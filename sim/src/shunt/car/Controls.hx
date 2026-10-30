@@ -24,11 +24,20 @@ class Controls {
 
 	/**
 	 * Where the driver wants the wheels: their steering times the most the
-	 * wheels may turn at this speed (full lock when slow, much less when fast).
+	 * wheels may turn now. A bent front also pulls the wheels to one side,
+	 * which the driver has to hold against (SPEC.md §4b).
 	 */
 	static function wheelAngleAskedFor(car:Car, input:CarInput):Float {
+		return input.steer * mostSteeringNow(car) + Damage.steeringPull(car);
+	}
+
+	/**
+	 * The most the front wheels may turn at the car's speed: full lock when
+	 * slow, much less when fast. A badly damaged front takes some away.
+	 */
+	public static function mostSteeringNow(car:Car):Float {
 		var shareOfTopSpeed = keepBetween(car.speed() / Tuning.topSpeed, 0, 1);
-		var mostSteering = partWay(Tuning.mostSteeringWhenSlow, Tuning.mostSteeringAtTopSpeed, shareOfTopSpeed);
-		return input.steer * mostSteering;
+		var mostWhenNew = partWay(Tuning.mostSteeringWhenSlow, Tuning.mostSteeringAtTopSpeed, shareOfTopSpeed);
+		return mostWhenNew * Damage.steeringShare(car);
 	}
 }

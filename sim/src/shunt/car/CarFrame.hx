@@ -39,4 +39,14 @@ class CarFrame {
 	public static inline function inWorldTerms(car:Car, inCarTerms:Vector):Vector {
 		return noseDirection(car) * inCarTerms.x + leftDirection(car) * inCarTerms.y;
 	}
+
+	/** The other way round: an arrow in the world's terms, as the car sees it (x forwards, y to the left). */
+	public static inline function inCarTerms(car:Car, inWorldTerms:Vector):Vector {
+		return new Vector(inWorldTerms.along(noseDirection(car)), inWorldTerms.along(leftDirection(car)));
+	}
+
+	/** The spot on the ground under a point of the car, given in the car's terms. */
+	public static inline function spotUnder(car:Car, inCarTerms:Vector):Vector {
+		return car.position + inWorldTerms(car, inCarTerms);
+	}
 }

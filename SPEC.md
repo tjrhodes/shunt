@@ -168,10 +168,14 @@ corner matters.
 **Oil.** A badly damaged car drops an oil patch every now and again, not all
 the time: the gap between drops is random, 4–10 s (from the race's seeded
 random numbers, so it replays the same), shorter as damage rises. A patch is
-a circle of about 1.5 m radius on the track under the car's rear, lasting
+a circle of about 2 m radius on the track under the car's rear, lasting
 20 s and fading over its last 5 s. A car whose wheels are on oil has their
-grip cut to 30 % (axle by axle, so rear wheels on oil spin the car, front
-wheels on oil make it run wide). At most 6 patches on the track at once; the
+grip cut to 30 % (axle by axle, so front wheels on oil make it run wide).
+While the rear wheels are on oil the back end also steps out: the tail
+swings further the way the car is already turning. (Cutting grip alone
+barely turned a car: at speed, both axles cross a patch almost together and
+the car just slides on. The swing makes a bend over oil a spin; a straight
+line over it, nothing.) At most 6 patches on the track at once; the
 oldest goes first. The car that dropped it is caught by its own oil too.
 
 **AI and damage.** AI drivers see oil patches ahead and steer round them,
@@ -198,7 +202,10 @@ and phase 1 ships two tracks:
 A figure-of-eight with a crossing comes after phase 1 (the same format
 handles it: the crossing is just two stretches of centreline that meet).
 
-Each track is one JSON file (`tracks/oval.json`, …) holding:
+Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
+a few points round the centreline (each with the track's width there) and
+the barriers; the rest below is worked out from those when the track loads,
+so nothing is written twice:
 - **centreline**: a closed list of points, smoothed into a curve when loaded,
   with a distance along it, used for progress, recovery and the AI;
 - **width** at each centreline point (tracks can pinch and widen), and the
@@ -207,14 +214,14 @@ Each track is one JSON file (`tracks/oval.json`, …) holding:
   points (a straight wall, an L, a curve), placed anywhere, inside the track
   or across it. These make the S-bends and chicanes. The physics sees edge
   walls and barriers alike, as segments;
-- **start line** and **grid**: four slots, two by two, staggered;
+- **start line** (where the centreline starts) and **grid**: four slots behind it, one car per row, alternating sides;
 - **checkpoints**: a car's lap only counts once it has passed them in order
   (no cutting across the infield or round the wrong side of a barrier, no
   reversing over the line);
-- **racing line**: the AI's preferred path, with a target speed at each point.
-  Worked out from the centreline and barriers by a small tool
-  (`tools/racing-line`), then hand-tweaked in the JSON if needed, so the AI
-  copes with any layout.
+- **racing line**: the fastest safe speed at each point, from how sharply
+  the centreline bends there and the braking needed before each bend
+  (`RacingLine`), so the AI copes with any layout. The AI follows the
+  centreline, each driver in its own lane, going round cars and oil.
 
 Track geometry, barriers, the infield and the surroundings are all drawn
 from the same file, so a new track is a new JSON file plus scenery. Barriers
@@ -263,7 +270,7 @@ The simulation is checked headlessly (Node, no browser), as bümbap's engine is:
 | Contact | A head-on and a side hit conserve momentum within 1 %; no overlap remains after the push-out |
 | Walls | 10,000 random fast approaches: no car ends up outside the walls |
 | Laps | Laps counted only in order; cutting the infield or reversing over the line counts nothing |
-| AI | On each track, four AI cars finish 100 seeded 5-lap races, none recovered more than twice per race |
+| AI | On each track, four AI cars race 100 seeded 5-lap races: every car not badly damaged reaches the last lap (the 10 s after the leader can stop the last finishing), none put back more than three times in a race (a wreck leaking oil can be) |
 | Barriers | 10,000 random fast approaches to each barrier, end-on and side-on: no car passes through |
 | Damage threshold | A 2.5 m/s nudge adds no damage; a 10 m/s hit adds about 28 to the zone hit, and only that zone |
 | Damage effects | At 100 overall the top speed is 75 % of new; the steering pull is to the damaged side; a car never stops being drivable |
@@ -362,7 +369,7 @@ shunt/
   SPEC.md          this file
   sim/             shared Haxe simulation (src/, test/)
   tracks/          oval.json, the whacky track (and later more)
-  tools/           racing-line: works out the AI's line for a track
+  tools/           make-oval.py (writes tracks/oval.json), check-lengths.py
   client/          Haxe browser client: render, input, audio, HUD
   assets/          glTF models, sounds
   server/          phase 3: the TypeScript Colyseus room

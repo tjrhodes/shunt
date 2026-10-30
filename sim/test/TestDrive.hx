@@ -1,7 +1,7 @@
-import shunt.Tick;
 import shunt.car.Car;
 import shunt.car.CarInput;
 import shunt.car.Driving;
+import shunt.car.Ground;
 import shunt.maths.Vector;
 
 /**
@@ -10,6 +10,9 @@ import shunt.maths.Vector;
  */
 class TestDrive {
 	public final car:Car;
+
+	/** What it drives on: clean tarmac unless a test puts oil down. */
+	public var ground:Ground = Grounds.cleanTarmac;
 
 	/** Ticks driven so far: counted whole, so every drive of the same length is the same number of ticks. */
 	var ticks = 0;
@@ -44,7 +47,7 @@ class TestDrive {
 	function driveUntil(inputAt:Float -> CarInput, isDone:Car -> Bool, atMost:Float):TestDrive {
 		var lastTick = ticks + Math.round(atMost * Tick.perSecond);
 		while (ticks < lastTick && !isDone(car)) {
-			Driving.driveOneTick(car, inputAt(time));
+			Driving.driveOneTick(car, inputAt(time), ground);
 			ticks++;
 		}
 		return this;

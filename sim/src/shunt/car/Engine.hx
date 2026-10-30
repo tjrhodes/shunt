@@ -25,12 +25,22 @@ class Engine {
 		return input.brake > 0 && input.throttle == 0 && car.forwardSpeed() < Tuning.stoppedBelow;
 	}
 
-	/** The engine pulls forwards with the accelerator, or backwards in reverse. */
+	/** The engine pulls forwards with the accelerator, or backwards (with the brake pedal) in reverse. */
 	static function enginePull(car:Car, input:CarInput):Float {
 		if (wantsToReverse(car, input)) {
-			return -Tuning.reversePull * input.brake * pullLeftAt(-car.forwardSpeed(), Tuning.reverseTopSpeed);
+			return -pullInGear(car, Tuning.reversePull, input.brake, -car.forwardSpeed(), Tuning.reverseTopSpeed);
 		}
-		return Tuning.enginePull * car.throttle * pullLeftAt(car.forwardSpeed(), Tuning.topSpeed);
+		return pullInGear(car, Tuning.enginePull, car.throttle, car.forwardSpeed(), Tuning.topSpeed);
+	}
+
+	/**
+	 * The pull in one direction: the engine's full pull, times how far the
+	 * pedal is down, fading as the car nears its top speed that way. A
+	 * damaged car has less pull and a lower top speed (SPEC.md §4b).
+	 */
+	static function pullInGear(car:Car, fullPull:Float, pedal:Float, speedThatWay:Float, topSpeed:Float):Float {
+		var stillWorking = Damage.speedShare(car);
+		return fullPull * stillWorking * pedal * pullLeftAt(speedThatWay, topSpeed * stillWorking);
 	}
 
 	/**

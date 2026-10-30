@@ -12,10 +12,10 @@ using shunt.car.CarMotion;
  * in order. Walls and other cars come in later, in the race (SPEC.md §4).
  */
 class Driving {
-	public static function driveOneTick(car:Car, input:CarInput) {
+	public static function driveOneTick(car:Car, input:CarInput, ground:Ground) {
 		var tidyInput = CarInputs.tidied(input);
 		car.followTheDriver(tidyInput);
-		var allThePushes = car.grip().plus(car.engineBrakesAndAir(tidyInput));
+		var allThePushes = car.grip(ground).plus(car.engineBrakesAndAir(tidyInput));
 		car.moveOneTick(allThePushes);
 	}
 }
