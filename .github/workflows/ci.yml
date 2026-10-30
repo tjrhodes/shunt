@@ -1,0 +1,31 @@
+# On every push and pull request: the 15-line rule, then every check of the simulation (SPEC.md §8).
+name: Build and test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Haxe 4.3.7, from the Haxe Foundation's own release
+        run: |
+          curl -fsSL https://github.com/HaxeFoundation/haxe/releases/download/4.3.7/haxe-4.3.7-linux64.tar.gz | tar xz -C "$RUNNER_TEMP"
+          haxe_dir=$(ls -d "$RUNNER_TEMP"/haxe_*)
+          echo "$haxe_dir" >> "$GITHUB_PATH"
+          echo "HAXE_STD_PATH=$haxe_dir/std" >> "$GITHUB_ENV"
+
+      - name: Functions of at most 15 lines
+        run: python3 tools/check-lengths.py sim tools
+
+      - name: The simulation's checks
+        working-directory: sim
+        run: haxe test.hxml

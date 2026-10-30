@@ -1,0 +1,4 @@
+# Built output: always made again from the source.
+sim/test/bin/
+dist/
+node_modules/

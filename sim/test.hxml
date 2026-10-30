@@ -1,0 +1,9 @@
+# The simulation's checks, on Node: no browser, no screen.
+# Run: haxe test.hxml   (from this folder)
+
+-cp src
+-cp test
+-D js-es=6
+-main TestMain
+-js test/bin/tests.cjs
+--cmd node test/bin/tests.cjs
