@@ -1,6 +1,6 @@
 # Built output: always made again from the source.
 sim/test/bin/
 dist/
-client/www/shunt.js
+client/www/shunt*.js
 client/www/tracks/
 node_modules/
