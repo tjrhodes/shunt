@@ -48,7 +48,7 @@ class CarTuning {
 	 * Lifting off the accelerator slows the car too: the engine holds it
 	 * back (engine braking), with this force when the pedal is fully up.
 	 */
-	public static inline final engineBraking = 5000.0;
+	public static inline final engineBraking = 7500.0;
 
 	/** Reverse is slow and weak, as it should be. */
 	public static inline final reverseTopSpeed = 8.0;
@@ -70,7 +70,7 @@ class CarTuning {
 
 	/** Full lock when slow, much less at speed, so a held key doesn't spin the car at 150 km/h. */
 	public static final mostSteeringWhenSlow = degrees(30);
-	public static final mostSteeringAtTopSpeed = degrees(6);
+	public static final mostSteeringAtTopSpeed = degrees(9);
 
 	/** How fast the front wheels turn (radians per second): keys are on or off, cars shouldn't be. */
 	public static inline final wheelTurnRate = 7.0;
@@ -82,13 +82,13 @@ class CarTuning {
 
 	/**
 	 * How hard each axle's tyres can push sideways, as a share of the weight
-	 * on them (1.45 means 1.45 g). Off the power the rear grips a little more
+	 * on them (1.6 means 1.6 g). Off the power the rear grips a little more
 	 * than the front, so a car pushed too far runs wide and settles; on the
 	 * power the rear loses some grip (`rearGripLostToThrottle`) and the tail
 	 * can drift round.
 	 */
-	public static inline final frontGrip = 1.45;
-	public static inline final rearGrip = 1.55;
+	public static inline final frontGrip = 1.6;
+	public static inline final rearGrip = 1.7;
 
 	/**
 	 * Once a tyre is really sliding it grips less than at its best: this

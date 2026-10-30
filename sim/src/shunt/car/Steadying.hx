@@ -23,7 +23,8 @@ class Steadying {
 
 	/**
 	 * The spin the front wheels ask for: as if they rolled without sliding,
-	 * but never more than the tyres' grip could hold at this speed.
+	 * but never more than the tyres' grip could hold at this speed. (Asking
+	 * for more was tried: a long held bend then scrubbed round into a doughnut.)
 	 */
 	static function spinTheWheelsAskFor(car:Car):Float {
 		var mostTheGripAllows = Math.min(Tuning.frontGrip, Tuning.rearGrip) * Tuning.gravity / Math.max(1, car.speed());

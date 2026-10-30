@@ -93,3 +93,24 @@ Tom drove it. What he found, what it was, and what changed:
 - **Top speed a bit quicker:** 46 m/s (165 km/h), from 42.
 - Checks added for each of these, so they can't quietly come back: 94 now.
   The AI check allows 1 car in 100 caught in a racing incident.
+
+## 30 Oct 2026, late: second tuning round
+
+Tom: much better; a bit more turning and engine braking, and steering that
+builds the longer a key is held.
+
+- **Key build:** `client/src/input/SteeringRamp.hx`: a third of the steering
+  when a key goes down, full after 0.6 s held; letting go or switching sides
+  starts again. Touch steering uses it too. It goes by the clock, so asking
+  twice in a frame changes nothing. In the client, not the car: it is about
+  keys, and a gamepad stick is already gradual.
+- **More turning:** steering at top speed 9° (from 6°), grip front 1.6 g and
+  rear 1.7 g (from 1.45 and 1.55). Full lock from top speed now turns 73° in
+  3 s (was 61°); a held half-lock bend at 72 km/h turns about 40 % quicker.
+  Taps at top speed unchanged: 20°, settling.
+- **Tried and dropped:** letting the steadying ask for up to 30 % more turning
+  than the grip can hold. Quick taps were fine, but a held half-lock bend
+  scrubbed round into a doughnut (35° slides, down to 25 km/h). 10 % did the
+  same, more slowly.
+- **Engine braking:** 7,500 N (from 5,000): top speed to 70 km/h in 4.2 s,
+  132 m (was 6 s, 188 m).

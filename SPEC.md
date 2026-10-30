@@ -34,7 +34,7 @@ One small, finished, fun race beats a big unfinished season.
 | Feature | Detail |
 |---|---|
 | Race | Four cars on the chosen track: the player and three AI drivers. Grid start, 3-2-1 lights, 5 laps. Finishing order by laps done, then distance round the lap. |
-| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
+| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD; holding a steering key turns harder, up to full after 0.6 s. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
 | Contact | Cars bump, push and spin each other. A tap on a rear quarter turns the car hit; a hit square from behind shoves it. Walls take speed off and send sparks. |
 | Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil, which takes away the grip of whoever drives over it. Walls are kinder than cars. Damage lasts the whole race (section 4b). |
 | Recover | A car stuck or facing the wrong way for 3 s is put back on the centreline at the nearest point, facing the right way, at walking pace. Also on a key (R / gamepad Y). |
@@ -103,17 +103,24 @@ class and are **starting values to tune by feel**.
 | Axles | 1.4 m in front of and 1.4 m behind the centre of mass |
 | Top speed | about 46 m/s (165 km/h); with drag it tops out near 44 m/s |
 | 0–100 km/h | about 4 s |
-| Lifting off | engine braking (5,000 N with the accelerator up): from top speed to 70 km/h in a few seconds |
-| Steering | ±30° when slow, narrowing to ±6° at top speed; the wheel turns at most 7 rad/s, so keys feel smooth but quick |
-| Grip | front 1.45 g, rear 1.55 g: off the power a car pushed too far runs wide and settles. Full throttle takes 20 % of the rear's grip, so on the power the tail drifts round |
+| Lifting off | engine braking (7,500 N with the accelerator up): from top speed to 70 km/h in about 4 s |
+| Steering | ±30° when slow, narrowing to ±9° at top speed; the wheel turns at most 7 rad/s, so keys feel smooth but quick. Keys and touch build up: a third of the steering at first, full after 0.6 s held (in the browser's input, not the car: a gamepad stick is already gradual) |
+| Grip | front 1.6 g, rear 1.7 g: off the power a car pushed too far runs wide and settles. Full throttle takes 20 % of the rear's grip, so on the power the tail drifts round |
 | Sliding | a tyre past its best slip angle grips less, down to 80 % at twice that angle: what lets a drift happen and makes it something to hold |
 | Steadying | a helping hand, as arcade racers have: the car's turning is drawn towards what its front wheels ask for (at 4 per second). A small correction stays small; countersteering catches a slide |
 
 *Tuned 30 Oct after Tom's first drive:* steering felt heavy and then the car
 spun with no warning; a 0.3 s tap at top speed turned it 93° into a spin
 (now 20°, settling); lifting off took 1.3 km to slow from top speed to
-70 km/h (now about 200 m). Earlier grip had the front at 1.15 g and the rear
+70 km/h (then about 200 m). Earlier grip had the front at 1.15 g and the rear
 at 1.3 g, with no sliding falloff and no steadying.
+
+*Second round, the same evening:* Tom asked for a bit more turning and more
+engine braking, and for steering that builds the longer a key is held.
+Grip up from 1.45/1.55 g, steering at top speed up from 6°, engine braking
+up from 5,000 N, and the key build added. Letting the steadying ask for
+more turning than the grip can hold was tried and dropped: a long held bend
+scrubbed round into a doughnut.
 
 **Per tick, for each car:**
 

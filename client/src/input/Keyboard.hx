@@ -13,6 +13,7 @@ class Keyboard {
 	static final pauseKeys = ["Escape", "KeyP"];
 
 	final keysDown = new Map<String, Bool>();
+	final steeringRamp = new SteeringRamp();
 
 	public function new() {
 		Browser.window.addEventListener("keydown", (event:KeyboardEvent) -> pressed(event, true));
@@ -20,12 +21,12 @@ class Keyboard {
 		Browser.window.addEventListener("blur", () -> keysDown.clear());
 	}
 
-	/** Keys are on or off, so pedals and steering are all or nothing; the car smooths them. */
+	/** Keys are on or off, so pedals are all or nothing (the car smooths them); steering builds while a key is held. */
 	public function hands():Hands {
 		return {
 			throttle: anyDown(throttleKeys) ? 1 : 0,
 			brake: anyDown(brakeKeys) ? 1 : 0,
-			steer: (anyDown(rightKeys) ? 1 : 0) - (anyDown(leftKeys) ? 1 : 0),
+			steer: steeringRamp.steering((anyDown(rightKeys) ? 1 : 0) - (anyDown(leftKeys) ? 1 : 0)),
 			recover: anyDown(recoverKeys),
 			pause: anyDown(pauseKeys)
 		};

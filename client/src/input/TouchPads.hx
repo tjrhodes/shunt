@@ -8,7 +8,8 @@ import js.Browser;
 
 /**
  * Driving by touch (SPEC.md §1): hold the left half of the screen to steer
- * left and the right half to steer right (both, and it goes straight). The
+ * left and the right half to steer right (both, and it goes straight),
+ * building the longer a finger is held. The
  * car accelerates by itself once touch is in use; a pad in the corner brakes,
  * and a button at the top pauses. Both appear at the first touch.
  */
@@ -16,6 +17,7 @@ class TouchPads {
 	final fingersOnTheScreen = new Map<Int, Float>();
 	final stage:Element;
 	final buttons:Array<Element>;
+	final steeringRamp = new SteeringRamp();
 	var isInUse = false;
 	var isBraking = false;
 	var isPausing = false;
@@ -38,7 +40,7 @@ class TouchPads {
 		return {
 			throttle: isBraking ? 0 : 1,
 			brake: isBraking ? 1 : 0,
-			steer: Lambda.fold([for (side in fingersOnTheScreen) side], (side, total) -> total + side, 0.0),
+			steer: steeringRamp.steering(Lambda.fold([for (side in fingersOnTheScreen) side], (side, total) -> total + side, 0.0)),
 			recover: false,
 			pause: isPausing
 		};
