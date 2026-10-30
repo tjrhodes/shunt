@@ -30,3 +30,35 @@ Written by Claude (AI) from the spec, for Tom to review.
   the tyres have (at 90 km/h, a third of the way already slides). That may
   be right for a slidey stock car, or the steering at speed may want
   narrowing. To decide at the wheel.
+
+## 30 Oct 2026, evening: the oval to a drivable race (steps 3 to 6)
+
+Written by Claude (AI) from the spec, for Tom to review.
+
+- **Built:** tracks from JSON (smoothed centreline, edge walls, barriers),
+  contact (corners, wall ends, impulses with spin), race rules (lights,
+  checkpoints, laps, finish, standings, putting cars back), damage and oil,
+  AI drivers with a racing line worked out from any track, and a Haxe
+  three.js client with keyboard, gamepad and touch. 82 checks.
+- **What fought back:**
+  - AI drivers whose favourite lane hugged the outside wall drifted into it
+    in every bend, wrecked themselves and were put back up to 12 times a
+    race. Favourite lanes now stay within 40 % of the room each side.
+  - Oil that only cut grip barely turned a car (6° at most): at speed both
+    axles cross a patch almost together and the car just slides on. Now the
+    back end also steps out while the rear wheels are on oil, the way the
+    car is already turning; patches are 2 m across the middle, not 1.5.
+    Spec updated.
+  - The "every AI car finishes" check can't hold with the 10 s rule, and a
+    wreck falling back is damage working. The check is now: every car not
+    badly damaged reaches its last lap; none put back more than 3 times.
+  - On a phone, the four 45° camera angles all laid the oval diagonally and
+    small. The camera now tries every 15° and picks the best fill.
+  - In this cloud workspace the browser renders in software (7 frames a
+    second at desktop size), so the game ran in slow motion there, as it is
+    built to (at most 8 ticks a frame). A real GPU should hold 60.
+- **For the feel test:** lap times (about 20 s, tight bends), how slidey the
+  steering is at speed, how hard hits feel, how often AI bump, how much oil
+  spins. All in the tuning classes.
+- **Not yet (phase 1 still to do):** sound, sparks, smoke and skid marks,
+  dents, the damage outline in the HUD, the whacky track, the design pass.

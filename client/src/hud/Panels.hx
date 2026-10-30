@@ -1,0 +1,87 @@
+package hud;
+
+import js.html.Element;
+import shunt.race.Laps;
+import shunt.race.Race;
+import shunt.race.StartLights;
+import view.Paint;
+
+/** What each panel's buttons do; the game decides. */
+typedef PanelActions = {
+	final start:() -> Void;
+	final resume:() -> Void;
+	final restart:() -> Void;
+	final raceAgain:() -> Void;
+}
+
+/**
+ * The panels over the track: the start panel (name and how to drive), the
+ * pause panel, and the results. One shows at a time, or none while racing.
+ */
+class Panels {
+	final holder:Element;
+	final startPanel:Element;
+	final pausePanel:Element;
+	final resultsPanel:Element;
+	final resultsTable:Element;
+
+	public function new(holder:Element, actions:PanelActions) {
+		this.holder = holder;
+		startPanel = panel(Words.gameName, "panel-start");
+		Dom.make("p", "panel-tagline", Words.tagline, startPanel);
+		for (line in Words.howToDrive) Dom.make("p", "panel-help", line, startPanel);
+		Dom.button(Words.start, "button button-go", startPanel, actions.start);
+		pausePanel = panel(Words.paused, "panel-pause");
+		Dom.button(Words.resume, "button button-go", pausePanel, actions.resume);
+		Dom.button(Words.restart, "button", pausePanel, actions.restart);
+		resultsPanel = panel(Words.results, "panel-results");
+		resultsTable = Dom.make("ol", "results", null, resultsPanel);
+		Dom.button(Words.raceAgain, "button button-go", resultsPanel, actions.raceAgain);
+	}
+
+	public function showStart() {
+		showOnly(startPanel);
+	}
+
+	public function showPause() {
+		showOnly(pausePanel);
+	}
+
+	public function hideAll() {
+		showOnly(null);
+	}
+
+	/** The results, in finishing order: place, car, and race time (or how far it got). */
+	public function showResults(race:Race) {
+		resultsTable.innerHTML = "";
+		for (place in 0...race.state.order.length) resultRow(race, race.state.order[place], place + 1);
+		showOnly(resultsPanel);
+	}
+
+	function resultRow(race:Race, seat:Int, place:Int) {
+		var racer = race.racer(seat);
+		var livery = Paint.liveries[seat];
+		var row = Dom.make("li", seat == 0 ? "result is-player" : "result", null, resultsTable);
+		Dom.make("span", "result-place", Words.place(place), row);
+		Dom.make("span", "result-swatch", null, row).style.background = Paint.css(livery.colour);
+		Dom.make("span", "result-name", Words.driverName(seat, livery.number), row);
+		var raceTime = (racer.finishTick - StartLights.greenTick) / Tick.perSecond;
+		var howFar = Words.lap + " " + Words.outOf(Laps.lapsDone(racer), race.state.laps);
+		Dom.make("span", "result-time", racer.finishTick >= 0 ? Words.raceTime(raceTime) : howFar, row);
+	}
+
+	/** A titled panel, hidden until wanted. */
+	function panel(title:String, className:String):Element {
+		var box = Dom.make("section", 'panel $className', null, holder);
+		Dom.make("h1", "panel-title", title, box);
+		box.hidden = true;
+		return box;
+	}
+
+	/** Shows one panel (or none) and hides the rest; the holder dims the track only while a panel shows. */
+	function showOnly(wanted:Null<Element>) {
+		for (box in [startPanel, pausePanel, resultsPanel]) box.hidden = box != wanted;
+		holder.classList.toggle("is-showing", wanted != null);
+		if (wanted != null) wanted.querySelector("button").focus();
+	}
+}

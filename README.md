@@ -12,9 +12,17 @@ The plan is in [SPEC.md](SPEC.md).
 
 ## Where it's at
 
-Phase 1, step 2 of 6: one car drives on an empty plane (tyres, engine,
-brakes, steering), with checks that it drives like a car. No track or
-graphics yet.
+Phase 1, step 6 of 6 reached: a race on the oval against three AI cars,
+with contact, damage and oil, drawn in plain low-poly 3D. Next: tuning at
+the wheel, then sound, the look, and the second track.
+
+## Playing it
+
+```sh
+cd client
+haxe build.hxml                       # builds www/shunt.js and copies the tracks
+python3 -m http.server -d www 8000    # then open http://localhost:8000
+```
 
 ## Running the checks
 
@@ -22,9 +30,9 @@ Needs [Haxe 4.3](https://haxe.org/download/) and Node.
 
 ```sh
 cd sim
-haxe test.hxml                        # every check of the simulation
+haxe test.hxml                        # every check of the simulation (about 30 s)
 cd ..
-python3 tools/check-lengths.py sim tools   # no function over 15 lines
+python3 tools/check-lengths.py sim client/src tools   # no function over 15 lines
 ```
 
 ## Licence

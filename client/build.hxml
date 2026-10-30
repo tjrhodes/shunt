@@ -1,0 +1,13 @@
+# The browser game: the shared simulation plus the client, one script.
+# Build: haxe build.hxml   (from this folder)
+# Then serve the www folder (e.g. python3 -m http.server -d www) and open it.
+
+-cp ../sim/src
+-cp src
+-D js-es=6
+-dce full
+-main Main
+-js www/shunt.js
+
+# The track files sit beside the page, so the game fetches the same JSON the checks read.
+--cmd mkdir -p www/tracks && cp ../tracks/*.json www/tracks/

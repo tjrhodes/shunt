@@ -101,7 +101,7 @@ class and are **starting values to tune by feel**.
 |---|---|
 | Car body | 4.8 × 1.9 m, mass 1,400 kg, yaw inertia from the box |
 | Axles | 1.4 m in front of and 1.4 m behind the centre of mass |
-| Top speed | about 42 m/s (150 km/h), so a lap of the oval is about 11 s |
+| Top speed | about 42 m/s (150 km/h); with drag it tops out near 40 m/s. The AI lapped the oval in about 20 s (its bends are tight: about 50 km/h), to tune at the wheel |
 | 0–100 km/h | about 4 s |
 | Steering | ±30° when slow, narrowing to ±8° at top speed; the wheel turns at most 4 rad/s, so keys feel smooth |
 | Grip | rear a little more than front, even at full throttle, so a car pushed too far runs wide and settles rather than always spinning (found in the first checks: front-first grip spun the car at half lock); the rear still loses some grip under full throttle, so the tail can be kicked out |
@@ -312,9 +312,13 @@ The whole-track camera means no split screen. No changes to the simulation.
 
 - **three.js through Haxe externs** (decided 30 Oct: employers recognise it,
   its docs and examples are vast, and it keeps the "Haxe with the JS
-  ecosystem" story). Only the externs the game uses are written, kept in
-  `client/externs/`. An orthographic camera at a true isometric angle
-  (45° round, 35.26° down).
+  ecosystem" story). Only the externs the game uses are written, in
+  `client/src/three/`. For now the page loads three.js r128, its last build
+  with a global `THREE`, from cdnjs; moving to a current version as an ES
+  module is a later step. An orthographic camera at the isometric angle
+  (35.26° down), looking from whichever way round (in 15° steps) fills the
+  screen best, so the oval lies across a wide screen and stands up on a
+  phone.
 - **Dents**: the car body is a low-poly mesh; a contact pushes in the
   vertices near its point, scaled by the damage it did. Drawn only, never fed
   back into the physics (the simulation's damage zones are the truth).
@@ -370,7 +374,7 @@ shunt/
   sim/             shared Haxe simulation (src/, test/)
   tracks/          oval.json, the whacky track (and later more)
   tools/           make-oval.py (writes tracks/oval.json), check-lengths.py
-  client/          Haxe browser client: render, input, audio, HUD
+  client/          Haxe browser client: render, input, HUD (src/), the page (www/)
   assets/          glTF models, sounds
   server/          phase 3: the TypeScript Colyseus room
   tests/           Playwright browser checks

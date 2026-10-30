@@ -38,7 +38,7 @@ class CarTuning {
 
 	// ---- Engine, brakes and air ----
 
-	/** About 150 km/h. A lap of the oval takes about 11 s. */
+	/** About 150 km/h (with drag, it tops out a little under). */
 	public static inline final topSpeed = 42.0;
 
 	/** The engine's pull at a standstill; it fades to nothing at top speed. Gives 0–100 km/h in about 4 s. */
