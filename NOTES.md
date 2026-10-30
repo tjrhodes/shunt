@@ -62,3 +62,34 @@ Written by Claude (AI) from the spec, for Tom to review.
   spins. All in the tuning classes.
 - **Not yet (phase 1 still to do):** sound, sparks, smoke and skid marks,
   dents, the damage outline in the HUD, the whacky track, the design pass.
+
+## 30 Oct 2026, night: tuning after Tom's first drive
+
+Tom drove it. What he found, what it was, and what changed:
+
+- **Heavy steering, then a sudden spin; a small correction at top speed
+  spun the car into the wall.** Measured: a 0.3 s tap at top speed turned
+  the car 93° with a 33° slide. Nothing stopped the car rotating once it
+  started. Now: a steadying hand draws the car's turning towards what its
+  front wheels ask for (an arcade assist, `CarTuning.steadying`); steering
+  turns faster (7 rad/s) and less at top speed (6°). The same tap turns it
+  20° and settles.
+- **Couldn't get round the bends, even lifting off on full lock.** Lifting
+  off slowed the car from top speed to 70 km/h in 48 s and 1.3 km: there
+  was no engine braking. Now 5,000 N of engine braking: 6 s and 190 m.
+  Grip is up (front 1.45 g, rear 1.55 g) and the oval's bends are wider
+  (32 m radius, not 25).
+- **The back should drift round so you can hold a slide on the power.**
+  Tyres now grip less once really sliding (80 % at twice the best slip
+  angle), and full throttle takes 20 % of the rear's grip. Full lock on the
+  power at 90 km/h: a 17° drift that countersteering straightens.
+- **Grazing walls broke the steering and started oil.** Walls did as much
+  harm as cars (a graze about 40 points), and a hit near a corner counted
+  as the front. Now walls are kinder (harmless below 6 m/s, 1.5 points per
+  m/s after: a top-speed graze about 10), damage goes on the side the hit
+  came from, steering pull starts at 50 front damage and oil at 80 overall.
+- **Oil spun the car regardless.** The tail-swing is gone; oil only takes
+  grip away. Straight over it: nothing. In a bend: the car slides wide.
+- **Top speed a bit quicker:** 46 m/s (165 km/h), from 42.
+- Checks added for each of these, so they can't quietly come back: 94 now.
+  The AI check allows 1 car in 100 caught in a racing incident.

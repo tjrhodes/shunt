@@ -10,8 +10,8 @@ import json
 import math
 from pathlib import Path
 
-BEND_RADIUS = 25.0      # metres, to the centreline
-STRAIGHT_LENGTH = 121.5  # metres; with the bends, about 400 m round (a quarter mile)
+BEND_RADIUS = 32.0      # metres, to the centreline
+STRAIGHT_LENGTH = 99.5   # metres; with the bends, about 400 m round (a quarter mile)
 WIDTH = 14.0            # metres, wall to wall: three cars wide
 STRAIGHT_STEP = 20.0    # metres between points on the straights
 BEND_STEP = 30.0        # degrees between points round the bends

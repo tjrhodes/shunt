@@ -53,15 +53,18 @@ class Engine {
 	}
 
 	/**
-	 * Brakes and rolling resistance only ever slow the car down: they push
-	 * against the way it is rolling, but never hard enough to send it back
-	 * the other way within one tick.
+	 * Brakes, engine braking (the accelerator up, unless it is driving the car
+	 * in reverse) and rolling resistance only
+	 * ever slow the car down: they push against the way it is rolling, but
+	 * never hard enough to send it back the other way within one tick.
 	 */
 	static function slowingDown(car:Car, input:CarInput):Float {
-		var braking = wantsToReverse(car, input) ? 0 : input.brake * Tuning.brakeForce;
+		var isReversing = wantsToReverse(car, input);
+		var braking = isReversing ? 0 : input.brake * Tuning.brakeForce;
+		var engineHoldingBack = isReversing ? 0 : Tuning.engineBraking * (1 - car.throttle);
 		var rollingSpeed = car.forwardSpeed();
 		var mostThatStopsWithoutReversing = Tuning.mass * Math.abs(rollingSpeed) / Tick.seconds;
-		return -signOf(rollingSpeed) * Math.min(braking + Tuning.rollingResistance, mostThatStopsWithoutReversing);
+		return -signOf(rollingSpeed) * Math.min(braking + engineHoldingBack + Tuning.rollingResistance, mostThatStopsWithoutReversing);
 	}
 
 	/** The air pushes back against the way the car is going, harder and harder with speed (speed squared). */

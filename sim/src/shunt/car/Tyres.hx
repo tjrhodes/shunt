@@ -2,6 +2,7 @@ package shunt.car;
 
 import shunt.car.CarTuning as Tuning;
 import shunt.maths.Numbers.keepBetween;
+import shunt.maths.Numbers.partWay;
 import shunt.maths.Numbers.signOf;
 import shunt.maths.Vector;
 
@@ -21,21 +22,8 @@ using shunt.car.CarFrame;
 class Tyres {
 	/** The push and twist from all four tyres together, on whatever ground they are on. */
 	public static function grip(car:Car, ground:Ground):Push {
-		var bothAxles = frontAxleGrip(car, ground).plus(rearAxleGrip(car, ground)).plus(tailSteppingOut(car, ground));
+		var bothAxles = frontAxleGrip(car, ground).plus(rearAxleGrip(car, ground));
 		return bothAxles.times(tyreModelShare(car));
-	}
-
-	/**
-	 * Rear wheels on oil let the back end step out: a twist the way the car
-	 * is already turning (by its spin, or else its wheels), stronger the less
-	 * grip there is. Going straight, there is no way to step out, so nothing.
-	 */
-	static function tailSteppingOut(car:Car, ground:Ground):Push {
-		var gripLost = 1 - gripUnderAxle(car, ground, -Tuning.rearAxleBehind);
-		if (gripLost <= 0) return Push.nothing();
-		var turningWay = Math.abs(car.spin) > 0.05 ? signOf(car.spin) : -signOf(car.wheelAngle);
-		var twist = gripLost * DamageTuning.oilSwingsTheTail * Tuning.turningInertia * turningWay;
-		return new Push(Vector.nothing(), twist);
 	}
 
 	/**
@@ -69,8 +57,17 @@ class Tyres {
 	 */
 	static function pushAgainstSliding(slidingLeft:Float, rollingForwards:Float, gripLimit:Float):Float {
 		var slipAngle = Math.atan2(slidingLeft, Math.abs(rollingForwards));
-		var shareOfGrip = keepBetween(slipAngle / Tuning.slipAtMostGrip, -1, 1);
-		return -gripLimit * shareOfGrip;
+		return -gripLimit * signOf(slipAngle) * shareOfGripAt(Math.abs(slipAngle));
+	}
+
+	/**
+	 * How much of its grip a tyre gives at a slip angle: growing to all of it
+	 * at its best angle, then falling away to its sliding grip by twice that.
+	 */
+	static function shareOfGripAt(slipAngle:Float):Float {
+		var best = Tuning.slipAtMostGrip;
+		if (slipAngle <= best) return slipAngle / best;
+		return partWay(1, Tuning.gripWhenSliding, keepBetween((slipAngle - best) / best, 0, 1));
 	}
 
 	/** How much grip the ground gives under an axle (oil takes most of it), given how far ahead of the middle the axle is. */

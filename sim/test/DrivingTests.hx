@@ -4,6 +4,7 @@ import haxe.Json;
 import shunt.car.Car;
 import shunt.car.CarInput;
 import shunt.car.CarTuning as Tuning;
+import shunt.maths.Numbers.degrees;
 import shunt.maths.Numbers.keepBetween;
 
 using shunt.car.CarFrame;
@@ -29,6 +30,9 @@ class DrivingTests {
 		test("a gentle bend at speed holds without sliding", holdsAGentleBend),
 		test("at a crawl on full lock it turns in a tight circle", turnsTightlyWhenSlow),
 		test("flat out on full lock it slides, but nothing breaks", survivesAbuse),
+		test("a quick correction at top speed stays a correction, not a spin", correctionsDoNotSpin),
+		test("lifting off at top speed slows it to 70 km/h within 8 s", liftingOffSlows),
+		test("on the power in a bend the tail drifts out, and countersteering catches it", powerSlidesCanBeHeld),
 		test("the same inputs always give the same drive", isRepeatable),
 		test("a copied car carries on exactly as the original", copiesCarryOn),
 		test("inputs out of range count as the most allowed", tidiesInputs)
@@ -104,6 +108,45 @@ class DrivingTests {
 		var drive = new TestDrive().hold(floored, 15).hold(pedals(1, 0, 1), 3).hold(pedals(1, 1, -1), 3);
 		isTrue(isFinite(drive.car), "every number is still a real number");
 		isTrue(Math.abs(drive.car.sidewaysSpeed()) > 1, "it slid");
+	}
+
+	/** Tom's first drive: a 0.3 s tap of the steering at top speed spun the car 93° into the wall. */
+	static function correctionsDoNotSpin() {
+		var drive = new TestDrive().hold(floored, 30);
+		var worstSlide = 0.0;
+		drive.follow(seconds -> {
+			worstSlide = Math.max(worstSlide, slideAngle(drive.car));
+			return pedals(1, 0, seconds < 30.3 ? 1 : 0);
+		}, 3);
+		between(Math.abs(drive.car.heading), 0.1, degrees(35), "radians turned by the correction");
+		between(worstSlide, 0, degrees(10), "worst slide angle");
+		between(Math.abs(drive.car.spin), 0, 0.05, "spin once it has settled");
+	}
+
+	static function liftingOffSlows() {
+		var drive = new TestDrive().hold(floored, 30);
+		var startedLifting = drive.time;
+		drive.holdUntil(pedals(0, 0, 0), car -> car.speed() < 70 * kilometresPerHour, 20);
+		between(drive.time - startedLifting, 0, 8, "seconds to slow to 70 km/h, lifting off");
+	}
+
+	/** Full lock and full throttle at 90 km/h: a drift, not a spin; then half countersteer straightens it. */
+	static function powerSlidesCanBeHeld() {
+		var drive = new TestDrive().holdUntil(floored, car -> car.speed() >= 25, 10);
+		var worstSlide = 0.0;
+		drive.follow(_ -> {
+			worstSlide = Math.max(worstSlide, slideAngle(drive.car));
+			return pedals(1, 0, 1);
+		}, 1);
+		between(worstSlide, degrees(8), degrees(30), "slide angle of the drift");
+		var car = drive.hold(pedals(1, 0, -0.5), 1).hold(pedals(0.5, 0, 0), 2).car;
+		between(Math.abs(car.spin), 0, 0.05, "spin after countersteering");
+		between(Math.abs(car.sidewaysSpeed()), 0, 0.5, "sideways speed after countersteering");
+	}
+
+	/** How far the car is going sideways to where it points: 0 when it rolls true, bigger in a slide. */
+	static function slideAngle(car:Car):Float {
+		return Math.abs(Math.atan2(car.sidewaysSpeed(), Math.abs(car.forwardSpeed())));
 	}
 
 	static function isRepeatable() {

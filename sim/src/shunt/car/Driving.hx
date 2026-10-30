@@ -4,6 +4,7 @@ import shunt.car.CarInput.CarInputs;
 
 using shunt.car.Controls;
 using shunt.car.Tyres;
+using shunt.car.Steadying;
 using shunt.car.Engine;
 using shunt.car.CarMotion;
 
@@ -15,7 +16,7 @@ class Driving {
 	public static function driveOneTick(car:Car, input:CarInput, ground:Ground) {
 		var tidyInput = CarInputs.tidied(input);
 		car.followTheDriver(tidyInput);
-		var allThePushes = car.grip(ground).plus(car.engineBrakesAndAir(tidyInput));
+		var allThePushes = car.grip(ground).plus(car.steadyingHand()).plus(car.engineBrakesAndAir(tidyInput));
 		car.moveOneTick(allThePushes);
 	}
 }

@@ -36,7 +36,7 @@ One small, finished, fun race beats a big unfinished season.
 | Race | Four cars on the chosen track: the player and three AI drivers. Grid start, 3-2-1 lights, 5 laps. Finishing order by laps done, then distance round the lap. |
 | Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
 | Contact | Cars bump, push and spin each other. A tap on a rear quarter turns the car hit; a hit square from behind shoves it. Walls take speed off and send sparks. |
-| Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil that spins whoever drives over it. Damage lasts the whole race (section 4b). |
+| Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil, which takes away the grip of whoever drives over it. Walls are kinder than cars. Damage lasts the whole race (section 4b). |
 | Recover | A car stuck or facing the wrong way for 3 s is put back on the centreline at the nearest point, facing the right way, at walking pace. Also on a key (R / gamepad Y). |
 | HUD | Position (2nd / 4), lap (3 / 5), current and best lap time, a 3-2-1 start, a results table at the end with a Race again button. |
 | Camera | Fixed isometric view; the whole track fits on screen at any aspect ratio (so phase 2 needs no split screen). |
@@ -101,10 +101,19 @@ class and are **starting values to tune by feel**.
 |---|---|
 | Car body | 4.8 × 1.9 m, mass 1,400 kg, yaw inertia from the box |
 | Axles | 1.4 m in front of and 1.4 m behind the centre of mass |
-| Top speed | about 42 m/s (150 km/h); with drag it tops out near 40 m/s. The AI lapped the oval in about 20 s (its bends are tight: about 50 km/h), to tune at the wheel |
+| Top speed | about 46 m/s (165 km/h); with drag it tops out near 44 m/s |
 | 0–100 km/h | about 4 s |
-| Steering | ±30° when slow, narrowing to ±8° at top speed; the wheel turns at most 4 rad/s, so keys feel smooth |
-| Grip | rear a little more than front, even at full throttle, so a car pushed too far runs wide and settles rather than always spinning (found in the first checks: front-first grip spun the car at half lock); the rear still loses some grip under full throttle, so the tail can be kicked out |
+| Lifting off | engine braking (5,000 N with the accelerator up): from top speed to 70 km/h in a few seconds |
+| Steering | ±30° when slow, narrowing to ±6° at top speed; the wheel turns at most 7 rad/s, so keys feel smooth but quick |
+| Grip | front 1.45 g, rear 1.55 g: off the power a car pushed too far runs wide and settles. Full throttle takes 20 % of the rear's grip, so on the power the tail drifts round |
+| Sliding | a tyre past its best slip angle grips less, down to 80 % at twice that angle: what lets a drift happen and makes it something to hold |
+| Steadying | a helping hand, as arcade racers have: the car's turning is drawn towards what its front wheels ask for (at 4 per second). A small correction stays small; countersteering catches a slide |
+
+*Tuned 30 Oct after Tom's first drive:* steering felt heavy and then the car
+spun with no warning; a 0.3 s tap at top speed turned it 93° into a spin
+(now 20°, settling); lifting off took 1.3 km to slow from top speed to
+70 km/h (now about 200 m). Earlier grip had the front at 1.15 g and the rear
+at 1.3 g, with no sliding falloff and no steadying.
 
 **Per tick, for each car:**
 
@@ -113,12 +122,15 @@ class and are **starting values to tune by feel**.
 2. **Velocity in the car's frame**: forward speed and sideways speed.
 3. **Tyre forces** (a bicycle model): the slip angle at each axle from its
    sideways speed (including the spin) against the forward speed; sideways
-   force grows with slip, up to the axle's grip limit, then stays there
-   (the car slides). Below 2 m/s the model blends into simple kinematic
-   steering, where the slip maths would be unstable.
-4. **Drive and drag**: engine force tapering to zero at top speed; brake
-   force; rolling resistance; air drag growing with speed squared.
-5. **Integrate** (semi-implicit Euler): speed, then position; spin, then
+   force grows with slip up to the axle's grip limit, then falls away to
+   its sliding grip (the car slides). Below 2 m/s the model blends into
+   simple kinematic steering, where the slip maths would be unstable.
+4. **Steadying**: a twist drawing the car's spin towards what its front
+   wheels ask for, never more than the grip allows at this speed.
+5. **Drive and drag**: engine force tapering to zero at top speed; brakes
+   and engine braking; rolling resistance; air drag growing with speed
+   squared.
+6. **Integrate** (semi-implicit Euler): speed, then position; spin, then
    heading.
 
 **Contact.** Each car is an oriented box.
@@ -147,10 +159,18 @@ and are starting values to tune by feel.
 
 **Taking damage.** Each car has four zones: front, rear, left, right, each
 0–100. A contact's impulse is turned into a change of speed for the car hit
-(impulse ÷ mass). Below 3 m/s nothing happens, so nudges and trading paint
-cost nothing. Above it, damage = 4 points per m/s over the threshold, put on
-the zone facing the contact point. Walls count the same as cars. A zone stops
-at 100. Damage lasts the whole race; recovering (section 1) doesn't repair.
+(impulse ÷ mass). From another car: below 3 m/s nothing happens, so nudges
+and trading paint cost nothing; above it, 4 points per m/s over. Walls are
+kinder, since scraping one is part of short-track racing: below 6 m/s
+nothing, then 1.5 points per m/s (a 15° graze at top speed is about
+13 m/s, so about 10 points). The damage goes on the side the hit came from,
+the opposite way to the shove: a graze shoves a car sideways, so it marks
+the side, not the front. A zone stops at 100. Damage lasts the whole race;
+recovering (section 1) doesn't repair.
+
+*Tuned 30 Oct after Tom's first drive:* a few grazes broke the steering and
+started oil. Walls counted the same as cars (a graze did about 40 points),
+and a hit near a corner counted as the front.
 
 The car's **overall damage** is the average of the zones, weighted towards
 the worst one (half the worst zone plus half the average), so one smashed
@@ -161,21 +181,19 @@ corner matters.
 | Effect | From | Start value |
 |---|---|---|
 | Less speed | overall damage | top speed and engine force fall by up to 25 % at 100; never lower, so a wreck can always finish |
-| Steering pull | front damage above 40, towards the more damaged side | up to 4° of steering at 100, which the driver has to hold against; feels like a bent track rod |
-| Less steering | front damage above 60 | the most steering falls by up to 30 % at 100 |
-| Oil | overall damage above 70 ("badly damaged") | see below |
+| Steering pull | front damage above 50, towards the more damaged side | up to 4° of steering at 100, which the driver has to hold against; feels like a bent track rod |
+| Less steering | front damage above 70 | the most steering falls by up to 30 % at 100 |
+| Oil | overall damage above 80 ("badly damaged") | see below |
 
 **Oil.** A badly damaged car drops an oil patch every now and again, not all
 the time: the gap between drops is random, 4–10 s (from the race's seeded
 random numbers, so it replays the same), shorter as damage rises. A patch is
 a circle of about 2 m radius on the track under the car's rear, lasting
 20 s and fading over its last 5 s. A car whose wheels are on oil has their
-grip cut to 30 % (axle by axle, so front wheels on oil make it run wide).
-While the rear wheels are on oil the back end also steps out: the tail
-swings further the way the car is already turning. (Cutting grip alone
-barely turned a car: at speed, both axles cross a patch almost together and
-the car just slides on. The swing makes a bend over oil a spin; a straight
-line over it, nothing.) At most 6 patches on the track at once; the
+grip cut to 30 % (axle by axle). Oil only takes grip away: going straight
+over it, nothing happens; in a bend, the car slides wide, and with the power
+on the tail can come round. (For a few hours it also swung the tail round
+by itself, which spun cars regardless; Tom found that too much.) At most 6 patches on the track at once; the
 oldest goes first. The car that dropped it is caught by its own oil too.
 
 **AI and damage.** AI drivers see oil patches ahead and steer round them,
@@ -183,7 +201,7 @@ with a chance of missing them that falls with skill. A damaged AI drives to
 its car's lower top speed and holds against the pull, as a player does.
 
 **Showing it** (section 10): dents at the contact point, steam from the bonnet
-over 40 front damage, smoke above 70 overall, a dark sheen on oil patches, and
+over 50 front damage, smoke above 80 overall, a dark sheen on oil patches, and
 a small car outline in the HUD with each zone shaded by its damage.
 
 ## 5. Tracks
@@ -193,7 +211,8 @@ and odd shapes, not just ovals. So the track format takes **any layout**,
 and phase 1 ships two tracks:
 
 1. **Oval**: a short oval about 400 m round (a quarter mile, the classic
-   short track), about 150 × 60 m, three cars wide (14 m). Built first, to
+   short track): two 100 m straights and two bends of 32 m radius (25 m at
+   first, too tight for the speed), about 165 × 78 m, three cars wide (14 m). Built first, to
    tune the physics on.
 2. **A whacky one**: short free-standing walls dropped onto a wide arena to
    make S-bends, a chicane and a hairpin, with a narrow gap where cars have
@@ -264,17 +283,17 @@ The simulation is checked headlessly (Node, no browser), as bümbap's engine is:
 
 | Check | Pass |
 |---|---|
-| Straight line | Full throttle from rest reaches 100 km/h in 3.5–4.5 s and tops out near 42 m/s |
+| Straight line | Full throttle from rest reaches 100 km/h in 3.5–4.5 s and tops out just under top speed |
 | Braking | From top speed, stops in a set distance; never goes backwards on brake alone until stopped |
 | Corner | At the racing line's target speed, a car on the line stays within 1 m of it |
 | Contact | A head-on and a side hit conserve momentum within 1 %; no overlap remains after the push-out |
 | Walls | 10,000 random fast approaches: no car ends up outside the walls |
 | Laps | Laps counted only in order; cutting the infield or reversing over the line counts nothing |
-| AI | On each track, four AI cars race 100 seeded 5-lap races: every car not badly damaged reaches the last lap (the 10 s after the leader can stop the last finishing), none put back more than three times in a race (a wreck leaking oil can be) |
+| AI | On each track, four AI cars race 100 seeded 5-lap races: every car not badly damaged reaches the last lap (the 10 s after the leader can stop the last finishing), but for at most 1 in 100 caught in a racing incident; none put back more than three times in a race |
 | Barriers | 10,000 random fast approaches to each barrier, end-on and side-on: no car passes through |
-| Damage threshold | A 2.5 m/s nudge adds no damage; a 10 m/s hit adds about 28 to the zone hit, and only that zone |
+| Damage threshold | A nudge under the harmless limit adds no damage; a 10 m/s hit from a car adds 28 to the side hit, and only that side; a graze marks the side, not the front; a top-speed graze along a wall does under a third of what a car would, and under a third of what bends the steering |
 | Damage effects | At 100 overall the top speed is 75 % of new; the steering pull is to the damaged side; a car never stops being drivable |
-| Oil | No oil below 70 overall; drops 4–10 s apart above it; a car crossing a patch at speed spins (heading changes by over 90° within 2 s) |
+| Oil | No oil below 80 overall; drops 4–10 s apart above it; going straight over oil doesn't turn a car; in a bend, the oily car turns less and slides more than a clean one |
 | Repeatable | The same seed and inputs give a byte-identical final state |
 | Copy | `copyState`, step, `restoreState`, step again: identical states |
 

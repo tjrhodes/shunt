@@ -3,6 +3,8 @@ package shunt.race;
 import shunt.car.Car;
 import shunt.car.CarTuning;
 import shunt.car.Damage;
+import shunt.car.DamageTuning;
+import shunt.car.DamageTuning.HowHitsHurt;
 import shunt.contact.CarContacts;
 import shunt.contact.ContactTuning as Tuning;
 import shunt.contact.Impacts;
@@ -30,7 +32,7 @@ class Bumping {
 		var car = race.racer(number).car;
 		for (contact in WallContacts.of(car, race.track)) {
 			var shove = Impacts.shoveApart(car, null, contact, Tuning.wallBounce, Tuning.wallScrape);
-			var speedChange = takeTheHit(car, shove, contact.point);
+			var speedChange = takeTheHit(car, shove, contact.pushFirstAway, DamageTuning.wallHits);
 			if (speedChange > noticeableSpeedChange) race.tell(WallHit, number, -1, contact.point, speedChange);
 		}
 	}
@@ -43,15 +45,15 @@ class Bumping {
 		var contact = CarContacts.deepestBetween(firstCar, secondCar);
 		if (contact == null) return;
 		var shove = Impacts.shoveApart(firstCar, secondCar, contact, Tuning.carBounce, Tuning.carScrape);
-		takeTheHit(secondCar, shove, contact.point);
-		var speedChange = takeTheHit(firstCar, shove, contact.point);
+		takeTheHit(secondCar, shove, contact.pushFirstAway * -1, DamageTuning.carHits);
+		var speedChange = takeTheHit(firstCar, shove, contact.pushFirstAway, DamageTuning.carHits);
 		if (speedChange > noticeableSpeedChange) race.tell(CarHit, first, second, contact.point, speedChange);
 	}
 
 	/** A shove changes a car's speed; a big enough change batters the side that was hit. Returns the change. */
-	static function takeTheHit(car:Car, shove:Float, point:Vector):Float {
+	static function takeTheHit(car:Car, shove:Float, pushedTowards:Vector, howItHurts:HowHitsHurt):Float {
 		var speedChange = shove / CarTuning.mass;
-		car.damage = Damage.afterHit(car, speedChange, point);
+		car.damage = Damage.afterHit(car, speedChange, pushedTowards, howItHurts);
 		return speedChange;
 	}
 }

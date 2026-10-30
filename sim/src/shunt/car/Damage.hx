@@ -1,7 +1,7 @@
 package shunt.car;
 
-import shunt.car.CarTuning as Tuning;
 import shunt.car.DamageTuning as Harm;
+import shunt.car.DamageTuning.HowHitsHurt;
 import shunt.maths.Numbers.keepBetween;
 import shunt.maths.Numbers.signOf;
 import shunt.maths.Vector;
@@ -37,25 +37,26 @@ class Damage {
 
 	/**
 	 * The car's damage after a hit that changed its speed by `speedChange`
-	 * (m/s) at a point on its body. Bumps under the harmless limit change
-	 * nothing; harder hits batter the side that was hit.
+	 * (m/s), shoving it towards `pushedTowards`. Bumps under the harmless
+	 * limit for that kind of hit change nothing; harder hits batter the side
+	 * the hit came from.
 	 */
-	public static function afterHit(car:Car, speedChange:Float, point:Vector):DamageZones {
-		var points = (speedChange - Harm.harmlessBelow) * Harm.pointsPerSpeedChange;
+	public static function afterHit(car:Car, speedChange:Float, pushedTowards:Vector, howItHurts:HowHitsHurt):DamageZones {
+		var points = (speedChange - howItHurts.harmlessBelow) * howItHurts.pointsPerSpeedChange;
 		if (points <= 0) return car.damage;
-		return withMore(car.damage, zoneFacing(car, point), points);
+		return withMore(car.damage, sideHitFrom(car, pushedTowards), points);
 	}
 
 	/**
-	 * Which side of the car a point is on: measured against the car's size,
-	 * is it further forwards or backwards, or further to a side?
+	 * Which side of the car a hit came from: the opposite way to the way it
+	 * was shoved. Shoved backwards, it was hit on the front; shoved to the
+	 * left, on its right side. (A graze along a wall shoves a car sideways,
+	 * so it marks the side, not the front.)
 	 */
-	public static function zoneFacing(car:Car, point:Vector):Zone {
-		var fromTheMiddle = car.inCarTerms(point - car.position);
-		var lengthways = fromTheMiddle.x / Tuning.length;
-		var sideways = fromTheMiddle.y / Tuning.width;
-		if (Math.abs(lengthways) >= Math.abs(sideways)) return lengthways > 0 ? Front : Rear;
-		return sideways > 0 ? Left : Right;
+	public static function sideHitFrom(car:Car, pushedTowards:Vector):Zone {
+		var cameFrom = car.inCarTerms(pushedTowards * -1);
+		if (Math.abs(cameFrom.x) >= Math.abs(cameFrom.y)) return cameFrom.x > 0 ? Front : Rear;
+		return cameFrom.y > 0 ? Left : Right;
 	}
 
 	/** The same damage, with more points on one zone (up to wrecked). */
