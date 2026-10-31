@@ -3,7 +3,7 @@ package input;
 import js.Browser;
 import js.html.KeyboardEvent;
 
-/** Driving with the keyboard: arrows or WASD, R to be put back, Esc or P to pause. */
+/** Driving with the keyboard: arrows or WASD, R to be put back, Esc or P to pause, M for sound off or on. */
 class Keyboard {
 	static final throttleKeys = ["ArrowUp", "KeyW"];
 	static final brakeKeys = ["ArrowDown", "KeyS"];
@@ -11,6 +11,7 @@ class Keyboard {
 	static final rightKeys = ["ArrowRight", "KeyD"];
 	static final recoverKeys = ["KeyR"];
 	static final pauseKeys = ["Escape", "KeyP"];
+	static final muteKeys = ["KeyM"];
 
 	final keysDown = new Map<String, Bool>();
 	final steeringRamp = new SteeringRamp();
@@ -28,7 +29,8 @@ class Keyboard {
 			brake: anyDown(brakeKeys) ? 1 : 0,
 			steer: steeringRamp.steering((anyDown(rightKeys) ? 1 : 0) - (anyDown(leftKeys) ? 1 : 0)),
 			recover: anyDown(recoverKeys),
-			pause: anyDown(pauseKeys)
+			pause: anyDown(pauseKeys),
+			mute: anyDown(muteKeys)
 		};
 	}
 

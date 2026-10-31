@@ -6,13 +6,14 @@ import shunt.car.CarInput;
 
 /**
  * Everything the player can drive with, together as one `CarInput` for the
- * race. Pause is noticed once per press.
+ * race. Pause and sound are noticed once per press.
  */
 class PlayerControls {
 	final keyboard = new Keyboard();
 	final gamepads = new Gamepads();
 	final touch:TouchPads;
-	var wasPausePressed = false;
+	final pausePresses = new PressedOnce();
+	final mutePresses = new PressedOnce();
 
 	public function new(stage:Element, brakePad:Element, pauseButton:Element) {
 		touch = new TouchPads(stage, brakePad, pauseButton);
@@ -29,12 +30,14 @@ class PlayerControls {
 		};
 	}
 
-	/** True once each time a pause button goes down (holding it doesn't pause and unpause over and over). */
+	/** True once each time a pause button goes down. */
 	public function pauseWasJustPressed():Bool {
-		var isPressed = allHands().pause;
-		var justNow = isPressed && !wasPausePressed;
-		wasPausePressed = isPressed;
-		return justNow;
+		return pausePresses.justNow(allHands().pause);
+	}
+
+	/** True once each time a sound button goes down. */
+	public function muteWasJustPressed():Bool {
+		return mutePresses.justNow(allHands().mute);
 	}
 
 	function allHands():Hands {

@@ -8,7 +8,7 @@ import js.html.GamepadMappingType;
 /**
  * Driving with a gamepad (the browser's "standard" button layout): right
  * trigger to go, left trigger to brake, left stick to steer, Y to be put
- * back, Start to pause. Every connected pad drives the player's car for now;
+ * back, Start to pause, Select for sound off or on. Every connected pad drives the player's car for now;
  * in phase 2 each pad gets its own seat.
  */
 class Gamepads {
@@ -16,6 +16,7 @@ class Gamepads {
 	static inline final leftTrigger = 6;
 	static inline final buttonY = 3;
 	static inline final startButton = 9;
+	static inline final selectButton = 8;
 
 	/** Stick movement smaller than this is the stick's own wobble, not steering. */
 	static inline final stickWobble = 0.12;
@@ -33,7 +34,8 @@ class Gamepads {
 			brake: pad.buttons[leftTrigger].value,
 			steer: steeringOf(pad),
 			recover: pad.buttons[buttonY].pressed,
-			pause: pad.buttons[startButton].pressed
+			pause: pad.buttons[startButton].pressed,
+			mute: pad.buttons[selectButton].pressed
 		};
 	}
 

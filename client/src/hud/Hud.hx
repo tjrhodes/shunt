@@ -7,9 +7,9 @@ import shunt.race.StartLights;
 import shunt.race.RaceTuning;
 
 /**
- * What the player reads while racing (SPEC.md §1): their position and lap
- * in one corner, this lap's time and their best in the other, and the start
- * lights across the top. All read straight from the race's state.
+ * What the player reads while racing (SPEC.md §1): their position, lap and
+ * damage in one corner, this lap's time and their best in the other, and
+ * the start lights across the top. All read straight from the race's state.
  */
 class Hud {
 	/** The player's seat: the HUD is about them. */
@@ -20,11 +20,13 @@ class Hud {
 	final thisLap:Element;
 	final bestLap:Element;
 	final lamps:Array<Element>;
+	final damage:DamageOutline;
 
 	public function new(hud:Element) {
 		var standing = Dom.make("div", "plate plate-standing", null, hud);
 		position = figure(standing, Words.position);
 		lap = figure(standing, Words.lap);
+		damage = new DamageOutline(standing);
 		var times = Dom.make("div", "plate plate-times", null, hud);
 		thisLap = figure(times, Words.thisLap);
 		bestLap = figure(times, Words.bestLap);
@@ -39,6 +41,7 @@ class Hud {
 		Dom.setText(lap, Words.outOf(Std.int(Math.max(1, Math.min(me.lapsStarted, race.state.laps))), race.state.laps));
 		Dom.setText(thisLap, Words.raceTime(secondsIntoThisLap(race, me)));
 		Dom.setText(bestLap, bestLapText(me));
+		damage.show(me.car);
 		showLights(race);
 	}
 

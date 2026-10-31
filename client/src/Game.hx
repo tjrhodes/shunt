@@ -1,5 +1,6 @@
 import hud.Hud;
 import hud.Panels;
+import hud.Panels.PanelActions;
 import input.PlayerControls;
 import js.Browser;
 import shunt.ai.AiDriver;
@@ -10,14 +11,17 @@ import shunt.maths.Numbers.partWay;
 import shunt.maths.Numbers.wrapAngle;
 import shunt.maths.Vector;
 import shunt.race.Race;
-import shunt.race.RaceEvent.EventKind;
+import shunt.race.RaceEvent;
 import shunt.race.RaceState.Phase;
-import shunt.race.RaceTuning;
 import shunt.track.Track;
 import view.CarView;
 import view.OilView;
 import view.Paint;
 import view.World;
+import sound.Sound;
+import view.effects.Effects;
+
+using shunt.car.CarFrame;
 
 /** Where a car was at the end of a tick: enough to draw it between ticks. */
 typedef Pose = {
@@ -43,17 +47,17 @@ typedef PageParts = {
 }
 
 /**
- * The game in the browser (SPEC.md §1): one race on the track, the player
- * in seat 0 and AI drivers in the others, drawn every frame between the
- * last two ticks. Everything about the race itself is in the shared
- * simulation; this only feeds it inputs and shows what it does.
+ * The game in the browser (SPEC.md §1): one race at a time on the track
+ * chosen, the player in seat 0 and AI drivers in the others, drawn every
+ * frame between the last two ticks. Everything about the race itself is in
+ * the shared simulation; this only feeds it inputs and shows what it does.
  */
 class Game {
 	/** A hit on the player's car this hard (m/s change of speed) or harder shakes the view fully. */
 	static inline final hardestShake = 12.0;
 
-	final track:Track;
-	final line:RacingLine;
+	final tracks:Array<Track>;
+	final racingLines:Array<RacingLine>;
 	final world:World;
 	final hud:Hud;
 	final panels:Panels;
@@ -61,30 +65,61 @@ class Game {
 	final steps = new FixedSteps();
 	final carViews:Array<CarView>;
 	final oilView = new OilView();
+	final effects = new Effects();
+	final sound = new Sound();
 	var race:Race;
 	var drivers:Array<AiDriver>;
 	var posesBefore:Array<Pose>;
 	var mode = WaitingToStart;
+	var chosenTrack = 0;
+	var lastFrameTime = -1.0;
 
-	public function new(track:Track, page:PageParts) {
-		this.track = track;
-		line = new RacingLine(track);
-		world = new World(track, page.stage);
+	public function new(tracks:Array<Track>, page:PageParts) {
+		this.tracks = tracks;
+		racingLines = tracks.map(track -> new RacingLine(track));
+		world = new World(page.stage);
 		hud = new Hud(page.hud);
-		panels = new Panels(page.panels, {start: startRacing, resume: startRacing, restart: raceAgain, raceAgain: raceAgain});
+		panels = new Panels(page.panels, tracks, panelActions());
 		controls = new PlayerControls(page.stage, page.brakePad, page.pauseButton);
 		carViews = [for (livery in Paint.liveries) new CarView(livery)];
 		for (view in carViews) world.scene.add(view.whole);
 		world.scene.add(oilView.whole);
-		lineUpANewRace();
-		panels.showStart();
+		world.scene.add(effects.whole);
+		chooseTrack(0);
 		Browser.window.requestAnimationFrame(frame);
 	}
 
-	/** One frame: run the ticks that are due (while racing), check for pause, and draw. */
+	function panelActions():PanelActions {
+		return {
+			chooseTrack: chooseTrack,
+			start: startRacing,
+			resume: startRacing,
+			restart: raceAgain,
+			toggleSound: toggleSound,
+			raceAgain: raceAgain,
+			changeTrack: () -> chooseTrack(chosenTrack)
+		};
+	}
+
+	/** Shows a track with the cars on its grid, waiting for the start. */
+	function chooseTrack(index:Int) {
+		chosenTrack = index;
+		world.showTrack(tracks[index]);
+		lineUpANewRace();
+		mode = WaitingToStart;
+		panels.showStart(index);
+	}
+
+	/** One frame: run the ticks that are due and move the sparks and smoke on (while racing), check for pause, and draw. */
 	function frame(now:Float) {
-		if (mode == Racing) runTheTicksDue(now);
+		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
+		lastFrameTime = now;
+		if (mode == Racing) {
+			runTheTicksDue(now);
+			effects.animate(secondsSinceLastFrame);
+		}
 		if (controls.pauseWasJustPressed()) pressPause();
+		if (controls.muteWasJustPressed()) toggleSound();
 		showEverything();
 		Browser.window.requestAnimationFrame(frame);
 	}
@@ -93,15 +128,28 @@ class Game {
 		for (_ in 0...steps.ticksDue(now)) oneTick();
 		if (race.state.phase == Finished) {
 			mode = RaceOver;
+			sound.rest();
 			panels.showResults(race);
 		}
 	}
 
-	/** Remembers where every car is, moves the race on a tick, and feels any hits. */
+	/** Remembers where every car is, moves the race on a tick, and shows what it left behind. */
 	function oneTick() {
 		posesBefore = posesNow();
 		race.step(everyonesInput());
-		for (event in race.events) if ((event.kind == CarHit || event.kind == WallHit) && involvesThePlayer(event.racer, event.other)) world.shakeFor(event.strength / hardestShake);
+		effects.afterTick(race);
+		for (event in race.events) sound.hear(event);
+		for (event in race.events) if (event.kind == CarHit || event.kind == WallHit) feelTheHit(event);
+	}
+
+	/** A hit dents the cars in it, and shakes the view if the player's car was one of them. */
+	function feelTheHit(hit:RaceEvent) {
+		for (seat in [hit.racer, hit.other]) {
+			if (seat < 0) continue;
+			var car = race.racer(seat).car;
+			carViews[seat].dent(car.inCarTerms(hit.point - car.position), hit.strength);
+		}
+		if (involvesThePlayer(hit.racer, hit.other)) world.shakeFor(hit.strength / hardestShake);
 	}
 
 	/** The player's input for seat 0; each AI driver's for the others. */
@@ -120,20 +168,26 @@ class Game {
 			carViews[seat].show(race.racer(seat).car, heading, before.position + (after.position - before.position) * share);
 		}
 		oilView.show(race.state.oil);
+		if (mode == Racing) sound.follow(race);
 		hud.update(race);
 		world.draw();
 	}
 
-	/** A fresh race, on a new seed, with new AI drivers, lights red. */
+	/** A fresh race on the chosen track, on a new seed, with new AI drivers, lights red. */
 	function lineUpANewRace() {
 		var seed = Std.random(1000000000) + 1;
-		race = new Race(track, {cars: Paint.liveries.length, laps: RaceTuning.defaultLaps, seed: seed});
-		drivers = [for (seat in 1...race.state.racers.length) new AiDriver(DriverCharacters.forSeat(seed, seat), line, seat)];
+		var track = tracks[chosenTrack];
+		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
+		drivers = [for (seat in 1...race.state.racers.length) new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
 		posesBefore = posesNow();
+		effects.clear();
+		for (view in carViews) view.mendDents();
 	}
 
+	/** Racing (again): sound wakes up too (the first time, the press of Start is what browsers wait for). */
 	function startRacing() {
 		mode = Racing;
+		sound.wake(carViews.length);
 		steps.startAfresh();
 		panels.hideAll();
 		Browser.document.body.focus();
@@ -148,8 +202,16 @@ class Game {
 	function pressPause() {
 		if (mode == Racing) {
 			mode = Paused;
+			sound.rest();
+			panels.showSoundAs(sound.isOn);
 			panels.showPause();
 		} else if (mode == Paused) startRacing();
+	}
+
+	/** Sound off, or back on, from a key, a pad button or the pause panel. */
+	function toggleSound() {
+		sound.toggle();
+		panels.showSoundAs(sound.isOn);
 	}
 
 	function posesNow():Array<Pose> {

@@ -2,34 +2,51 @@ package view;
 
 import js.Browser;
 import js.html.Element;
+import shunt.maths.Vector;
 import shunt.track.Track;
+
+using Lambda;
 import three.Three;
 
 /**
  * The 3D scene: the renderer drawing into the page, the lights, the
- * isometric camera, and the track. Cars and oil are added by the game.
+ * isometric camera, and the track being raced on. Cars and oil are added by
+ * the game.
  */
 class World {
 	/** How far a hard hit shakes the view, at most, in metres; it dies away by this share each frame. */
 	static inline final mostShake = 0.6;
 	static inline final shakeLeftEachFrame = 0.85;
 
+	/** The floodlight stands this far off the track's middle (on the ground), and this high. */
+	static final floodlightComesFrom = new Vector(-60, -40);
+	static inline final floodlightHeight = 120.0;
+
 	public final scene = new Scene();
 	final renderer = new WebGLRenderer({antialias: true});
-	final view:IsometricCamera;
+	final floodlight = new DirectionalLight(Paint.floodlight, 0.85);
 	final stage:Element;
+	var view:IsometricCamera;
+	var trackShown:Null<Group> = null;
 	var shake = 0.0;
 
-	public function new(track:Track, stage:Element) {
+	public function new(stage:Element) {
 		this.stage = stage;
-		view = new IsometricCamera([for (index in 0...track.samples.length) for (side in [1, -1]) track.edgeAt(index, side)]);
 		scene.background = new Color(Paint.sky);
-		scene.add(TrackView.build(track));
-		lightUp(track);
+		lightUp();
 		renderer.shadowMap.enabled = true;
 		stage.appendChild(renderer.domElement);
-		fitTheScreen();
 		Browser.window.addEventListener("resize", fitTheScreen);
+	}
+
+	/** Puts a track in the scene (in place of any other), aims the floodlight at it, and frames it. */
+	public function showTrack(track:Track) {
+		if (trackShown != null) scene.remove(trackShown);
+		trackShown = TrackView.build(track);
+		scene.add(trackShown);
+		view = new IsometricCamera(track.wallCorners());
+		shadowsOver(track);
+		fitTheScreen();
 	}
 
 	/** Draws a frame, with any shake from a hit nudging the camera. */
@@ -56,17 +73,29 @@ class World {
 		view.frame(width, height);
 	}
 
-	/** Soft light from the sky and the infield, and one floodlight casting shadows over the whole track. */
-	function lightUp(track:Track) {
+	/** Soft light from the sky and the infield, and one floodlight that casts shadows. */
+	function lightUp() {
 		scene.add(new HemisphereLight(Paint.skyGlow, Paint.groundGlow, 0.75));
-		var flood = new DirectionalLight(Paint.floodlight, 0.85);
-		flood.position.set(-60, 120, 40);
-		flood.castShadow = true;
-		flood.shadow.mapSize.width = flood.shadow.mapSize.height = 2048;
-		var reach = track.length / 3;
-		flood.shadow.camera.left = flood.shadow.camera.bottom = -reach;
-		flood.shadow.camera.right = flood.shadow.camera.top = reach;
-		flood.shadow.camera.far = 400;
-		scene.add(flood);
+		floodlight.castShadow = true;
+		scene.add(floodlight.target);
+		floodlight.shadow.mapSize.width = floodlight.shadow.mapSize.height = 2048;
+		floodlight.shadow.camera.far = 400;
+		scene.add(floodlight);
+	}
+
+	/**
+	 * Aims the floodlight at the middle of a track, from up and to one side,
+	 * with its shadows covering the whole track and no more (so they stay sharp).
+	 */
+	function shadowsOver(track:Track) {
+		var corners = track.wallCorners();
+		var middle = corners.fold((corner:Vector, total:Vector) -> total + corner, Vector.nothing()) * (1 / corners.length);
+		var reach = corners.fold((corner, furthest) -> Math.max(furthest, corner.distanceTo(middle)), 0.0) + 10;
+		Placing.put(floodlight.target, middle, 0, 0);
+		Placing.put(floodlight, middle + floodlightComesFrom, floodlightHeight, 0);
+		var shadows = floodlight.shadow.camera;
+		shadows.left = shadows.bottom = -reach;
+		shadows.right = shadows.top = reach;
+		shadows.updateProjectionMatrix();
 	}
 }

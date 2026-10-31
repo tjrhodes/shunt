@@ -4,6 +4,7 @@ import haxe.Json;
 import shunt.maths.Vector;
 import shunt.track.Centreline.CentrePlace;
 import shunt.track.TrackFile.BarrierPoint;
+import shunt.race.RaceTuning;
 import shunt.track.Wall.Walls;
 
 /** One place on the smoothed centreline, about a metre from the next. */
@@ -39,7 +40,15 @@ class Track {
 	public final name:String;
 	public final samples:Array<TrackSample>;
 	public final length:Float;
+	public final laps:Int;
 	public final walls:Array<Wall>;
+
+	/** A road has walls down its edges; an arena is an open floor inside its outline (see `TrackFile`). */
+	public final isARoad:Bool;
+
+	/** An arena's outline, which is also its floor; empty for a road. */
+	public final arenaOutline:Array<Vector>;
+
 	final wallGrid:WallGrid;
 
 	public function new(file:TrackFile) {
@@ -47,7 +56,11 @@ class Track {
 		var places = Centreline.evenlySpaced(file.centreline, sampleSpacing);
 		length = loopLength(places);
 		samples = [for (index in 0...places.length) sampleAt(places, index, length)];
-		walls = edgeWalls().concat(barrierWalls(file.barriers));
+		laps = file.laps ?? RaceTuning.defaultLaps;
+		isARoad = file.edgeWalls ?? true;
+		var loops = [for (loop in file.loops ?? []) spotsOf(loop)];
+		arenaOutline = isARoad || loops.length == 0 ? [] : loops[0];
+		walls = (isARoad ? edgeWalls() : []).concat(loopWalls(loops)).concat(barrierWalls(file.barriers));
 		wallGrid = new WallGrid(walls);
 	}
 
@@ -156,7 +169,23 @@ class Track {
 	/** The free-standing walls, each a line from corner to corner. */
 	static function barrierWalls(barriers:Array<Array<BarrierPoint>>):Array<Wall> {
 		var walls:Array<Wall> = [];
-		for (corners in barriers) walls = walls.concat(Walls.joining([for (corner in corners) new Vector(corner.x, corner.y)], false));
+		for (corners in barriers) walls = walls.concat(Walls.joining(spotsOf(corners), false));
 		return walls;
+	}
+
+	/** The closed wall loops, each joined back to its start. */
+	static function loopWalls(loops:Array<Array<Vector>>):Array<Wall> {
+		var walls:Array<Wall> = [];
+		for (loop in loops) walls = walls.concat(Walls.joining(loop, true));
+		return walls;
+	}
+
+	static function spotsOf(corners:Array<BarrierPoint>):Array<Vector> {
+		return [for (corner in corners) new Vector(corner.x, corner.y)];
+	}
+
+	/** Every place a wall starts: enough to see how far the track reaches, whatever its kind. */
+	public function wallCorners():Array<Vector> {
+		return [for (wall in walls) wall.from].concat([for (wall in walls) wall.to]);
 	}
 }

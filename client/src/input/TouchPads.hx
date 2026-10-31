@@ -42,7 +42,8 @@ class TouchPads {
 			brake: isBraking ? 1 : 0,
 			steer: steeringRamp.steering(Lambda.fold([for (side in fingersOnTheScreen) side], (side, total) -> total + side, 0.0)),
 			recover: false,
-			pause: isPausing
+			pause: isPausing,
+			mute: false
 		};
 	}
 

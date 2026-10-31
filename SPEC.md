@@ -249,13 +249,16 @@ Dressed with billboards, trees, flags and crowd stands, and textured
 infields. Phase 1's whacky track should be an arena maze (a serpentine or
 a comb).
 
-**What that asks of the format:** today the edge walls are built from the
-centreline and its width, which suits flowing circuits. Mazes and
-crossings need their walls written out directly (an arena outline, fences,
-and gaps where a crossing passes through), with the centreline only
-guiding laps, recovery and the AI. So a track file will be able to list
-its own walls and say not to build edge walls; the oval keeps working as
-it is.
+**What that asks of the format (done 31 Oct):** a track is either a *road*,
+with edge walls built from the centreline and its width (the oval), or an
+*arena*: `"edgeWalls": false`, its own closed wall `loops` (the first is
+the outline and the floor) and its fences as `barriers`, with the
+centreline only guiding laps, recovery and the AI. A file can also give its
+own `laps`. `tracks/index.json` lists the tracks, for the game and the
+checks alike. The second track is **Serpentine** (`tools/make-serpentine.py`):
+a 170 × 100 m arena, four rows zigzagging up round fence tips in hairpins,
+a return lane down the east side; about 650 m a lap, 3 laps. Gaps for a
+crossing are still to come, with the figure-of-eight.
 
 Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
 a few points round the centreline (each with the track's width there) and
@@ -279,8 +282,12 @@ so nothing is written twice:
   centreline, each driver in its own lane, going round cars and oil.
 
 Track geometry, barriers, the infield and the surroundings are all drawn
-from the same file, so a new track is a new JSON file plus scenery. Barriers
-are drawn as low walls (concrete blocks or stacked tyres). A track picker
+from the same file, so a new track is a new JSON file and nothing else.
+Walls are drawn as low blocks, concrete and red in turn. The scenery
+(billboards, trees, a crowd stand by the start line, floodlight towers at
+the corners) is placed from the walls too: everything stands just outside
+the rectangle the walls fit in, so it can never be on the racing surface
+(`client/src/view/Scenery.hx`, done 31 Oct). A track picker
 before the race chooses which. A visual track editor would be a good later
 Lab feature, but isn't needed: the JSON is written by hand.
 
@@ -373,20 +380,33 @@ The whole-track camera means no split screen. No changes to the simulation.
   module is a later step. An orthographic camera at the isometric angle
   (35.26° down), looking from whichever way round (in 15° steps) fills the
   screen best, so the oval lies across a wide screen and stands up on a
-  phone.
+  phone. A diagonal view (the classic isometric look) wins unless another
+  fills the screen a quarter better: a box-shaped arena otherwise came out
+  straight-on and flat.
 - **Dents**: the car body is a low-poly mesh; a contact pushes in the
   vertices near its point, scaled by the damage it did. Drawn only, never fed
   back into the physics (the simulation's damage zones are the truth).
 - **Low-poly** flat-shaded cars, walls, infield, stands and lights; cars built
   in Blender and loaded as glTF, simple boxes until then. Big readable
   numbers on the car roofs (the player's car marked clearly).
-- **Feel**: body roll and pitch from the forces (drawn only, not simulated);
-  tyre smoke and skid marks from slip; sparks and a short screen shake from
-  contact strength; lights that actually count down.
-- **Look**: its own palette and style, decided in a design pass before
-  polish; flat placeholder colours until then.
-- **Sound**: Web Audio (no Tone.js needed): a looped engine sample per car
-  with playback rate from speed, plus one-shot hits and scrapes.
+- **Feel** (done 31 Oct): skid marks and tyre smoke from sideways slide;
+  sparks, dents and a short screen shake from hits (no shake if the viewer
+  prefers less motion); steam from a smashed front, smoke from a leaking
+  car; lights that actually count down. Body roll and pitch are still to
+  come. Effects are pools of instanced particles, so they cost one draw
+  each, however many there are.
+- **Look** (done 31 Oct): a night race under floodlights. Every colour is in
+  `view/Paint.hx`; the page's CSS takes the player's colour from there.
+  Cars have a spoiler, headlights and tail lights; the start line is
+  chequered; a damage outline in the HUD shows each zone of the player's
+  car going from clean to red.
+- **Sound** (done 31 Oct): Web Audio, all made as it plays, with no sound
+  files: per car an engine (two buzzing notes through a filter that opens
+  with the throttle, the note climbing through four gears) and a tyre
+  squeal from the same slide as the skid marks; one-shot thumps and crunches
+  for hits, scaled by how hard and louder for the player's car; beeps for
+  the start lights. M (or a gamepad's Select) or the pause panel turns it
+  off; the choice is remembered. Every number is in `sound/SoundTuning.hx`.
 
 ## 11. Code rules
 
@@ -430,7 +450,7 @@ shunt/
   tracks/          oval.json, the whacky track (and later more)
   tools/           make-oval.py (writes tracks/oval.json), check-lengths.py
   client/          Haxe browser client: render, input, HUD (src/), the page (www/)
-  assets/          glTF models, sounds
+  assets/          glTF models (later)
   server/          phase 3: the TypeScript Colyseus room
   tests/           Playwright browser checks
 ```

@@ -24,6 +24,7 @@ import js.html.CanvasElement;
 
 @:native("THREE.Color") extern class Color {
 	function new(colour:Int);
+	function setHex(colour:Int):Color;
 }
 
 @:native("THREE.Matrix4") extern class Matrix4 {
@@ -57,6 +58,8 @@ import js.html.CanvasElement;
 	var right:Float;
 	var top:Float;
 	var bottom:Float;
+	var near:Float;
+	var far:Float;
 	function updateProjectionMatrix():Void;
 }
 
@@ -75,6 +78,12 @@ import js.html.CanvasElement;
 
 @:native("THREE.Float32BufferAttribute") extern class Float32BufferAttribute extends BufferAttribute {
 	function new(values:Array<Float>, itemSize:Int);
+
+	/** The numbers themselves, three to a corner for positions. */
+	var array(default, null):js.lib.Float32Array;
+
+	/** How many corners (items) there are. */
+	var count(default, null):Int;
 }
 
 @:native("THREE.BufferGeometry") extern class BufferGeometry {
@@ -82,12 +91,16 @@ import js.html.CanvasElement;
 	function setAttribute(name:String, attribute:BufferAttribute):BufferGeometry;
 	function setIndex(index:Array<Int>):BufferGeometry;
 	function computeVertexNormals():Void;
+
+	/** The shape's corners and other per-corner numbers, by name ("position" is where each corner is). */
+	var attributes(default, null):{position:Float32BufferAttribute};
+
 	function rotateX(angle:Float):BufferGeometry;
 	function translate(x:Float, y:Float, z:Float):BufferGeometry;
 }
 
 @:native("THREE.BoxGeometry") extern class BoxGeometry extends BufferGeometry {
-	function new(width:Float, height:Float, depth:Float);
+	function new(width:Float, height:Float, depth:Float, ?widthPieces:Int, ?heightPieces:Int, ?depthPieces:Int);
 }
 
 @:native("THREE.PlaneGeometry") extern class PlaneGeometry extends BufferGeometry {
@@ -100,6 +113,17 @@ import js.html.CanvasElement;
 
 @:native("THREE.ConeGeometry") extern class ConeGeometry extends BufferGeometry {
 	function new(radius:Float, height:Float, segments:Int);
+}
+
+/** A flat outline, drawn point to point (x across, y up), to fill as a shape. */
+@:native("THREE.Shape") extern class Shape {
+	function new();
+	function moveTo(x:Float, y:Float):Shape;
+	function lineTo(x:Float, y:Float):Shape;
+}
+
+@:native("THREE.ShapeGeometry") extern class ShapeGeometry extends BufferGeometry {
+	function new(shape:Shape);
 }
 
 @:native("THREE.CanvasTexture") extern class CanvasTexture {
@@ -122,12 +146,15 @@ import js.html.CanvasElement;
 @:native("THREE.Mesh") extern class Mesh extends Object3D {
 	function new(geometry:BufferGeometry, material:Material);
 	var material:Material;
+	var geometry(default, null):BufferGeometry;
 }
 
 @:native("THREE.InstancedMesh") extern class InstancedMesh extends Mesh {
 	function new(geometry:BufferGeometry, material:Material, count:Int);
 	var instanceMatrix(default, null):BufferAttribute;
+	var instanceColor(default, null):Null<BufferAttribute>;
 	function setMatrixAt(index:Int, matrix:Matrix4):Void;
+	function setColorAt(index:Int, colour:Color):Void;
 }
 
 @:native("THREE.HemisphereLight") extern class HemisphereLight extends Object3D {
@@ -137,8 +164,12 @@ import js.html.CanvasElement;
 /** A light like the sun: parallel rays from one direction, casting shadows. */
 @:native("THREE.DirectionalLight") extern class DirectionalLight extends Object3D {
 	function new(colour:Int, intensity:Float);
+
+	/** What it shines at: it must be in the scene for a move to count. */
+	var target(default, null):Object3D;
+
 	var shadow(default, null):{
 		mapSize:{width:Int, height:Int},
-		camera:{left:Float, right:Float, top:Float, bottom:Float, near:Float, far:Float}
+		camera:OrthographicCamera
 	};
 }
