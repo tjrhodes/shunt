@@ -84,7 +84,7 @@
   }
   #panels.is-showing { background: rgba(8, 10, 13, 0.55); pointer-events: auto; }
   .panel {
-    width: min(100%, 30rem); padding: 26px 26px 24px;
+    box-sizing: border-box; width: min(100%, 30rem); padding: 26px 26px 24px;
     background: var(--plate); border: 1px solid var(--plate-edge); border-top: 4px solid var(--player); border-radius: 3px;
     display: flex; flex-direction: column; gap: 10px;
   }
@@ -127,6 +127,15 @@
   .button-row { display: flex; flex-wrap: wrap; gap: 8px; }
   .button-row .button { flex: 1 1 10rem; margin-top: 0; }
   .online-choices .button-join { margin-top: 4px; }
+  /* Opened from a friend's link: joining them comes first, and racing alone is a quiet second choice. */
+  .panel-start:not(.is-invited) .only-invited,
+  .panel-start.is-invited .not-invited,
+  .panel-start.is-invited > .track-picker,
+  .panel-start.is-invited > .button-start,
+  .panel-start.is-invited > .seat-picker,
+  .panel-start.is-invited > .seat-picker + .panel-help { display: none; }
+  .panel-start.is-invited > .online-choices { order: -1; margin-top: 0; padding-top: 0; border-top: 0; }
+  .panel-start.is-invited > .panel-title, .panel-start.is-invited > .panel-tagline { order: -2; }
   .room-link { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
   .room-link .panel-help { grid-column: 1 / -1; }
   .room-link-text {
@@ -182,6 +191,6 @@
 <button id="pause-button" type="button" hidden></button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="shunt-457196e6.js" charset="utf-8"></script>
+<script src="shunt-e28059f2.js" charset="utf-8"></script>
 </body>
 </html>

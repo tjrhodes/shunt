@@ -34,7 +34,9 @@ class Words {
 	public static inline final raceOnline = "Race online";
 	public static inline final quickMatch = "Quick match";
 	public static inline final raceFriends = "Race friends";
-	public static inline final joinFriends = "Join your friends' race";
+	public static inline final joinFriends = "Join the race";
+	public static inline final invited = "You've been invited to a race.";
+	public static inline final raceAlone = "Race on your own instead";
 	public static inline final onlineHelp = "Quick match puts you in with anyone looking for a race. Race friends gives you a link to send them. Everyone on this computer comes too.";
 	public static inline final connecting = "Getting you a seat…";
 	public static inline final cantConnect = "Couldn't reach the race. It may have finished, or the server is down. Try again in a moment.";

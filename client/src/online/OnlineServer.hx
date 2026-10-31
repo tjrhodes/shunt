@@ -35,6 +35,11 @@ class OnlineServer {
 		return new js.html.URLSearchParams(Browser.location.search).get(roomInTheLink);
 	}
 
+	/** Forgets the invitation (declined, or the race was left): the address goes back to the plain page. */
+	public static function forgetInvitation() {
+		Browser.window.history.replaceState(null, "", Browser.location.pathname);
+	}
+
 	/** The link to a room, to send to friends. */
 	public static function linkTo(roomId:String):String {
 		return Browser.location.origin + Browser.location.pathname + '?$roomInTheLink=$roomId';

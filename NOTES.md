@@ -229,3 +229,10 @@ Tom chose quick match plus room links, its own subdomain
 - **Deploying from here wasn't possible** (no route to the VPS), so
   `deploy/deploy.sh` does it from Tom's computer.
 - Colyseus needs Node 22 or newer; the script checks.
+- **First real test (Tom, desktop and phone):** opened from the link, the
+  phone showed the offline "Start the race" first and the join button
+  second, so it was easy to start a race alone by mistake; that is what
+  looked like both devices driving the yellow car. An invitation link now
+  leads with "Join the race" (racing alone is a quiet second choice, and
+  the offline start, track picker and seat cards are hidden). Panels were
+  also slightly wider than a phone screen (no `box-sizing`), now fixed.

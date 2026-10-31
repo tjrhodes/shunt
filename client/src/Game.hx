@@ -78,13 +78,13 @@ class Game {
 			chooseTrack: index -> mode == Online ? online.chooseTrack(index) : chooseTrack(index),
 			start: () -> mode == Online ? online.startRace() : startRacing(),
 			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
-			restart: raceAgain,
 			toggleSound: toggleSound,
 			raceAgain: () -> mode == Online ? online.startRace() : raceAgain(),
 			changeTrack: () -> chooseTrack(chosenTrack),
 			quickMatch: () -> goOnline(QuickMatch),
 			raceFriends: () -> goOnline(NewRoom),
 			joinFriends: () -> goOnline(RoomById(OnlineServer.invitation())),
+			raceAlone: forgetTheInvitation,
 			leave: () -> if (online != null) online.leave()
 		};
 	}
@@ -244,7 +244,14 @@ class Game {
 		online.join(how);
 	}
 
+	/** Back to the plain start panel: no invitation any more (declined, or that race has been left). */
+	function forgetTheInvitation() {
+		OnlineServer.forgetInvitation();
+		panels.offerOnline(false);
+	}
+
 	function backFromOnline() {
+		forgetTheInvitation();
 		online = null;
 		mode = WaitingToStart;
 		chooseTrack(chosenTrack);

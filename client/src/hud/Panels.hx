@@ -14,13 +14,13 @@ typedef PanelActions = {
 	final chooseTrack:Int -> Void;
 	final start:() -> Void;
 	final resume:() -> Void;
-	final restart:() -> Void;
 	final toggleSound:() -> Void;
 	final raceAgain:() -> Void;
 	final changeTrack:() -> Void;
 	final quickMatch:() -> Void;
 	final raceFriends:() -> Void;
 	final joinFriends:() -> Void;
+	final raceAlone:() -> Void;
 	final leave:() -> Void;
 }
 
@@ -65,7 +65,7 @@ class Panels {
 		startTracks = new TrackPicker(startPanel, tracks, actions.chooseTrack);
 		startSeats = new SeatCards(startPanel);
 		Dom.make("p", "panel-help", Words.joinHint, startPanel);
-		Dom.button(Words.start, "button button-go", startPanel, actions.start);
+		Dom.button(Words.start, "button button-go button-start", startPanel, actions.start);
 		onlineBox = onlineChoices(actions);
 		joinFriendsButton = onlineBox.querySelector(".button-join");
 		for (line in Words.howToDrive) Dom.make("p", "panel-help", line, startPanel);
@@ -79,18 +79,25 @@ class Panels {
 		var box = Dom.make("div", "online-choices", null, startPanel);
 		box.hidden = true;
 		Dom.make("h2", "panel-subtitle", Words.raceOnline, box);
-		Dom.button(Words.joinFriends, "button button-go button-join", box, actions.joinFriends).hidden = true;
-		var row = Dom.make("div", "button-row", null, box);
+		Dom.make("p", "panel-tagline only-invited", Words.invited, box);
+		Dom.button(Words.joinFriends, "button button-go button-join only-invited", box, actions.joinFriends);
+		Dom.button(Words.raceAlone, "button only-invited", box, actions.raceAlone);
+		var row = Dom.make("div", "button-row not-invited", null, box);
 		Dom.button(Words.quickMatch, "button", row, actions.quickMatch);
 		Dom.button(Words.raceFriends, "button", row, actions.raceFriends);
-		Dom.make("p", "panel-help", Words.onlineHelp, box);
+		Dom.make("p", "panel-help not-invited", Words.onlineHelp, box);
 		return box;
 	}
 
-	/** There is a server to race on (and perhaps friends' race to join, from a link). */
+	/**
+	 * There is a server to race on. Opened from a friend's link, the start
+	 * panel is only about joining them (the stylesheet hides the rest), so
+	 * nobody starts a race on their own by mistake.
+	 */
 	public function offerOnline(hasAnInvitation:Bool) {
 		onlineBox.hidden = false;
-		joinFriendsButton.hidden = !hasAnInvitation;
+		startPanel.classList.toggle("is-invited", hasAnInvitation);
+		if (!startPanel.hidden) showOnly(startPanel, hasAnInvitation ? joinFriendsButton : null);
 	}
 
 	// ---- On this computer ----
@@ -99,7 +106,7 @@ class Panels {
 	public function showStart(chosenTrack:Int, seats:Array<SeatLook>) {
 		startTracks.mark(chosenTrack, true);
 		startSeats.show(seats);
-		showOnly(startPanel, joinFriendsButton.hidden ? null : joinFriendsButton);
+		showOnly(startPanel, startPanel.classList.contains("is-invited") ? joinFriendsButton : null);
 	}
 
 	/** The seats changed while the start panel shows. */
@@ -168,7 +175,7 @@ class Panels {
 		for (box in everyPanel) box.hidden = box != wanted;
 		holder.classList.toggle("is-showing", wanted != null);
 		if (wanted == null) return;
-		var main = focusOn ?? firstShowing(wanted.querySelectorAll(".button-go"));
+		var main = focusOn ?? firstShowing(wanted.querySelectorAll(".button-go:not(.button-join)"));
 		if (main != null) main.focus();
 	}
 
@@ -290,7 +297,7 @@ class PauseParts {
 
 	public function new(panel:Element, actions:PanelActions) {
 		Dom.button(Words.resume, "button button-go", panel, actions.resume);
-		restartButton = Dom.button(Words.restart, "button", panel, actions.restart);
+		restartButton = Dom.button(Words.restart, "button", panel, actions.raceAgain);
 		soundButton = Dom.button(Words.soundIsOn, "button", panel, actions.toggleSound);
 		leaveButton = Dom.button(Words.leave, "button", panel, actions.leave);
 	}
