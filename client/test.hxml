@@ -1,0 +1,11 @@
+# The client's checks, on Node: the parts that decide things, not the drawing.
+# Run: haxe test.hxml   (from this folder)
+
+-cp ../sim/src
+-cp ../sim/test
+-cp src
+-cp test
+-D js-es=6
+-main ClientTestMain
+-js test/bin/tests.cjs
+--cmd node test/bin/tests.cjs

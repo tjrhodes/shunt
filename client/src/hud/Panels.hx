@@ -1,6 +1,7 @@
 package hud;
 
 import js.html.Element;
+import seats.Lineup;
 import shunt.race.Laps;
 import shunt.race.Race;
 import shunt.race.StartLights;
@@ -31,12 +32,14 @@ class Panels {
 	final resultsTable:Element;
 	final trackButtons:Array<Element>;
 	final soundButton:Element;
+	final seatCards:Array<Element>;
 
 	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions) {
 		this.holder = holder;
 		startPanel = panel(Words.gameName, "panel-start");
 		Dom.make("p", "panel-tagline", Words.tagline, startPanel);
 		trackButtons = trackPicker(tracks, actions.chooseTrack);
+		seatCards = seatPicker();
 		Dom.button(Words.start, "button button-go", startPanel, actions.start);
 		for (line in Words.howToDrive) Dom.make("p", "panel-help", line, startPanel);
 		pausePanel = panel(Words.paused, "panel-pause");
@@ -68,6 +71,30 @@ class Panels {
 		return [for (index in 0...tracks.length) Dom.button(Words.trackChoice(tracks[index].name, tracks[index].laps), "button track-choice", picker, () -> choose(index))];
 	}
 
+	/** A card per seat, under a label, with how to join below. */
+	function seatPicker():Array<Element> {
+		var picker = Dom.make("div", "seat-picker", null, startPanel);
+		picker.setAttribute("aria-label", Words.drivers);
+		picker.setAttribute("aria-live", "polite");
+		var cards = [for (seat in 0...Paint.liveries.length) Dom.make("div", "seat", null, picker)];
+		for (seat in 0...cards.length) cards[seat].style.setProperty("--player", Paint.css(Paint.liveries[seat].colour));
+		Dom.make("p", "panel-help", Words.joinHint, startPanel);
+		return cards;
+	}
+
+	/** Each seat's card says who drives it, and with what. */
+	public function showSeats(lineup:Lineup) {
+		for (seat in 0...seatCards.length) {
+			var card = seatCards[seat];
+			var isHuman = lineup.isHuman(seat);
+			var controller = lineup.controllerIn(seat);
+			card.classList.toggle("is-human", isHuman);
+			card.innerHTML = "";
+			Dom.make("span", "seat-who", isHuman ? Words.driverName(seat, 0, true, false) : Words.aiDriver, card);
+			Dom.make("span", "seat-how", controller != null ? Words.controllerName(controller) : (isHuman ? Words.anyControls : ""), card);
+		}
+	}
+
 	public function showPause() {
 		showOnly(pausePanel);
 	}
@@ -83,19 +110,20 @@ class Panels {
 	}
 
 	/** The results, in finishing order: place, car, and race time (or how far it got). */
-	public function showResults(race:Race) {
+	public function showResults(race:Race, lineup:Lineup) {
 		resultsTable.innerHTML = "";
-		for (place in 0...race.state.order.length) resultRow(race, race.state.order[place], place + 1);
+		for (place in 0...race.state.order.length) resultRow(race, lineup, race.state.order[place], place + 1);
 		showOnly(resultsPanel);
 	}
 
-	function resultRow(race:Race, seat:Int, place:Int) {
+	function resultRow(race:Race, lineup:Lineup, seat:Int, place:Int) {
 		var racer = race.racer(seat);
 		var livery = Paint.liveries[seat];
-		var row = Dom.make("li", seat == 0 ? "result is-player" : "result", null, resultsTable);
+		var row = Dom.make("li", lineup.isHuman(seat) ? "result is-player" : "result", null, resultsTable);
+		row.style.setProperty("--player", Paint.css(livery.colour));
 		Dom.make("span", "result-place", Words.place(place), row);
 		Dom.make("span", "result-swatch", null, row).style.background = Paint.css(livery.colour);
-		Dom.make("span", "result-name", Words.driverName(seat, livery.number), row);
+		Dom.make("span", "result-name", Words.driverName(seat, livery.number, lineup.isHuman(seat), lineup.people() == 1), row);
 		var raceTime = (racer.finishTick - StartLights.greenTick) / Tick.perSecond;
 		var howFar = Words.lap + " " + Words.outOf(Laps.lapsDone(racer), race.state.laps);
 		Dom.make("span", "result-time", racer.finishTick >= 0 ? Words.raceTime(raceTime) : howFar, row);

@@ -19,7 +19,7 @@ both sides.
 | Phase | What it adds | Done when |
 |---|---|---|
 | **1. Alone** (this spec) | Car physics, two tracks (an oval and a whacky one), three AI cars, keyboard and gamepad, HUD, sound | A 5-lap race against three AI cars is fun, on a phone and a desktop |
-| 2. Same screen | 2–4 human players on one screen (keyboard halves and gamepads); AI fills the empty seats | Four people on one sofa can race |
+| **2. Same screen** (done) | 2–4 human players on one screen (keyboard halves and gamepads); AI fills the empty seats | Four people on one sofa can race |
 | 3. Online | Colyseus rooms on the VPS; bots fill empty seats; netcode (section 9) | Two browsers on different networks race and bump with no snapping |
 
 Phase 1 is built so that phases 2 and 3 are additions, not rewrites: the
@@ -347,9 +347,21 @@ recorded: frame time on a phone-sized window with the CPU slowed 4×
 
 ## 9. Later phases, in short
 
-**Phase 2: same screen.** A seat picker: each seat is Keyboard (left: WASD;
-right: arrows), Gamepad 1–4, Touch, or AI. Car colours and names per seat.
-The whole-track camera means no split screen. No changes to the simulation.
+**Phase 2: same screen (done 31 Oct).** The start panel shows the four
+seats. Pressing go on a controller (W, ↑, or a gamepad's right trigger)
+takes the first empty seat, one controller each; pressing brake gives it
+back. Controllers are the keyboard's two halves (WASD with R to be put
+back; the arrows with /), and each gamepad by its slot. Until anyone joins
+it is the phase 1 game: one person in the first seat driving with
+everything, touch included (touch can't claim a seat, as it is the whole
+screen). Empty seats are AI drivers. Each seat keeps its car's colour;
+people are "Player 1" to "Player 4" (or "You" alone). The HUD gives each
+person a plate, a corner each in seat order, with their position, lap and
+damage; the lap times show only for someone alone. A gamepad's A says yes
+to whatever panel is showing. People's cars are the loud ones, and their
+hits shake the view. Who sits where is `client/src/seats/Lineup.hx`, with
+its own checks (`client/test`, run in CI). The whole-track camera means no
+split screen, and the simulation didn't change at all.
 
 **Phase 3: online.**
 - **Server**: a thin TypeScript Colyseus room on Tom's OVH VPS that runs the

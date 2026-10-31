@@ -1,7 +1,9 @@
 import hud.Hud;
 import hud.Panels;
 import hud.Panels.PanelActions;
-import input.PlayerControls;
+import input.Controller;
+import input.Controls;
+import seats.Lineup;
 import js.Browser;
 import shunt.ai.AiDriver;
 import shunt.ai.DriverCharacter;
@@ -47,9 +49,9 @@ typedef PageParts = {
 }
 
 /**
- * The game in the browser (SPEC.md §1): one race at a time on the track
- * chosen, the player in seat 0 and AI drivers in the others, drawn every
- * frame between the last two ticks. Everything about the race itself is in
+ * The game in the browser (SPEC.md §1, §9): one race at a time on the track
+ * chosen, with people in the seats they joined (or one person alone) and AI
+ * drivers in the rest, drawn every frame between the last two ticks. Everything about the race itself is in
  * the shared simulation; this only feeds it inputs and shows what it does.
  */
 class Game {
@@ -61,14 +63,17 @@ class Game {
 	final world:World;
 	final hud:Hud;
 	final panels:Panels;
-	final controls:PlayerControls;
+	final controls:Controls;
+	final lineup = new Lineup(Paint.liveries.length);
 	final steps = new FixedSteps();
 	final carViews:Array<CarView>;
 	final oilView = new OilView();
 	final effects = new Effects();
-	final sound = new Sound();
+	final sound:Sound;
 	var race:Race;
-	var drivers:Array<AiDriver>;
+
+	/** The AI driver in each seat, or nothing where a person drives. */
+	var drivers:Array<Null<AiDriver>>;
 	var posesBefore:Array<Pose>;
 	var mode = WaitingToStart;
 	var chosenTrack = 0;
@@ -78,9 +83,10 @@ class Game {
 		this.tracks = tracks;
 		racingLines = tracks.map(track -> new RacingLine(track));
 		world = new World(page.stage);
-		hud = new Hud(page.hud);
+		hud = new Hud(page.hud, lineup.seats);
 		panels = new Panels(page.panels, tracks, panelActions());
-		controls = new PlayerControls(page.stage, page.brakePad, page.pauseButton);
+		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
+		sound = new Sound(lineup.isHuman);
 		carViews = [for (livery in Paint.liveries) new CarView(livery)];
 		for (view in carViews) world.scene.add(view.whole);
 		world.scene.add(oilView.whole);
@@ -107,6 +113,7 @@ class Game {
 		world.showTrack(tracks[index]);
 		lineUpANewRace();
 		mode = WaitingToStart;
+		panels.showSeats(lineup);
 		panels.showStart(index);
 	}
 
@@ -118,8 +125,10 @@ class Game {
 			runTheTicksDue(now);
 			effects.animate(secondsSinceLastFrame);
 		}
+		if (mode == WaitingToStart) takeSeats();
 		if (controls.pauseWasJustPressed()) pressPause();
 		if (controls.muteWasJustPressed()) toggleSound();
+		if (controls.confirmWasJustPressed()) pressYes();
 		showEverything();
 		Browser.window.requestAnimationFrame(frame);
 	}
@@ -129,7 +138,7 @@ class Game {
 		if (race.state.phase == Finished) {
 			mode = RaceOver;
 			sound.rest();
-			panels.showResults(race);
+			panels.showResults(race, lineup);
 		}
 	}
 
@@ -149,12 +158,26 @@ class Game {
 			var car = race.racer(seat).car;
 			carViews[seat].dent(car.inCarTerms(hit.point - car.position), hit.strength);
 		}
-		if (involvesThePlayer(hit.racer, hit.other)) world.shakeFor(hit.strength / hardestShake);
+		if (lineup.isHuman(hit.racer) || (hit.other >= 0 && lineup.isHuman(hit.other))) world.shakeFor(hit.strength / hardestShake);
 	}
 
-	/** The player's input for seat 0; each AI driver's for the others. */
+	/** Each seat's input: from its person's controllers, or from its AI driver. */
 	function everyonesInput():Array<CarInput> {
-		return [controls.carInput()].concat([for (seat in 1...race.state.racers.length) drivers[seat - 1].inputFor(race, seat)]);
+		return [for (seat in 0...race.state.racers.length) inputFor(seat)];
+	}
+
+	function inputFor(seat:Int):CarInput {
+		var driver = drivers[seat];
+		return driver != null ? driver.inputFor(race, seat) : controls.carInputFrom(lineup.controllersFor(seat, controls.every()));
+	}
+
+	/** Before a race, a press of go on a controller takes a seat and a press of brake gives it back; the panel and HUD follow. */
+	function takeSeats() {
+		var joined = Lambda.count(controls.throttleJustPressedOn(), lineup.join) > 0;
+		var left = Lambda.count(controls.brakeJustPressedOn(), lineup.leave) > 0;
+		if (!joined && !left) return;
+		panels.showSeats(lineup);
+		lineUpANewRace();
 	}
 
 	/** Every car drawn part way between its last two ticks, then the oil, the HUD, and the frame. */
@@ -178,10 +201,21 @@ class Game {
 		var seed = Std.random(1000000000) + 1;
 		var track = tracks[chosenTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
-		drivers = [for (seat in 1...race.state.racers.length) new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
+		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
+		hud.seat(lineup);
 		posesBefore = posesNow();
 		effects.clear();
 		for (view in carViews) view.mendDents();
+	}
+
+	/** A gamepad's A says yes to the panel showing: start, resume, or race again. */
+	function pressYes() {
+		switch mode {
+			case WaitingToStart: startRacing();
+			case Paused: startRacing();
+			case RaceOver: raceAgain();
+			case Racing:
+		}
 	}
 
 	/** Racing (again): sound wakes up too (the first time, the press of Start is what browsers wait for). */
@@ -216,9 +250,5 @@ class Game {
 
 	function posesNow():Array<Pose> {
 		return [for (racer in race.state.racers) {position: racer.car.position, heading: racer.car.heading}];
-	}
-
-	static function involvesThePlayer(racer:Int, other:Int):Bool {
-		return racer == 0 || other == 0;
 	}
 }

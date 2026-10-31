@@ -1,5 +1,7 @@
 package hud;
 
+import input.Controller;
+
 /** Every word the player sees, in one place. */
 class Words {
 	public static inline final gameName = "shunt";
@@ -22,14 +24,18 @@ class Words {
 	public static inline final results = "Results";
 	public static inline final you = "You";
 	public static inline final noTimeYet = "–";
+	public static inline final drivers = "Drivers";
+	public static inline final aiDriver = "AI";
+	public static inline final anyControls = "Keys, pad or touch";
+	public static inline final joinHint = "More players: press go on your own keys (W or ↑) or gamepad (right trigger) to take a seat; brake to give it back.";
 
 	/** The made-up sponsors on the billboards round the track. */
 	public static final billboards = ["SHUNT", "LAP COLA", "DENTCO", "GRIPSTER TYRES", "OIL? NO", "BUMPER & SONS"];
 
 	/** How to drive, one line per way of driving. */
 	public static final howToDrive = [
-		"Keyboard: arrows or WASD; hold a steering key longer to turn harder. R puts you back on the track. Esc pauses. M turns the sound off or on.",
-		"Gamepad: right trigger to go, left trigger to brake, stick to steer. Select turns the sound off or on.",
+		"Keyboard: arrows or WASD; hold a steering key longer to turn harder. R (or / for the arrows) puts you back on the track. Esc pauses. M turns the sound off or on.",
+		"Gamepad: right trigger to go, left trigger to brake, stick to steer, Y to be put back. Start pauses; Select turns the sound off or on.",
 		"Touch: hold the left or right side to steer. You accelerate on your own; the pad brakes."
 	];
 
@@ -41,9 +47,25 @@ class Words {
 		return '$position$ending';
 	}
 
-	/** A seat's name in the results: "You", or the car's number. */
-	public static function driverName(seat:Int, number:Int):String {
-		return seat == 0 ? you : 'No. $number';
+	/** A seat's name: "You" for someone racing alone, "Player 2" when several race, or the AI car's number. */
+	public static function driverName(seat:Int, number:Int, isHuman:Bool, isAlone:Bool):String {
+		if (!isHuman) return 'No. $number';
+		return isAlone ? you : 'Player ${seat + 1}';
+	}
+
+	/** A person's short tag in the HUD: "P2". */
+	public static function playerTag(seat:Int):String {
+		return 'P${seat + 1}';
+	}
+
+	/** What a controller is called on the seat picker. */
+	public static function controllerName(controller:Controller):String {
+		return switch controller {
+			case KeyboardLeft: "WASD";
+			case KeyboardRight: "Arrows";
+			case Pad(slot): 'Gamepad ${slot + 1}';
+			case Touch: "Touch";
+		}
 	}
 
 	/** Seconds as a race clock shows them, to the tenth: "1:04.3", or "19.6" under a minute. */

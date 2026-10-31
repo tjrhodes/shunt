@@ -27,7 +27,11 @@ class Sound {
 	var squeals:Array<SquealVoice> = [];
 	var oneShots:OneShots;
 
-	public function new() {
+	/** Whether a person drives a seat: people's cars are the loud ones. */
+	final isHuman:Int -> Bool;
+
+	public function new(isHuman:Int -> Bool) {
+		this.isHuman = isHuman;
 		isOn = rememberedChoice();
 	}
 
@@ -54,8 +58,8 @@ class Sound {
 		if (context == null) return;
 		for (seat in 0...engines.length) {
 			var car = race.racer(seat).car;
-			engines[seat].follow(car, seat == 0 ? Tuning.playerEngine : Tuning.otherEngines);
-			squeals[seat].follow(Slide.strength(car), seat == 0 ? Tuning.playerSqueal : Tuning.otherSqueals);
+			engines[seat].follow(car, isHuman(seat) ? Tuning.playerEngine : Tuning.otherEngines);
+			squeals[seat].follow(Slide.strength(car), isHuman(seat) ? Tuning.playerSqueal : Tuning.otherSqueals);
 		}
 	}
 
@@ -71,9 +75,9 @@ class Sound {
 		}
 	}
 
-	/** A hit is louder the harder it was, and louder still if it was the player's car. */
-	static function loudnessOf(hit:RaceEvent):Float {
-		var isThePlayers = hit.racer == 0 || hit.other == 0;
+	/** A hit is louder the harder it was, and louder still if a person's car was in it. */
+	function loudnessOf(hit:RaceEvent):Float {
+		var isThePlayers = isHuman(hit.racer) || (hit.other >= 0 && isHuman(hit.other));
 		return (isThePlayers ? Tuning.playerHit : Tuning.otherHits) * Math.min(1, hit.strength / Tuning.loudestHitFrom);
 	}
 
