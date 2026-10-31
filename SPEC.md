@@ -237,8 +237,25 @@ and phase 1 ships two tracks:
    make S-bends, a chicane and a hairpin, with a narrow gap where cars have
    to queue and bump. Designed once the oval drives well.
 
-A figure-of-eight with a crossing comes after phase 1 (the same format
-handles it: the crossing is just two stretches of centreline that meet).
+A figure-of-eight with a crossing comes after phase 1.
+
+**Inspiration (Tom's screenshots of the original's tracks, 31 Oct, in his
+`Pictures/shunt`):** three families. *Arena mazes*: an open box, sometimes
+hexagonal, with thin fences inside making spirals, combs that zigzag back
+and forth, and serpentines; the fences are the track. *Flowing circuits*:
+thick-walled roads round a raised infield, in S, G, kidney and snake
+shapes. *Crossings*: an hourglass that crosses itself in the middle.
+Dressed with billboards, trees, flags and crowd stands, and textured
+infields. Phase 1's whacky track should be an arena maze (a serpentine or
+a comb).
+
+**What that asks of the format:** today the edge walls are built from the
+centreline and its width, which suits flowing circuits. Mazes and
+crossings need their walls written out directly (an arena outline, fences,
+and gaps where a crossing passes through), with the centreline only
+guiding laps, recovery and the AI. So a track file will be able to list
+its own walls and say not to build edge walls; the oval keeps working as
+it is.
 
 Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
 a few points round the centreline (each with the track's width there) and
