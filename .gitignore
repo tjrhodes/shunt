@@ -4,3 +4,4 @@ dist/
 client/www/shunt*.js
 client/www/tracks/
 node_modules/
+client/test/bin/

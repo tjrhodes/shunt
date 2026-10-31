@@ -15,8 +15,11 @@ The plan is in [SPEC.md](SPEC.md).
 Phase 1: races on two tracks (an oval and an arena maze, the Serpentine)
 against three AI cars, with contact, damage and oil, in low-poly 3D. The
 driving is tuned, and it has skid marks, smoke, sparks and dents, sound made
-live in the browser, and scenery round every track. Next: same-screen
-multiplayer (phase 2).
+live in the browser, and scenery round every track.
+
+Phase 2: up to four people on one screen, two on the keyboard (WASD and
+the arrows) and the rest on gamepads; press go on yours on the start
+screen to take a seat. AI drivers fill the rest. Next: online (phase 3).
 
 ## Playing it
 
@@ -33,8 +36,10 @@ Needs [Haxe 4.3](https://haxe.org/download/) and Node.
 ```sh
 cd sim
 haxe test.hxml                        # every check of the simulation (about 30 s)
+cd ../client
+haxe test.hxml                        # the client's checks (who sits where)
 cd ..
-python3 tools/check-lengths.py sim client/src tools   # no function over 15 lines
+python3 tools/check-lengths.py sim client/src client/test tools   # no function over 15 lines
 ```
 
 ## Licence

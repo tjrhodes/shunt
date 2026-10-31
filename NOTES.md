@@ -168,3 +168,27 @@ crossings), so the second track is an arena maze.
   concrete and red in turn, which makes arena fences read at a glance.
 - **Found on the way:** the start panel couldn't be reached on a short
   screen (a phone held sideways); the panels now scroll.
+
+## 31 Oct 2026, afternoon: phase 2, same screen
+
+Tom chose phase 2 before the design tweaks, so the panels and HUD get
+designed once, for several players.
+
+- **No simulation changes at all.** The race only ever took one
+  `CarInput` per seat, so phase 2 was all in the client: controllers, who
+  sits where, and showing several people.
+- **The solo game stays as it was** until someone presses go on a
+  controller. That avoided a "how many players?" question before every
+  race: one person never sees the seat picker do anything.
+- **Joining rebuilds the race on the grid**, so the AI drivers match the
+  seats. Nothing has happened yet at that point, so nothing is lost.
+- **Checked in the browser:** two people on one keyboard (WASD and the
+  arrows) each drive their own car; with only one pressing go, the other
+  stays on the grid and drops to last. The lineup's rules (joining,
+  leaving, the solo fallback) have their own Node checks, the client's
+  first.
+- **Not tested with real gamepads** here; the pad code reads each pad by
+  its slot, as the browser numbers them.
+- Keyboards often can't read more than a few keys at once, so two people
+  on one keyboard can block each other now and then. Gamepads don't have
+  this.

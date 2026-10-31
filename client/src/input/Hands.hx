@@ -3,7 +3,9 @@ package input;
 /**
  * What one way of driving (keyboard, a gamepad, touch) has pressed right
  * now: how hard on each pedal, which way to steer, and whether it asks to be
- * put back on the track, to pause, or to turn the sound off or on.
+ * put back on the track, to pause, to turn the sound off or on, or to say
+ * yes to what a panel offers (a gamepad's A: the keyboard has Enter on the
+ * panel's button already).
  */
 typedef Hands = {
 	final throttle:Float;
@@ -12,6 +14,7 @@ typedef Hands = {
 	final recover:Bool;
 	final pause:Bool;
 	final mute:Bool;
+	final confirm:Bool;
 }
 
 class HandsTogether {
@@ -21,7 +24,8 @@ class HandsTogether {
 		steer: 0,
 		recover: false,
 		pause: false,
-		mute: false
+		mute: false,
+		confirm: false
 	};
 
 	/**
@@ -36,7 +40,8 @@ class HandsTogether {
 			steer: Lambda.fold(all, (hands, total) -> total + hands.steer, 0.0),
 			recover: Lambda.exists(all, hands -> hands.recover),
 			pause: Lambda.exists(all, hands -> hands.pause),
-			mute: Lambda.exists(all, hands -> hands.mute)
+			mute: Lambda.exists(all, hands -> hands.mute),
+			confirm: Lambda.exists(all, hands -> hands.confirm)
 		};
 	}
 }
