@@ -192,3 +192,10 @@ designed once, for several players.
 - Keyboards often can't read more than a few keys at once, so two people
   on one keyboard can block each other now and then. Gamepads don't have
   this.
+- **Gamepads on Linux (found with Tom's Switch Pro Controller):** the
+  game was fine; the machine wasn't. Chrome-based browsers need
+  `/dev/input/js*` (the `joydev` module, in Ubuntu's
+  `linux-modules-extra` package), and for Nintendo pads they read
+  `/dev/hidraw` directly, which a Snap browser can't reach even with
+  `joystick` connected. Firefox and unsandboxed browsers read it fine. The
+  game now carries on with no pads if the browser refuses them.
