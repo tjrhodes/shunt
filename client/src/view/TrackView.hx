@@ -7,8 +7,9 @@ import three.Three;
 
 /**
  * The track in 3D, built from the very same `Track` the race runs on: the
- * grass, the asphalt between the edges, every wall piece, and the start
- * line. Nothing about its shape is written again here.
+ * grass, the asphalt (between a road's edges, or an arena's whole floor),
+ * every wall piece, and the start line. Nothing about its shape is written
+ * again here.
  */
 class TrackView {
 	/** How tall the walls are, in metres. */
@@ -23,7 +24,7 @@ class TrackView {
 	public static function build(track:Track):Group {
 		var everything = new Group();
 		everything.add(grass());
-		everything.add(asphalt(track));
+		everything.add(track.isARoad ? asphalt(track) : arenaFloor(track));
 		everything.add(walls(track.walls));
 		everything.add(startLine(track));
 		return everything;
@@ -52,6 +53,17 @@ class TrackView {
 		var ribbon = new Mesh(shapeFrom(corners, trianglesRound(track.samples.length)), new MeshLambertMaterial({color: Paint.asphalt}));
 		ribbon.receiveShadow = true;
 		return ribbon;
+	}
+
+	/** An arena's floor: its outline, filled with asphalt. */
+	static function arenaFloor(track:Track):Mesh {
+		var outline = new Shape();
+		outline.moveTo(track.arenaOutline[0].x, track.arenaOutline[0].y);
+		for (corner in track.arenaOutline.slice(1)) outline.lineTo(corner.x, corner.y);
+		var flatOnTheGround = new ShapeGeometry(outline).rotateX(-Math.PI / 2).translate(0, aboveTheGrass, 0);
+		var floor = new Mesh(flatOnTheGround, new MeshLambertMaterial({color: Paint.asphalt}));
+		floor.receiveShadow = true;
+		return floor;
 	}
 
 	/**

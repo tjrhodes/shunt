@@ -12,9 +12,9 @@ The plan is in [SPEC.md](SPEC.md).
 
 ## Where it's at
 
-Phase 1, step 6 of 6 reached: a race on the oval against three AI cars,
-with contact, damage and oil, drawn in plain low-poly 3D. Next: tuning at
-the wheel, then sound, the look, and the second track.
+Phase 1: races on two tracks (an oval and an arena maze, the Serpentine)
+against three AI cars, with contact, damage and oil, in low-poly 3D. The
+driving is tuned. Under way: sound, effects and the design pass.
 
 ## Playing it
 

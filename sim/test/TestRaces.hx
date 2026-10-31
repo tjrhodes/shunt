@@ -1,31 +1,43 @@
+import haxe.Json;
 import shunt.ai.AiDriver;
 import shunt.ai.DriverCharacter;
 import shunt.ai.RacingLine;
 import shunt.car.CarInput;
 import shunt.race.Race;
 import shunt.race.RaceState.Phase;
-import shunt.race.RaceTuning;
 import shunt.track.Track;
 
 /** Tracks and races for the checks, made the same way every time. */
 class TestRaces {
-	/** The oval, read from its file once and shared by every check. */
-	public static final oval = Track.fromJson(js.Syntax.code("require('fs').readFileSync({0}, 'utf8')", "../tracks/oval.json"));
+	/** Every track, read once from the same list of files the game reads (`tracks/index.json`). */
+	public static final everyTrack:Array<Track> = [for (file in (Json.parse(fileText("index.json")) : Array<String>)) Track.fromJson(fileText(file))];
 
-	/** The racing line for the oval, also made once. */
-	public static final ovalLine = new RacingLine(oval);
+	/** The oval, which most checks use: the first track in the list. */
+	public static final oval = everyTrack[0];
+
+	/** Each track's racing line, made once, in the same order as `everyTrack`. */
+	static final racingLines = everyTrack.map(track -> new RacingLine(track));
+
+	/** The oval's racing line. */
+	public static final ovalLine = racingLines[0];
+
+	static function fileText(name:String):String {
+		return js.Syntax.code("require('fs').readFileSync({0}, 'utf8')", '../tracks/$name');
+	}
 
 	/** The longest any race is allowed to run in a check: something has gone wrong after this. */
 	static inline final mostSeconds = 600;
 
-	/** A race on the oval, lights still red. */
-	public static function newRace(cars:Int, seed:Int):Race {
-		return new Race(oval, {cars: cars, laps: RaceTuning.defaultLaps, seed: seed});
+	/** A race on a track (the oval, unless another is given), lights still red, its usual number of laps. */
+	public static function newRace(cars:Int, seed:Int, ?track:Track):Race {
+		var where = track ?? oval;
+		return new Race(where, {cars: cars, laps: where.laps, seed: seed});
 	}
 
-	/** An AI driver for every seat in a race. */
+	/** An AI driver for every seat in a race, following its track's racing line. */
 	public static function aiDriversFor(race:Race, seed:Int):Array<AiDriver> {
-		return [for (seat in 0...race.state.racers.length) new AiDriver(DriverCharacters.forSeat(seed, seat), ovalLine, seat)];
+		var line = racingLines[everyTrack.indexOf(race.track)];
+		return [for (seat in 0...race.state.racers.length) new AiDriver(DriverCharacters.forSeat(seed, seat), line, seat)];
 	}
 
 	/** Every seat's input this tick, from its AI driver. */
@@ -33,9 +45,12 @@ class TestRaces {
 		return [for (seat in 0...drivers.length) drivers[seat].inputFor(race, seat)];
 	}
 
-	/** Runs a race with AI drivers until it is over (or something is badly wrong). */
-	public static function runToTheEnd(race:Race, drivers:Array<AiDriver>):Race {
-		while (race.state.phase != Finished && race.state.tick < Tick.ticksIn(mostSeconds)) race.step(aiInputs(race, drivers));
+	/** Runs a race with AI drivers until it is over (or something is badly wrong), showing each tick to `watch` if given. */
+	public static function runToTheEnd(race:Race, drivers:Array<AiDriver>, ?watch:Race -> Void):Race {
+		while (race.state.phase != Finished && race.state.tick < Tick.ticksIn(mostSeconds)) {
+			race.step(aiInputs(race, drivers));
+			if (watch != null) watch(race);
+		}
 		return race;
 	}
 
@@ -45,9 +60,9 @@ class TestRaces {
 		return race;
 	}
 
-	/** A four-car AI race on the oval with a seed, run to the end. */
-	public static function aiRace(seed:Int):Race {
-		var race = newRace(4, seed);
-		return runToTheEnd(race, aiDriversFor(race, seed));
+	/** A four-car AI race with a seed, on a track (the oval, unless another is given), run to the end. */
+	public static function aiRace(seed:Int, ?track:Track, ?watch:Race -> Void):Race {
+		var race = newRace(4, seed, track);
+		return runToTheEnd(race, aiDriversFor(race, seed), watch);
 	}
 }

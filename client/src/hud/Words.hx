@@ -6,6 +6,8 @@ class Words {
 	public static inline final tagline = "Short-track stock cars. Bumping is allowed.";
 	public static inline final start = "Start the race";
 	public static inline final raceAgain = "Race again";
+	public static inline final changeTrack = "Change track";
+	public static inline final track = "Track";
 	public static inline final resume = "Resume";
 	public static inline final restart = "Restart";
 	public static inline final paused = "Paused";
@@ -46,6 +48,11 @@ class Words {
 		var wholeSeconds = Std.int((tenths % 600) / 10);
 		var secondsText = minutes > 0 && wholeSeconds < 10 ? '0$wholeSeconds' : '$wholeSeconds';
 		return (minutes > 0 ? '$minutes:' : "") + '$secondsText.${tenths % 10}';
+	}
+
+	/** A track as the picker offers it: "Serpentine · 3 laps". */
+	public static function trackChoice(name:String, laps:Int):String {
+		return '$name · $laps laps';
 	}
 
 	/** A count out of a total, as the HUD shows laps and places: "3 / 5". */

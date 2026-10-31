@@ -249,13 +249,16 @@ Dressed with billboards, trees, flags and crowd stands, and textured
 infields. Phase 1's whacky track should be an arena maze (a serpentine or
 a comb).
 
-**What that asks of the format:** today the edge walls are built from the
-centreline and its width, which suits flowing circuits. Mazes and
-crossings need their walls written out directly (an arena outline, fences,
-and gaps where a crossing passes through), with the centreline only
-guiding laps, recovery and the AI. So a track file will be able to list
-its own walls and say not to build edge walls; the oval keeps working as
-it is.
+**What that asks of the format (done 31 Oct):** a track is either a *road*,
+with edge walls built from the centreline and its width (the oval), or an
+*arena*: `"edgeWalls": false`, its own closed wall `loops` (the first is
+the outline and the floor) and its fences as `barriers`, with the
+centreline only guiding laps, recovery and the AI. A file can also give its
+own `laps`. `tracks/index.json` lists the tracks, for the game and the
+checks alike. The second track is **Serpentine** (`tools/make-serpentine.py`):
+a 170 × 100 m arena, four rows zigzagging up round fence tips in hairpins,
+a return lane down the east side; about 650 m a lap, 3 laps. Gaps for a
+crossing are still to come, with the figure-of-eight.
 
 Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
 a few points round the centreline (each with the track's width there) and
@@ -373,7 +376,9 @@ The whole-track camera means no split screen. No changes to the simulation.
   module is a later step. An orthographic camera at the isometric angle
   (35.26° down), looking from whichever way round (in 15° steps) fills the
   screen best, so the oval lies across a wide screen and stands up on a
-  phone.
+  phone. A diagonal view (the classic isometric look) wins unless another
+  fills the screen a quarter better: a box-shaped arena otherwise came out
+  straight-on and flat.
 - **Dents**: the car body is a low-poly mesh; a contact pushes in the
   vertices near its point, scaled by the damage it did. Drawn only, never fed
   back into the physics (the simulation's damage zones are the truth).

@@ -14,7 +14,8 @@ class TrackTests {
 		test("free-standing barriers become walls too", barriersAreWalls),
 		test("joints in a smooth wall don't stick out; barrier tips and sharp corners do", onlyRealEndsStickOut),
 		test("the grid is behind the line, each car further back, inside the walls", gridIsBehindTheLine),
-		test("the racing line is slower in the bends than on the straights", bendsAreSlower)
+		test("the racing line is slower in the bends than on the straights", bendsAreSlower),
+		test("the serpentine is an arena: no edge walls, its outline is its floor, its own laps", serpentineIsAnArena)
 	];
 
 	static function isAQuarterMile() {
@@ -48,6 +49,15 @@ class TrackTests {
 		equal(stickingOutOfTheOval, 0, "ends sticking out of the oval's smooth walls");
 		var anL = Walls.joining([new Vector(0, 0), new Vector(10, 0), new Vector(10, 5)], false);
 		equal(anL[0].endsThatStickOut.length + anL[1].endsThatStickOut.length, 4, "an L's tips and its bend (counted on both pieces)");
+	}
+
+	static function serpentineIsAnArena() {
+		var serpentine = Lambda.find(TestRaces.everyTrack, track -> track.name == "Serpentine");
+		isTrue(serpentine != null, "the serpentine is in the list of tracks");
+		isTrue(!serpentine.isARoad, "it is not a road");
+		equal(serpentine.arenaOutline.length, 4, "corners of its outline");
+		equal(serpentine.laps, 3, "laps");
+		between(serpentine.length, 550, 750, "metres round");
 	}
 
 	static function gridIsBehindTheLine() {

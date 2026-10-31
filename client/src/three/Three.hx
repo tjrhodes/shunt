@@ -57,6 +57,8 @@ import js.html.CanvasElement;
 	var right:Float;
 	var top:Float;
 	var bottom:Float;
+	var near:Float;
+	var far:Float;
 	function updateProjectionMatrix():Void;
 }
 
@@ -102,6 +104,17 @@ import js.html.CanvasElement;
 	function new(radius:Float, height:Float, segments:Int);
 }
 
+/** A flat outline, drawn point to point (x across, y up), to fill as a shape. */
+@:native("THREE.Shape") extern class Shape {
+	function new();
+	function moveTo(x:Float, y:Float):Shape;
+	function lineTo(x:Float, y:Float):Shape;
+}
+
+@:native("THREE.ShapeGeometry") extern class ShapeGeometry extends BufferGeometry {
+	function new(shape:Shape);
+}
+
 @:native("THREE.CanvasTexture") extern class CanvasTexture {
 	function new(canvas:CanvasElement);
 }
@@ -137,8 +150,12 @@ import js.html.CanvasElement;
 /** A light like the sun: parallel rays from one direction, casting shadows. */
 @:native("THREE.DirectionalLight") extern class DirectionalLight extends Object3D {
 	function new(colour:Int, intensity:Float);
+
+	/** What it shines at: it must be in the scene for a move to count. */
+	var target(default, null):Object3D;
+
 	var shadow(default, null):{
 		mapSize:{width:Int, height:Int},
-		camera:{left:Float, right:Float, top:Float, bottom:Float, near:Float, far:Float}
+		camera:OrthographicCamera
 	};
 }

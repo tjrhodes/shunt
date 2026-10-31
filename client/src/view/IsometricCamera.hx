@@ -37,12 +37,26 @@ class IsometricCamera {
 		middle = middleOf(trackEdge);
 	}
 
+	/**
+	 * A diagonal view (45° to the track's own lines) is the classic
+	 * isometric look, and shows walls best; it is chosen unless another
+	 * way fills the screen this much better.
+	 */
+	static inline final diagonalPreference = 1.25;
+
 	/** Frames the track for a screen this many pixels wide and high. */
 	public function frame(width:Float, height:Float) {
 		var bestWay = waysRound[0];
-		for (way in waysRound) if (pixelsPerMetre(way, width, height) > pixelsPerMetre(bestWay, width, height)) bestWay = way;
+		for (way in waysRound) if (howGood(way, width, height) > howGood(bestWay, width, height)) bestWay = way;
 		standLookingFrom(bestWay);
 		fitTheView(spanAcrossTheScreen(bestWay), width / height);
+	}
+
+	/** How well a way round suits the screen: how big the track looks, with a bonus for the diagonals. */
+	function howGood(wayRound:Float, width:Float, height:Float):Float {
+		var degreesRound = Math.round(wayRound * 180 / Math.PI);
+		var isDiagonal = degreesRound % 90 == 45;
+		return pixelsPerMetre(wayRound, width, height) * (isDiagonal ? diagonalPreference : 1);
 	}
 
 	/** Puts the camera up and back from the track's middle, at the isometric angle, looking at it. */
