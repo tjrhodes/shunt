@@ -20,6 +20,10 @@ class CarView {
 	static inline final wheelSize = 0.7;
 	static inline final wheelWidth = 0.32;
 
+	/** The spoiler's wing is this deep (front to back), held up this high above the boot. */
+	static inline final spoilerDeep = 0.32;
+	static inline final spoilerLift = 0.2;
+
 	/** The body is built of this many pieces along, up and across, so a dent has corners to push in. */
 	static inline final piecesAlong = 10;
 	static inline final piecesUp = 2;
@@ -45,6 +49,8 @@ class CarView {
 		whole.add(shadowed(new Mesh(new BoxGeometry(cabinLength, cabinHeight, CarTuning.width * 0.84), new MeshLambertMaterial({color: Paint.glass})), roofHeight() - cabinHeight / 2, -0.3));
 		whole.add(roofNumber(livery));
 		for (axle in [CarTuning.frontAxleAhead, -CarTuning.rearAxleBehind]) addWheels(axle);
+		addSpoiler();
+		for (end in [1, -1]) addLights(end);
 	}
 
 	/** Moves the car to where the simulation has it (between two ticks, for smoothness). */
@@ -102,6 +108,28 @@ class CarView {
 			wheel.position.z = side * (CarTuning.width / 2 - wheelWidth / 3);
 			whole.add(wheel);
 			if (howFarAhead > 0) frontWheels.push(wheel);
+		}
+	}
+
+	/** A wing across the back of the boot, on two little posts. */
+	function addSpoiler() {
+		var rear = -CarTuning.length / 2 + spoilerDeep / 2;
+		var top = rideHeight + bodyHeight;
+		whole.add(shadowed(new Mesh(new BoxGeometry(spoilerDeep, 0.05, CarTuning.width * 0.92), new MeshLambertMaterial({color: Paint.spoiler})), top + spoilerLift, rear));
+		for (side in [1, -1]) {
+			var post = shadowed(new Mesh(new BoxGeometry(0.08, spoilerLift, 0.06), new MeshLambertMaterial({color: Paint.spoiler})), top + spoilerLift / 2, rear);
+			post.position.z = side * CarTuning.width * 0.35;
+			whole.add(post);
+		}
+	}
+
+	/** Two lamps on one end of the car: headlights at the front (1), tail lights at the back (-1). They glow, unlit by anything. */
+	function addLights(end:Int) {
+		var colour = end > 0 ? Paint.headlight : Paint.tailLight;
+		for (side in [1, -1]) {
+			var lamp = new Mesh(new BoxGeometry(0.06, 0.14, 0.32), new MeshBasicMaterial({color: colour}));
+			lamp.position.set(end * (CarTuning.length / 2 + 0.01), rideHeight + bodyHeight * 0.62, side * CarTuning.width * 0.32);
+			whole.add(lamp);
 		}
 	}
 

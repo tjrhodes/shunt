@@ -8,7 +8,7 @@ import three.Three;
 /**
  * The track in 3D, built from the very same `Track` the race runs on: the
  * grass, the asphalt (between a road's edges, or an arena's whole floor),
- * every wall piece, and the start line. Nothing about its shape is written
+ * every wall piece, the start line, and the scenery round it all. Nothing about its shape is written
  * again here.
  */
 class TrackView {
@@ -17,6 +17,12 @@ class TrackView {
 
 	/** How much bigger than the track the grass reaches. */
 	static inline final grassBeyondTheTrack = 3000.0;
+
+	/** Walls are drawn as blocks at most this long, coloured in turn. */
+	static inline final blockLength = 3.0;
+
+	/** The start line's squares are this big. */
+	static inline final checkSize = 0.8;
 
 	/** Lifts the asphalt and line a hair above the grass, so they don't flicker into it. */
 	static inline final aboveTheGrass = 0.02;
@@ -27,6 +33,7 @@ class TrackView {
 		everything.add(track.isARoad ? asphalt(track) : arenaFloor(track));
 		everything.add(walls(track.walls));
 		everything.add(startLine(track));
+		everything.add(Scenery.build(track));
 		return everything;
 	}
 
@@ -90,18 +97,33 @@ class TrackView {
 		return shape;
 	}
 
-	/** One box per wall piece, all drawn at once (an "instanced" mesh), each stretched and turned to fit. */
+	/**
+	 * The walls as blocks no longer than a few metres, painted concrete and
+	 * red in turn like a real barrier (it shows which way a wall runs, and
+	 * how fast you pass it). All drawn at once: an "instanced" mesh, each
+	 * block stretched and turned to fit.
+	 */
 	static function walls(pieces:Array<Wall>):InstancedMesh {
 		var thickness = 2 * ContactTuning.wallHalfThickness;
-		var blocks = new InstancedMesh(new BoxGeometry(1, wallHeight, thickness), new MeshLambertMaterial({color: Paint.concrete}), pieces.length);
+		var stretches = [for (wall in pieces) for (stretch in blocksAlong(wall)) stretch];
+		var blocks = new InstancedMesh(new BoxGeometry(1, wallHeight, thickness), new MeshLambertMaterial({color: 0xffffff}), stretches.length);
 		var placer = new Object3D();
-		for (index in 0...pieces.length) {
-			fitBlockToWall(placer, pieces[index], thickness);
+		for (index in 0...stretches.length) {
+			fitBlockToWall(placer, stretches[index], thickness);
 			blocks.setMatrixAt(index, placer.matrix);
+			blocks.setColorAt(index, new Color(index % 2 == 0 ? Paint.concrete : Paint.barrierStripe));
 		}
 		blocks.castShadow = true;
 		blocks.receiveShadow = true;
 		return blocks;
+	}
+
+	/** A wall cut into equal blocks no longer than `blockLength`, each a little wall of its own. */
+	static function blocksAlong(wall:Wall):Array<Wall> {
+		var along = wall.to - wall.from;
+		var count = Math.ceil(along.length() / blockLength);
+		var step = along * (1 / count);
+		return [for (block in 0...count) {from: wall.from + step * block, to: wall.from + step * (block + 1), endsThatStickOut: []}];
 	}
 
 	/** Moves, turns and stretches a block to cover a wall piece, a little longer so the joints close. */
@@ -112,11 +134,20 @@ class TrackView {
 		block.updateMatrix();
 	}
 
-	/** A white stripe across the track where the lap starts. */
-	static function startLine(track:Track):Mesh {
+	/** A chequered band across the track where the lap starts: squares in two rows, black and white in turn. */
+	static function startLine(track:Track):InstancedMesh {
 		var here = track.sample(0);
-		var stripe = new Mesh(new BoxGeometry(0.8, 0.02, here.width), new MeshLambertMaterial({color: Paint.startLine}));
-		Placing.put(stripe, here.position, aboveTheGrass * 2, here.direction.angle());
-		return stripe;
+		var across = Math.round(here.width / checkSize);
+		var squares = new InstancedMesh(new BoxGeometry(checkSize, 0.02, checkSize), new MeshLambertMaterial({color: 0xffffff}), across * 2);
+		var placer = new Object3D();
+		for (row in 0...2) for (column in 0...across) {
+			var index = row * across + column;
+			var spot = here.position + here.direction * ((row - 0.5) * checkSize) + here.direction.turnedLeft() * ((column + 0.5) * checkSize - here.width / 2);
+			Placing.put(placer, spot, aboveTheGrass * 2, here.direction.angle());
+			placer.updateMatrix();
+			squares.setMatrixAt(index, placer.matrix);
+			squares.setColorAt(index, new Color((row + column) % 2 == 0 ? Paint.startLine : Paint.chequerDark));
+		}
+		return squares;
 	}
 }

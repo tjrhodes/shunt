@@ -71,8 +71,9 @@
   .lamp.is-green { background: var(--lamp-green); box-shadow: 0 0 18px var(--lamp-green); }
 
   #panels {
-    position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none;
-    padding-left: var(--gutter-left); padding-right: var(--gutter-right);
+    position: fixed; inset: 0; display: grid; place-items: safe center; pointer-events: none;
+    padding: 16px var(--gutter-right) 16px var(--gutter-left);
+    overflow-y: auto; overscroll-behavior: contain;  /* a short screen scrolls the panel instead of cutting it off */
     transition: background 200ms ease;
   }
   #panels.is-showing { background: rgba(8, 10, 13, 0.55); pointer-events: auto; }
@@ -147,6 +148,6 @@
 <button id="pause-button" type="button" hidden></button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="shunt-9edf9451.js" charset="utf-8"></script>
+<script src="shunt-abf60629.js" charset="utf-8"></script>
 </body>
 </html>

@@ -23,6 +23,9 @@ class Words {
 	public static inline final you = "You";
 	public static inline final noTimeYet = "–";
 
+	/** The made-up sponsors on the billboards round the track. */
+	public static final billboards = ["SHUNT", "LAP COLA", "DENTCO", "GRIPSTER TYRES", "OIL? NO", "BUMPER & SONS"];
+
 	/** How to drive, one line per way of driving. */
 	public static final howToDrive = [
 		"Keyboard: arrows or WASD; hold a steering key longer to turn harder. R puts you back on the track. Esc pauses. M turns the sound off or on.",
