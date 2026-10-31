@@ -53,11 +53,11 @@ class Gamepads {
 		return Math.abs(stick) < stickWobble ? 0 : stick;
 	}
 
-	/** Pads with the standard layout that are plugged in now. */
+	/** Pads with the standard layout that are plugged in now (none, if the browser has no gamepads or isn't allowed them here). */
 	static function connectedPads():Array<Gamepad> {
 		var navigator:Dynamic = Browser.navigator;
 		if (navigator.getGamepads == null) return [];
-		var slots:Array<Gamepad> = navigator.getGamepads();
+		var slots:Array<Gamepad> = try navigator.getGamepads() catch (_) [];
 		return [for (pad in slots) if (pad != null && pad.mapping == STANDARD && pad.buttons.length > startButton) pad];
 	}
 }
