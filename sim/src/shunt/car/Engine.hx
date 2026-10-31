@@ -53,15 +53,16 @@ class Engine {
 	}
 
 	/**
-	 * Brakes, engine braking (the accelerator up, unless it is driving the car
-	 * in reverse) and rolling resistance only
+	 * Brakes, engine braking (strong with the accelerator right up, gentle on
+	 * part throttle, none when driving in reverse) and rolling resistance only
 	 * ever slow the car down: they push against the way it is rolling, but
 	 * never hard enough to send it back the other way within one tick.
 	 */
 	static function slowingDown(car:Car, input:CarInput):Float {
 		var isReversing = wantsToReverse(car, input);
 		var braking = isReversing ? 0 : input.brake * Tuning.brakeForce;
-		var engineHoldingBack = isReversing ? 0 : Tuning.engineBraking * (1 - car.throttle);
+		var footOff = 1 - car.throttle;
+		var engineHoldingBack = isReversing ? 0 : Tuning.engineBraking * footOff * footOff;
 		var rollingSpeed = car.forwardSpeed();
 		var mostThatStopsWithoutReversing = Tuning.mass * Math.abs(rollingSpeed) / Tick.seconds;
 		return -signOf(rollingSpeed) * Math.min(braking + engineHoldingBack + Tuning.rollingResistance, mostThatStopsWithoutReversing);

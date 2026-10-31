@@ -114,3 +114,30 @@ builds the longer a key is held.
   same, more slowly.
 - **Engine braking:** 7,500 N (from 5,000): top speed to 70 km/h in 4.2 s,
   132 m (was 6 s, 188 m).
+
+## 31 Oct 2026: third tuning round
+
+Tom: better again; steering a little more pronounced when held, engine
+braking a little more, and the walls: the front corner catches and the car
+spears in, stops and turns, instead of sliding along.
+
+- **Walls: found the real cause.** Driving into the oval's wall at 15° and
+  20° stopped the car dead (2 m/s and 1 m/s), pointing 62° and 90° into the
+  wall. Lowering friction didn't fix it, even near zero. The cause: the edge
+  walls are pieces joined every 2 m, and every joint was tested as a wall
+  end poking into the car; at the car's nose that end pushed it straight
+  back along its length. Only ends that stick out (a barrier's free tip, or
+  a corner sharper than 30°) count now. Every angle from 5° to 20° now
+  slides along, pointing down the track. Wall friction 0.3 (from 0.6): a
+  top-speed graze keeps about three quarters of the speed, not 60 %.
+  Rounding the car's corners turned out not to be needed.
+- **Steering held:** near full lock at speed, the steadying lets the car turn
+  up to a quarter more than its grip holds, so it rotates into a slight
+  drift. Faded in with speed: at 72 km/h it made a held full lock scrub
+  into a doughnut (49° slide, down to 4 m/s). Full lock from top speed turns
+  84° in 3 s (from 73°); taps unchanged.
+- **Engine braking:** 10,000 N with the foot right off (from 7,500), going
+  with the square of the lift: part throttle is barely held back. Top speed
+  to 70 km/h in 3.3 s (from 4.2).
+- Checks added: glancing off the wall at 5° to 20°; smooth joints don't
+  stick out. 104 now.

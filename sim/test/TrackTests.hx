@@ -12,6 +12,7 @@ class TrackTests {
 		test("the oval is about 400 m round, sampled every metre", isAQuarterMile),
 		test("the edge walls are half the track's width from the centreline", wallsAreWhereTheWidthSays),
 		test("free-standing barriers become walls too", barriersAreWalls),
+		test("joints in a smooth wall don't stick out; barrier tips and sharp corners do", onlyRealEndsStickOut),
 		test("the grid is behind the line, each car further back, inside the walls", gridIsBehindTheLine),
 		test("the racing line is slower in the bends than on the straights", bendsAreSlower)
 	];
@@ -39,6 +40,14 @@ class TrackTests {
 		});
 		equal(withAnL.walls.length - oval.walls.length, 2, "extra walls from a barrier with three corners");
 		isTrue(withAnL.wallsNear(new Vector(5, 1), 2).length > 0, "the barrier is found near its middle");
+	}
+
+	/** A joint that stuck out stopped cars dead against the oval's walls (Tom's third drive). */
+	static function onlyRealEndsStickOut() {
+		var stickingOutOfTheOval = Lambda.fold(oval.walls, (wall, count) -> count + wall.endsThatStickOut.length, 0);
+		equal(stickingOutOfTheOval, 0, "ends sticking out of the oval's smooth walls");
+		var anL = Walls.joining([new Vector(0, 0), new Vector(10, 0), new Vector(10, 5)], false);
+		equal(anL[0].endsThatStickOut.length + anL[1].endsThatStickOut.length, 4, "an L's tips and its bend (counted on both pieces)");
 	}
 
 	static function gridIsBehindTheLine() {

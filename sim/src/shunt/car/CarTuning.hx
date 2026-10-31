@@ -46,9 +46,10 @@ class CarTuning {
 
 	/**
 	 * Lifting off the accelerator slows the car too: the engine holds it
-	 * back (engine braking), with this force when the pedal is fully up.
+	 * back (engine braking), with this force when the pedal is fully up, and
+	 * a quarter of it at half throttle (it goes with the square of the lift).
 	 */
-	public static inline final engineBraking = 7500.0;
+	public static inline final engineBraking = 10000.0;
 
 	/** Reverse is slow and weak, as it should be. */
 	public static inline final reverseTopSpeed = 8.0;
@@ -114,6 +115,14 @@ class CarTuning {
 	 * slide; drift is still there, but it goes where the wheels point.
 	 */
 	public static inline final steadying = 4.0;
+
+	/**
+	 * Steering held at full lock lets the car turn this much more than its
+	 * grip can hold (0.25 is a quarter more), building from `extraTurnFromLock`
+	 * of full lock. Keys and touch reach full lock by being held.
+	 */
+	public static inline final extraTurnAtFullLock = 0.25;
+	public static inline final extraTurnFromLock = 0.75;
 
 	/**
 	 * Below this speed (m/s) the tyre sums get jumpy, so the car rolls where

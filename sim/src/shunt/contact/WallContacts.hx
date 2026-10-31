@@ -9,8 +9,8 @@ import shunt.track.Wall.Walls;
 
 /**
  * Where a car touches walls. Two kinds of touch: a corner of the car against
- * a wall's face, and the end of a wall (a barrier's tip, or a joint between
- * pieces) poking into the side of the car.
+ * a wall's face, and an end of a wall that sticks out (a barrier's tip, or a
+ * sharp corner) poking into the side of the car.
  */
 class WallContacts {
 	/** Every place a car touches a wall, each with the way to push the car off it. */
@@ -19,7 +19,7 @@ class WallContacts {
 		var touches:Array<Contact> = [];
 		for (wall in nearbyWalls) {
 			for (corner in CarShape.corners(car)) addIfTouching(touches, cornerAgainstWall(corner, wall));
-			for (end in [wall.from, wall.to]) addIfTouching(touches, wallEndInCar(car, end));
+			for (end in wall.endsThatStickOut) addIfTouching(touches, wallEndInCar(car, end));
 		}
 		return touches;
 	}

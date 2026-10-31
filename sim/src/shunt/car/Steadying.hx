@@ -23,11 +23,25 @@ class Steadying {
 
 	/**
 	 * The spin the front wheels ask for: as if they rolled without sliding,
-	 * but never more than the tyres' grip could hold at this speed. (Asking
-	 * for more was tried: a long held bend then scrubbed round into a doughnut.)
+	 * but never more than the tyres' grip could hold at this speed, except
+	 * near full lock (see `extraTurnAtFullLock`).
 	 */
 	static function spinTheWheelsAskFor(car:Car):Float {
-		var mostTheGripAllows = Math.min(Tuning.frontGrip, Tuning.rearGrip) * Tuning.gravity / Math.max(1, car.speed());
-		return keepBetween(CarMotion.spinOfRollingWheels(car), -mostTheGripAllows, mostTheGripAllows);
+		var gripHolds = Math.min(Tuning.frontGrip, Tuning.rearGrip) * Tuning.gravity / Math.max(1, car.speed());
+		var mostAllowed = gripHolds * (1 + extraTurnAtFullLock(car));
+		return keepBetween(CarMotion.spinOfRollingWheels(car), -mostAllowed, mostAllowed);
+	}
+
+	/**
+	 * Held at (or near) full lock at speed, the car may turn a little more
+	 * than its grip can hold, so it rotates into a slight drift: steering
+	 * held down turns harder. Part lock gets nothing extra, and nor do slow
+	 * cars: asking for more there scrubbed a held bend round into a doughnut.
+	 */
+	static function extraTurnAtFullLock(car:Car):Float {
+		var shareOfLock = Math.abs(car.wheelAngle) / Controls.mostSteeringNow(car);
+		var nearFullLock = keepBetween((shareOfLock - Tuning.extraTurnFromLock) / (1 - Tuning.extraTurnFromLock), 0, 1);
+		var shareOfTopSpeed = keepBetween(car.speed() / Tuning.topSpeed, 0, 1);
+		return Tuning.extraTurnAtFullLock * nearFullLock * shareOfTopSpeed;
 	}
 }

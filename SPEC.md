@@ -103,11 +103,11 @@ class and are **starting values to tune by feel**.
 | Axles | 1.4 m in front of and 1.4 m behind the centre of mass |
 | Top speed | about 46 m/s (165 km/h); with drag it tops out near 44 m/s |
 | 0–100 km/h | about 4 s |
-| Lifting off | engine braking (7,500 N with the accelerator up): from top speed to 70 km/h in about 4 s |
+| Lifting off | engine braking (10,000 N with the accelerator right up, falling with the square of the lift so part throttle isn't held back): from top speed to 70 km/h in about 3 s |
 | Steering | ±30° when slow, narrowing to ±9° at top speed; the wheel turns at most 7 rad/s, so keys feel smooth but quick. Keys and touch build up: a third of the steering at first, full after 0.6 s held (in the browser's input, not the car: a gamepad stick is already gradual) |
 | Grip | front 1.6 g, rear 1.7 g: off the power a car pushed too far runs wide and settles. Full throttle takes 20 % of the rear's grip, so on the power the tail drifts round |
 | Sliding | a tyre past its best slip angle grips less, down to 80 % at twice that angle: what lets a drift happen and makes it something to hold |
-| Steadying | a helping hand, as arcade racers have: the car's turning is drawn towards what its front wheels ask for (at 4 per second). A small correction stays small; countersteering catches a slide |
+| Steadying | a helping hand, as arcade racers have: the car's turning is drawn towards what its front wheels ask for (at 4 per second), never more than the grip holds. A small correction stays small; countersteering catches a slide. Held near full lock at speed, the car may turn up to a quarter more than its grip holds, rotating into a slight drift: holding the steering turns harder |
 
 *Tuned 30 Oct after Tom's first drive:* steering felt heavy and then the car
 spun with no warning; a 0.3 s tap at top speed turned it 93° into a spin
@@ -121,6 +121,13 @@ Grip up from 1.45/1.55 g, steering at top speed up from 6°, engine braking
 up from 5,000 N, and the key build added. Letting the steadying ask for
 more turning than the grip can hold was tried and dropped: a long held bend
 scrubbed round into a doughnut.
+
+*Third round, 31 Oct:* more turning with the steering held, more engine
+braking, and walls that cars slide along rather than spear into. Held full
+lock at speed may now turn beyond grip (faded out at low speed, where it
+made doughnuts); engine braking up from 7,500 N and gentler on part
+throttle; wall friction down from 0.6; smooth wall joints no longer count as
+ends.
 
 **Per tick, for each car:**
 
@@ -148,8 +155,13 @@ scrubbed round into a doughnut.
   rather than being scripted). The cars are pushed apart by 80 % of the
   overlap so they never sink into each other.
 - *Car against wall*: each box corner against the wall segments, and each
-  wall's end points against the box (so a car's side hitting the end of a
-  barrier is caught too); restitution 0.2, sliding friction 0.6, the same
+  wall end that sticks out (a barrier's free tip, or a corner where a wall
+  turns by more than 30°) against the box, so a car's side hitting the end
+  of a barrier is caught too. Joints where a wall carries on smoothly are
+  not ends: treating them as ends pushed a car straight back along its
+  length and stopped it dead, which made it spear into the oval's wall
+  (found on Tom's third drive). Restitution 0.2, sliding friction 0.3 (a
+  top-speed graze keeps about three quarters of the speed), the same
   push-out.
 - Each contact adds a `RaceEvent` with its point and strength, for sparks,
   sound and screen shake.

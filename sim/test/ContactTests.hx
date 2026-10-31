@@ -22,7 +22,8 @@ class ContactTests {
 		test("a side hit keeps all the momentum", sideHitKeepsMomentum),
 		test("cars pushing into each other don't stay overlapped", noOverlapRemains),
 		test("a tap on a back corner turns the car", tapTurnsTheCar),
-		test('$wallRuns random runs at the walls: no car gets out', wallsHold)
+		test('$wallRuns random runs at the walls: no car gets out', wallsHold),
+		test("a car flat out into a wall at 5° to 20° slides along it, never spearing in", wallsAreGlancedOff)
 	];
 
 	static function headOnKeepsMomentum() {
@@ -88,6 +89,26 @@ class ContactTests {
 			}
 		}
 		equal(escapes, 0, "ticks with a car's middle outside the walls");
+	}
+
+	/**
+	 * Tom's third drive: the front corner caught in the wall and the car
+	 * speared in, stopped and turned. At every angle it must keep at least
+	 * half its speed and end up pointing along the track, not into the wall.
+	 */
+	static function wallsAreGlancedOff() {
+		for (degreesIn in [5, 10, 15, 20]) {
+			var race = racingOnTheOval(1);
+			var start = race.track.sample(30);
+			var nearTheRightWall = start.position + race.track.leftAt(30) * (3.5 - start.width / 2);
+			var heading = start.direction.angle() - degreesIn * Math.PI / 180;
+			race.racer(0).car = carAt(nearTheRightWall.x, nearTheRightWall.y, heading, Vector.pointingAt(heading) * 40);
+			race.racer(0).trackIndex = 30;
+			TestRaces.runFor(race, 1.5, TestDrive.pedals(1, 0, 0));
+			var car = race.racer(0).car;
+			between(car.speed(), 20, 50, 'm/s after hitting the wall at $degreesIn°');
+			isTrue(car.noseDirection().along(race.track.leftAt(race.racer(0).trackIndex)) > -0.2, 'not pointing into the wall after $degreesIn°');
+		}
 	}
 
 	static function placeCarAnyOldWhere(race:Race, numbers:Array<Float>) {
