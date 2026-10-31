@@ -24,6 +24,7 @@ import js.html.CanvasElement;
 
 @:native("THREE.Color") extern class Color {
 	function new(colour:Int);
+	function setHex(colour:Int):Color;
 }
 
 @:native("THREE.Matrix4") extern class Matrix4 {
@@ -77,6 +78,12 @@ import js.html.CanvasElement;
 
 @:native("THREE.Float32BufferAttribute") extern class Float32BufferAttribute extends BufferAttribute {
 	function new(values:Array<Float>, itemSize:Int);
+
+	/** The numbers themselves, three to a corner for positions. */
+	var array(default, null):js.lib.Float32Array;
+
+	/** How many corners (items) there are. */
+	var count(default, null):Int;
 }
 
 @:native("THREE.BufferGeometry") extern class BufferGeometry {
@@ -84,12 +91,16 @@ import js.html.CanvasElement;
 	function setAttribute(name:String, attribute:BufferAttribute):BufferGeometry;
 	function setIndex(index:Array<Int>):BufferGeometry;
 	function computeVertexNormals():Void;
+
+	/** The shape's corners and other per-corner numbers, by name ("position" is where each corner is). */
+	var attributes(default, null):{position:Float32BufferAttribute};
+
 	function rotateX(angle:Float):BufferGeometry;
 	function translate(x:Float, y:Float, z:Float):BufferGeometry;
 }
 
 @:native("THREE.BoxGeometry") extern class BoxGeometry extends BufferGeometry {
-	function new(width:Float, height:Float, depth:Float);
+	function new(width:Float, height:Float, depth:Float, ?widthPieces:Int, ?heightPieces:Int, ?depthPieces:Int);
 }
 
 @:native("THREE.PlaneGeometry") extern class PlaneGeometry extends BufferGeometry {
@@ -135,12 +146,15 @@ import js.html.CanvasElement;
 @:native("THREE.Mesh") extern class Mesh extends Object3D {
 	function new(geometry:BufferGeometry, material:Material);
 	var material:Material;
+	var geometry(default, null):BufferGeometry;
 }
 
 @:native("THREE.InstancedMesh") extern class InstancedMesh extends Mesh {
 	function new(geometry:BufferGeometry, material:Material, count:Int);
 	var instanceMatrix(default, null):BufferAttribute;
+	var instanceColor(default, null):Null<BufferAttribute>;
 	function setMatrixAt(index:Int, matrix:Matrix4):Void;
+	function setColorAt(index:Int, colour:Color):Void;
 }
 
 @:native("THREE.HemisphereLight") extern class HemisphereLight extends Object3D {

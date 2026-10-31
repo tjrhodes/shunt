@@ -24,6 +24,13 @@ class Paint {
 	public static inline final roofNumber = 0x111111;
 	public static inline final roofDisc = 0xf4f2ec;
 
+	// ---- Effects ----
+	public static inline final rubber = 0x0b0b0c;
+	public static inline final tyreSmoke = 0xc8ccd2;
+	public static inline final steam = 0xf3f5f7;
+	public static inline final engineSmoke = 0x2b2b2d;
+	public static final sparks = [0xfff1b8, 0xffd36b, 0xff9a3c];
+
 	/** Floodlight from above, and the glow of the infield below. */
 	public static inline final floodlight = 0xfff4e0;
 	public static inline final skyGlow = 0x8fa3c0;

@@ -11,13 +11,16 @@ import shunt.maths.Numbers.partWay;
 import shunt.maths.Numbers.wrapAngle;
 import shunt.maths.Vector;
 import shunt.race.Race;
-import shunt.race.RaceEvent.EventKind;
+import shunt.race.RaceEvent;
 import shunt.race.RaceState.Phase;
 import shunt.track.Track;
 import view.CarView;
 import view.OilView;
 import view.Paint;
 import view.World;
+import view.effects.Effects;
+
+using shunt.car.CarFrame;
 
 /** Where a car was at the end of a tick: enough to draw it between ticks. */
 typedef Pose = {
@@ -61,11 +64,13 @@ class Game {
 	final steps = new FixedSteps();
 	final carViews:Array<CarView>;
 	final oilView = new OilView();
+	final effects = new Effects();
 	var race:Race;
 	var drivers:Array<AiDriver>;
 	var posesBefore:Array<Pose>;
 	var mode = WaitingToStart;
 	var chosenTrack = 0;
+	var lastFrameTime = -1.0;
 
 	public function new(tracks:Array<Track>, page:PageParts) {
 		this.tracks = tracks;
@@ -77,6 +82,7 @@ class Game {
 		carViews = [for (livery in Paint.liveries) new CarView(livery)];
 		for (view in carViews) world.scene.add(view.whole);
 		world.scene.add(oilView.whole);
+		world.scene.add(effects.whole);
 		chooseTrack(0);
 		Browser.window.requestAnimationFrame(frame);
 	}
@@ -101,9 +107,14 @@ class Game {
 		panels.showStart(index);
 	}
 
-	/** One frame: run the ticks that are due (while racing), check for pause, and draw. */
+	/** One frame: run the ticks that are due and move the sparks and smoke on (while racing), check for pause, and draw. */
 	function frame(now:Float) {
-		if (mode == Racing) runTheTicksDue(now);
+		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
+		lastFrameTime = now;
+		if (mode == Racing) {
+			runTheTicksDue(now);
+			effects.animate(secondsSinceLastFrame);
+		}
 		if (controls.pauseWasJustPressed()) pressPause();
 		showEverything();
 		Browser.window.requestAnimationFrame(frame);
@@ -117,11 +128,22 @@ class Game {
 		}
 	}
 
-	/** Remembers where every car is, moves the race on a tick, and feels any hits. */
+	/** Remembers where every car is, moves the race on a tick, and shows what it left behind. */
 	function oneTick() {
 		posesBefore = posesNow();
 		race.step(everyonesInput());
-		for (event in race.events) if ((event.kind == CarHit || event.kind == WallHit) && involvesThePlayer(event.racer, event.other)) world.shakeFor(event.strength / hardestShake);
+		effects.afterTick(race);
+		for (event in race.events) if (event.kind == CarHit || event.kind == WallHit) feelTheHit(event);
+	}
+
+	/** A hit dents the cars in it, and shakes the view if the player's car was one of them. */
+	function feelTheHit(hit:RaceEvent) {
+		for (seat in [hit.racer, hit.other]) {
+			if (seat < 0) continue;
+			var car = race.racer(seat).car;
+			carViews[seat].dent(car.inCarTerms(hit.point - car.position), hit.strength);
+		}
+		if (involvesThePlayer(hit.racer, hit.other)) world.shakeFor(hit.strength / hardestShake);
 	}
 
 	/** The player's input for seat 0; each AI driver's for the others. */
@@ -151,6 +173,8 @@ class Game {
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
 		drivers = [for (seat in 1...race.state.racers.length) new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
 		posesBefore = posesNow();
+		effects.clear();
+		for (view in carViews) view.mendDents();
 	}
 
 	function startRacing() {

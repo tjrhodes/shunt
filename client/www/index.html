@@ -54,6 +54,10 @@
   }
   .plate-times .figure-value { font-size: 22px; min-width: 3.4ch; }
 
+  .damage-outline { width: 18px; height: 32px; align-self: center; }
+  .damage-body { fill: none; stroke: var(--ink-quiet); stroke-width: 1; }
+  .damage-zone { fill: color-mix(in srgb, var(--lamp-red) calc(var(--harm, 0) * 100%), var(--plate-edge)); }
+
   .lights {
     position: fixed; left: 50%; transform: translateX(-50%);
     top: calc(12px + env(safe-area-inset-top, 0px));
@@ -143,6 +147,6 @@
 <button id="pause-button" type="button" hidden></button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="shunt-39a60415.js" charset="utf-8"></script>
+<script src="shunt-c51fb0c4.js" charset="utf-8"></script>
 </body>
 </html>
