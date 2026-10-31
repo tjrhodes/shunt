@@ -10,4 +10,9 @@ package shunt;
 class Tick {
 	public static inline final perSecond = 120;
 	public static inline final seconds = 1 / perSecond;
+
+	/** How many ticks make up a number of seconds (to the nearest tick). */
+	public static inline function ticksIn(seconds:Float):Int {
+		return Math.round(seconds * perSecond);
+	}
 }

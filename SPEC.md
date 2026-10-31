@@ -34,9 +34,9 @@ One small, finished, fun race beats a big unfinished season.
 | Feature | Detail |
 |---|---|
 | Race | Four cars on the chosen track: the player and three AI drivers. Grid start, 3-2-1 lights, 5 laps. Finishing order by laps done, then distance round the lap. |
-| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
+| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD; holding a steering key turns harder, up to full after 0.6 s. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
 | Contact | Cars bump, push and spin each other. A tap on a rear quarter turns the car hit; a hit square from behind shoves it. Walls take speed off and send sparks. |
-| Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil that spins whoever drives over it. Damage lasts the whole race (section 4b). |
+| Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil, which takes away the grip of whoever drives over it. Walls are kinder than cars. Damage lasts the whole race (section 4b). |
 | Recover | A car stuck or facing the wrong way for 3 s is put back on the centreline at the nearest point, facing the right way, at walking pace. Also on a key (R / gamepad Y). |
 | HUD | Position (2nd / 4), lap (3 / 5), current and best lap time, a 3-2-1 start, a results table at the end with a Race again button. |
 | Camera | Fixed isometric view; the whole track fits on screen at any aspect ratio (so phase 2 needs no split screen). |
@@ -101,10 +101,33 @@ class and are **starting values to tune by feel**.
 |---|---|
 | Car body | 4.8 × 1.9 m, mass 1,400 kg, yaw inertia from the box |
 | Axles | 1.4 m in front of and 1.4 m behind the centre of mass |
-| Top speed | about 42 m/s (150 km/h), so a lap of the oval is about 11 s |
+| Top speed | about 46 m/s (165 km/h); with drag it tops out near 44 m/s |
 | 0–100 km/h | about 4 s |
-| Steering | ±30° when slow, narrowing to ±8° at top speed; the wheel turns at most 4 rad/s, so keys feel smooth |
-| Grip | rear a little more than front, even at full throttle, so a car pushed too far runs wide and settles rather than always spinning (found in the first checks: front-first grip spun the car at half lock); the rear still loses some grip under full throttle, so the tail can be kicked out |
+| Lifting off | engine braking (10,000 N with the accelerator right up, falling with the square of the lift so part throttle isn't held back): from top speed to 70 km/h in about 3 s |
+| Steering | ±30° when slow, narrowing to ±9° at top speed; the wheel turns at most 7 rad/s, so keys feel smooth but quick. Keys and touch build up: a third of the steering at first, full after 0.6 s held (in the browser's input, not the car: a gamepad stick is already gradual) |
+| Grip | front 1.6 g, rear 1.7 g: off the power a car pushed too far runs wide and settles. Full throttle takes 20 % of the rear's grip, so on the power the tail drifts round |
+| Sliding | a tyre past its best slip angle grips less, down to 80 % at twice that angle: what lets a drift happen and makes it something to hold |
+| Steadying | a helping hand, as arcade racers have: the car's turning is drawn towards what its front wheels ask for (at 4 per second), never more than the grip holds. A small correction stays small; countersteering catches a slide. Held near full lock at speed, the car may turn up to a quarter more than its grip holds, rotating into a slight drift: holding the steering turns harder |
+
+*Tuned 30 Oct after Tom's first drive:* steering felt heavy and then the car
+spun with no warning; a 0.3 s tap at top speed turned it 93° into a spin
+(now 20°, settling); lifting off took 1.3 km to slow from top speed to
+70 km/h (then about 200 m). Earlier grip had the front at 1.15 g and the rear
+at 1.3 g, with no sliding falloff and no steadying.
+
+*Second round, the same evening:* Tom asked for a bit more turning and more
+engine braking, and for steering that builds the longer a key is held.
+Grip up from 1.45/1.55 g, steering at top speed up from 6°, engine braking
+up from 5,000 N, and the key build added. Letting the steadying ask for
+more turning than the grip can hold was tried and dropped: a long held bend
+scrubbed round into a doughnut.
+
+*Third round, 31 Oct:* more turning with the steering held, more engine
+braking, and walls that cars slide along rather than spear into. Held full
+lock at speed may now turn beyond grip (faded out at low speed, where it
+made doughnuts); engine braking up from 7,500 N and gentler on part
+throttle; wall friction down from 0.6; smooth wall joints no longer count as
+ends.
 
 **Per tick, for each car:**
 
@@ -113,12 +136,15 @@ class and are **starting values to tune by feel**.
 2. **Velocity in the car's frame**: forward speed and sideways speed.
 3. **Tyre forces** (a bicycle model): the slip angle at each axle from its
    sideways speed (including the spin) against the forward speed; sideways
-   force grows with slip, up to the axle's grip limit, then stays there
-   (the car slides). Below 2 m/s the model blends into simple kinematic
-   steering, where the slip maths would be unstable.
-4. **Drive and drag**: engine force tapering to zero at top speed; brake
-   force; rolling resistance; air drag growing with speed squared.
-5. **Integrate** (semi-implicit Euler): speed, then position; spin, then
+   force grows with slip up to the axle's grip limit, then falls away to
+   its sliding grip (the car slides). Below 2 m/s the model blends into
+   simple kinematic steering, where the slip maths would be unstable.
+4. **Steadying**: a twist drawing the car's spin towards what its front
+   wheels ask for, never more than the grip allows at this speed.
+5. **Drive and drag**: engine force tapering to zero at top speed; brakes
+   and engine braking; rolling resistance; air drag growing with speed
+   squared.
+6. **Integrate** (semi-implicit Euler): speed, then position; spin, then
    heading.
 
 **Contact.** Each car is an oriented box.
@@ -129,8 +155,13 @@ class and are **starting values to tune by feel**.
   rather than being scripted). The cars are pushed apart by 80 % of the
   overlap so they never sink into each other.
 - *Car against wall*: each box corner against the wall segments, and each
-  wall's end points against the box (so a car's side hitting the end of a
-  barrier is caught too); restitution 0.2, sliding friction 0.6, the same
+  wall end that sticks out (a barrier's free tip, or a corner where a wall
+  turns by more than 30°) against the box, so a car's side hitting the end
+  of a barrier is caught too. Joints where a wall carries on smoothly are
+  not ends: treating them as ends pushed a car straight back along its
+  length and stopped it dead, which made it spear into the oval's wall
+  (found on Tom's third drive). Restitution 0.2, sliding friction 0.3 (a
+  top-speed graze keeps about three quarters of the speed), the same
   push-out.
 - Each contact adds a `RaceEvent` with its point and strength, for sparks,
   sound and screen shake.
@@ -147,10 +178,18 @@ and are starting values to tune by feel.
 
 **Taking damage.** Each car has four zones: front, rear, left, right, each
 0–100. A contact's impulse is turned into a change of speed for the car hit
-(impulse ÷ mass). Below 3 m/s nothing happens, so nudges and trading paint
-cost nothing. Above it, damage = 4 points per m/s over the threshold, put on
-the zone facing the contact point. Walls count the same as cars. A zone stops
-at 100. Damage lasts the whole race; recovering (section 1) doesn't repair.
+(impulse ÷ mass). From another car: below 3 m/s nothing happens, so nudges
+and trading paint cost nothing; above it, 4 points per m/s over. Walls are
+kinder, since scraping one is part of short-track racing: below 6 m/s
+nothing, then 1.5 points per m/s (a 15° graze at top speed is about
+13 m/s, so about 10 points). The damage goes on the side the hit came from,
+the opposite way to the shove: a graze shoves a car sideways, so it marks
+the side, not the front. A zone stops at 100. Damage lasts the whole race;
+recovering (section 1) doesn't repair.
+
+*Tuned 30 Oct after Tom's first drive:* a few grazes broke the steering and
+started oil. Walls counted the same as cars (a graze did about 40 points),
+and a hit near a corner counted as the front.
 
 The car's **overall damage** is the average of the zones, weighted towards
 the worst one (half the worst zone plus half the average), so one smashed
@@ -161,17 +200,19 @@ corner matters.
 | Effect | From | Start value |
 |---|---|---|
 | Less speed | overall damage | top speed and engine force fall by up to 25 % at 100; never lower, so a wreck can always finish |
-| Steering pull | front damage above 40, towards the more damaged side | up to 4° of steering at 100, which the driver has to hold against; feels like a bent track rod |
-| Less steering | front damage above 60 | the most steering falls by up to 30 % at 100 |
-| Oil | overall damage above 70 ("badly damaged") | see below |
+| Steering pull | front damage above 50, towards the more damaged side | up to 4° of steering at 100, which the driver has to hold against; feels like a bent track rod |
+| Less steering | front damage above 70 | the most steering falls by up to 30 % at 100 |
+| Oil | overall damage above 80 ("badly damaged") | see below |
 
 **Oil.** A badly damaged car drops an oil patch every now and again, not all
 the time: the gap between drops is random, 4–10 s (from the race's seeded
 random numbers, so it replays the same), shorter as damage rises. A patch is
-a circle of about 1.5 m radius on the track under the car's rear, lasting
+a circle of about 2 m radius on the track under the car's rear, lasting
 20 s and fading over its last 5 s. A car whose wheels are on oil has their
-grip cut to 30 % (axle by axle, so rear wheels on oil spin the car, front
-wheels on oil make it run wide). At most 6 patches on the track at once; the
+grip cut to 30 % (axle by axle). Oil only takes grip away: going straight
+over it, nothing happens; in a bend, the car slides wide, and with the power
+on the tail can come round. (For a few hours it also swung the tail round
+by itself, which spun cars regardless; Tom found that too much.) At most 6 patches on the track at once; the
 oldest goes first. The car that dropped it is caught by its own oil too.
 
 **AI and damage.** AI drivers see oil patches ahead and steer round them,
@@ -179,7 +220,7 @@ with a chance of missing them that falls with skill. A damaged AI drives to
 its car's lower top speed and holds against the pull, as a player does.
 
 **Showing it** (section 10): dents at the contact point, steam from the bonnet
-over 40 front damage, smoke above 70 overall, a dark sheen on oil patches, and
+over 50 front damage, smoke above 80 overall, a dark sheen on oil patches, and
 a small car outline in the HUD with each zone shaded by its damage.
 
 ## 5. Tracks
@@ -189,16 +230,37 @@ and odd shapes, not just ovals. So the track format takes **any layout**,
 and phase 1 ships two tracks:
 
 1. **Oval**: a short oval about 400 m round (a quarter mile, the classic
-   short track), about 150 × 60 m, three cars wide (14 m). Built first, to
+   short track): two 100 m straights and two bends of 32 m radius (25 m at
+   first, too tight for the speed), about 165 × 78 m, three cars wide (14 m). Built first, to
    tune the physics on.
 2. **A whacky one**: short free-standing walls dropped onto a wide arena to
    make S-bends, a chicane and a hairpin, with a narrow gap where cars have
    to queue and bump. Designed once the oval drives well.
 
-A figure-of-eight with a crossing comes after phase 1 (the same format
-handles it: the crossing is just two stretches of centreline that meet).
+A figure-of-eight with a crossing comes after phase 1.
 
-Each track is one JSON file (`tracks/oval.json`, …) holding:
+**Inspiration (Tom's screenshots of the original's tracks, 31 Oct, in his
+`Pictures/shunt`):** three families. *Arena mazes*: an open box, sometimes
+hexagonal, with thin fences inside making spirals, combs that zigzag back
+and forth, and serpentines; the fences are the track. *Flowing circuits*:
+thick-walled roads round a raised infield, in S, G, kidney and snake
+shapes. *Crossings*: an hourglass that crosses itself in the middle.
+Dressed with billboards, trees, flags and crowd stands, and textured
+infields. Phase 1's whacky track should be an arena maze (a serpentine or
+a comb).
+
+**What that asks of the format:** today the edge walls are built from the
+centreline and its width, which suits flowing circuits. Mazes and
+crossings need their walls written out directly (an arena outline, fences,
+and gaps where a crossing passes through), with the centreline only
+guiding laps, recovery and the AI. So a track file will be able to list
+its own walls and say not to build edge walls; the oval keeps working as
+it is.
+
+Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
+a few points round the centreline (each with the track's width there) and
+the barriers; the rest below is worked out from those when the track loads,
+so nothing is written twice:
 - **centreline**: a closed list of points, smoothed into a curve when loaded,
   with a distance along it, used for progress, recovery and the AI;
 - **width** at each centreline point (tracks can pinch and widen), and the
@@ -207,14 +269,14 @@ Each track is one JSON file (`tracks/oval.json`, …) holding:
   points (a straight wall, an L, a curve), placed anywhere, inside the track
   or across it. These make the S-bends and chicanes. The physics sees edge
   walls and barriers alike, as segments;
-- **start line** and **grid**: four slots, two by two, staggered;
+- **start line** (where the centreline starts) and **grid**: four slots behind it, one car per row, alternating sides;
 - **checkpoints**: a car's lap only counts once it has passed them in order
   (no cutting across the infield or round the wrong side of a barrier, no
   reversing over the line);
-- **racing line**: the AI's preferred path, with a target speed at each point.
-  Worked out from the centreline and barriers by a small tool
-  (`tools/racing-line`), then hand-tweaked in the JSON if needed, so the AI
-  copes with any layout.
+- **racing line**: the fastest safe speed at each point, from how sharply
+  the centreline bends there and the braking needed before each bend
+  (`RacingLine`), so the AI copes with any layout. The AI follows the
+  centreline, each driver in its own lane, going round cars and oil.
 
 Track geometry, barriers, the infield and the surroundings are all drawn
 from the same file, so a new track is a new JSON file plus scenery. Barriers
@@ -257,17 +319,17 @@ The simulation is checked headlessly (Node, no browser), as bümbap's engine is:
 
 | Check | Pass |
 |---|---|
-| Straight line | Full throttle from rest reaches 100 km/h in 3.5–4.5 s and tops out near 42 m/s |
+| Straight line | Full throttle from rest reaches 100 km/h in 3.5–4.5 s and tops out just under top speed |
 | Braking | From top speed, stops in a set distance; never goes backwards on brake alone until stopped |
 | Corner | At the racing line's target speed, a car on the line stays within 1 m of it |
 | Contact | A head-on and a side hit conserve momentum within 1 %; no overlap remains after the push-out |
 | Walls | 10,000 random fast approaches: no car ends up outside the walls |
 | Laps | Laps counted only in order; cutting the infield or reversing over the line counts nothing |
-| AI | On each track, four AI cars finish 100 seeded 5-lap races, none recovered more than twice per race |
+| AI | On each track, four AI cars race 100 seeded 5-lap races: every car not badly damaged reaches the last lap (the 10 s after the leader can stop the last finishing), but for at most 1 in 100 caught in a racing incident; none put back more than three times in a race |
 | Barriers | 10,000 random fast approaches to each barrier, end-on and side-on: no car passes through |
-| Damage threshold | A 2.5 m/s nudge adds no damage; a 10 m/s hit adds about 28 to the zone hit, and only that zone |
+| Damage threshold | A nudge under the harmless limit adds no damage; a 10 m/s hit from a car adds 28 to the side hit, and only that side; a graze marks the side, not the front; a top-speed graze along a wall does under a third of what a car would, and under a third of what bends the steering |
 | Damage effects | At 100 overall the top speed is 75 % of new; the steering pull is to the damaged side; a car never stops being drivable |
-| Oil | No oil below 70 overall; drops 4–10 s apart above it; a car crossing a patch at speed spins (heading changes by over 90° within 2 s) |
+| Oil | No oil below 80 overall; drops 4–10 s apart above it; going straight over oil doesn't turn a car; in a bend, the oily car turns less and slides more than a clean one |
 | Repeatable | The same seed and inputs give a byte-identical final state |
 | Copy | `copyState`, step, `restoreState`, step again: identical states |
 
@@ -305,9 +367,13 @@ The whole-track camera means no split screen. No changes to the simulation.
 
 - **three.js through Haxe externs** (decided 30 Oct: employers recognise it,
   its docs and examples are vast, and it keeps the "Haxe with the JS
-  ecosystem" story). Only the externs the game uses are written, kept in
-  `client/externs/`. An orthographic camera at a true isometric angle
-  (45° round, 35.26° down).
+  ecosystem" story). Only the externs the game uses are written, in
+  `client/src/three/`. For now the page loads three.js r128, its last build
+  with a global `THREE`, from cdnjs; moving to a current version as an ES
+  module is a later step. An orthographic camera at the isometric angle
+  (35.26° down), looking from whichever way round (in 15° steps) fills the
+  screen best, so the oval lies across a wide screen and stands up on a
+  phone.
 - **Dents**: the car body is a low-poly mesh; a contact pushes in the
   vertices near its point, scaled by the damage it did. Drawn only, never fed
   back into the physics (the simulation's damage zones are the truth).
@@ -362,8 +428,8 @@ shunt/
   SPEC.md          this file
   sim/             shared Haxe simulation (src/, test/)
   tracks/          oval.json, the whacky track (and later more)
-  tools/           racing-line: works out the AI's line for a track
-  client/          Haxe browser client: render, input, audio, HUD
+  tools/           make-oval.py (writes tracks/oval.json), check-lengths.py
+  client/          Haxe browser client: render, input, HUD (src/), the page (www/)
   assets/          glTF models, sounds
   server/          phase 3: the TypeScript Colyseus room
   tests/           Playwright browser checks

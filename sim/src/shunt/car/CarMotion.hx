@@ -46,7 +46,7 @@ class CarMotion {
 	 * follows its front on a circle set by the wheelbase and the wheel angle.
 	 * Wheels turned right make the car turn clockwise, so the sign is turned round.
 	 */
-	static function spinOfRollingWheels(car:Car):Float {
+	public static function spinOfRollingWheels(car:Car):Float {
 		return -car.forwardSpeed() * Math.tan(car.wheelAngle) / Tuning.wheelbase;
 	}
 }

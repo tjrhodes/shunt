@@ -1,4 +1,4 @@
-# On every push and pull request: the 15-line rule, then every check of the simulation (SPEC.md §8).
+# On every push and pull request: the 15-line rule, every check of the simulation (SPEC.md §8), and the game's build.
 name: Build and test
 
 on:
@@ -24,8 +24,12 @@ jobs:
           echo "HAXE_STD_PATH=$haxe_dir/std" >> "$GITHUB_ENV"
 
       - name: Functions of at most 15 lines
-        run: python3 tools/check-lengths.py sim tools
+        run: python3 tools/check-lengths.py sim client/src tools
 
       - name: The simulation's checks
         working-directory: sim
         run: haxe test.hxml
+
+      - name: The browser game builds
+        working-directory: client
+        run: haxe build.hxml

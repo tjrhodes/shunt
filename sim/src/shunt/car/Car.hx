@@ -1,5 +1,6 @@
 package shunt.car;
 
+import shunt.car.Damage.DamageZones;
 import shunt.maths.Vector;
 
 /**
@@ -29,6 +30,9 @@ typedef Car = {
 
 	/** How far down the accelerator is, 0 to 1 (it follows the driver's foot smoothly). */
 	var throttle:Float;
+
+	/** How battered each side is (SPEC.md §4b). */
+	var damage:DamageZones;
 }
 
 /** Making cars, and copying them. */
@@ -41,13 +45,14 @@ class Cars {
 			velocity: Vector.nothing(),
 			spin: 0,
 			wheelAngle: 0,
-			throttle: 0
+			throttle: 0,
+			damage: Damage.none
 		};
 	}
 
 	/**
 	 * A separate car exactly like this one. A shallow copy is enough because
-	 * every field is a number or an arrow, and arrows never change.
+	 * every field is a number, or an arrow or damage, which never change.
 	 */
 	public static function copyOf(car:Car):Car {
 		return Reflect.copy(car);

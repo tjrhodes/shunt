@@ -1,0 +1,16 @@
+# The browser game: the shared simulation plus the client, one script.
+# Build: haxe build.hxml   (from this folder; needs Python 3 for the last step)
+# Then serve the www folder (e.g. python3 -m http.server -d www) and open it.
+
+-cp ../sim/src
+-cp src
+-D js-es=6
+-dce full
+-main Main
+-js www/shunt.js
+
+# The track files sit beside the page, so the game fetches the same JSON the checks read.
+--cmd mkdir -p www/tracks && cp ../tracks/*.json www/tracks/
+
+# The script gets a name from its contents (shunt-1a2b3c4d.js), so browsers never run an old copy.
+--cmd python3 ../tools/fingerprint-script.py www

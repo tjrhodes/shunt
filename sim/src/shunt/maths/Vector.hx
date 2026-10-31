@@ -59,4 +59,35 @@ abstract Vector(VectorData) from VectorData to VectorData {
 	public inline function turnedLeft():Vector {
 		return new Vector(-this.y, this.x);
 	}
+
+	/**
+	 * How much this arrow turns the other one anticlockwise (a 2D cross
+	 * product): for an arrow from a car's middle to where it is pushed, how
+	 * much the push will spin the car.
+	 */
+	public inline function turning(other:Vector):Float {
+		return this.x * other.y - this.y * other.x;
+	}
+
+	/** The same direction, one long (or no arrow at all, if it had no length). */
+	public function lengthOne():Vector {
+		var howLong = length();
+		return howLong > 0 ? times(1 / howLong) : nothing();
+	}
+
+	/** The angle this arrow points at, anticlockwise from east. */
+	public inline function angle():Float {
+		return Math.atan2(this.y, this.x);
+	}
+
+	/** How far apart two places are. */
+	public inline function distanceTo(other:Vector):Float {
+		return minus(other).length();
+	}
+
+	/** How far apart two places are, squared: quicker, and enough to tell which is nearer. */
+	public inline function distanceSquaredTo(other:Vector):Float {
+		var gap = minus(other);
+		return gap.along(gap);
+	}
 }

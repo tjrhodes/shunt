@@ -38,11 +38,18 @@ class CarTuning {
 
 	// ---- Engine, brakes and air ----
 
-	/** About 150 km/h. A lap of the oval takes about 11 s. */
-	public static inline final topSpeed = 42.0;
+	/** About 165 km/h (with drag, it tops out a little under). */
+	public static inline final topSpeed = 46.0;
 
 	/** The engine's pull at a standstill; it fades to nothing at top speed. Gives 0–100 km/h in about 4 s. */
-	public static inline final enginePull = 16000.0;
+	public static inline final enginePull = 15500.0;
+
+	/**
+	 * Lifting off the accelerator slows the car too: the engine holds it
+	 * back (engine braking), with this force when the pedal is fully up, and
+	 * a quarter of it at half throttle (it goes with the square of the lift).
+	 */
+	public static inline final engineBraking = 10000.0;
 
 	/** Reverse is slow and weak, as it should be. */
 	public static inline final reverseTopSpeed = 8.0;
@@ -64,10 +71,10 @@ class CarTuning {
 
 	/** Full lock when slow, much less at speed, so a held key doesn't spin the car at 150 km/h. */
 	public static final mostSteeringWhenSlow = degrees(30);
-	public static final mostSteeringAtTopSpeed = degrees(8);
+	public static final mostSteeringAtTopSpeed = degrees(9);
 
 	/** How fast the front wheels turn (radians per second): keys are on or off, cars shouldn't be. */
-	public static inline final wheelTurnRate = 4.0;
+	public static inline final wheelTurnRate = 7.0;
 
 	/** How fast the accelerator goes down or up: from none to full in a quarter of a second. */
 	public static inline final throttleRate = 4.0;
@@ -76,14 +83,20 @@ class CarTuning {
 
 	/**
 	 * How hard each axle's tyres can push sideways, as a share of the weight
-	 * on them (1.15 means 1.15 g). The rear grips a little more than the
-	 * front, even at full throttle: when a car is pushed past its grip, the
-	 * end that lets go first decides what happens. Front first, and it runs
-	 * wide and settles; rear first, and it spins round every time, which is
-	 * no fun on a keyboard. Contact and oil still spin cars (SPEC.md §4).
+	 * on them (1.6 means 1.6 g). Off the power the rear grips a little more
+	 * than the front, so a car pushed too far runs wide and settles; on the
+	 * power the rear loses some grip (`rearGripLostToThrottle`) and the tail
+	 * can drift round.
 	 */
-	public static inline final frontGrip = 1.15;
-	public static inline final rearGrip = 1.3;
+	public static inline final frontGrip = 1.6;
+	public static inline final rearGrip = 1.7;
+
+	/**
+	 * Once a tyre is really sliding it grips less than at its best: this
+	 * share, reached at twice the slip of its best grip. That is what lets a
+	 * drift happen, and makes it something to hold rather than a fixed line.
+	 */
+	public static inline final gripWhenSliding = 0.8;
 
 	/**
 	 * The slip angle (between where a tyre points and where it is going) at
@@ -93,7 +106,23 @@ class CarTuning {
 	public static final slipAtMostGrip = degrees(7);
 
 	/** Full throttle takes this share of the rear grip away, so the tail can be kicked out (power oversteer). */
-	public static inline final rearGripLostToThrottle = 0.1;
+	public static inline final rearGripLostToThrottle = 0.2;
+
+	/**
+	 * A helping hand, as arcade racers have: how quickly (per second) the
+	 * car's turning settles towards what its front wheels ask for. It stops a
+	 * small correction growing into a spin, and makes countersteering catch a
+	 * slide; drift is still there, but it goes where the wheels point.
+	 */
+	public static inline final steadying = 4.0;
+
+	/**
+	 * Steering held at full lock lets the car turn this much more than its
+	 * grip can hold (0.25 is a quarter more), building from `extraTurnFromLock`
+	 * of full lock. Keys and touch reach full lock by being held.
+	 */
+	public static inline final extraTurnAtFullLock = 0.25;
+	public static inline final extraTurnFromLock = 0.75;
 
 	/**
 	 * Below this speed (m/s) the tyre sums get jumpy, so the car rolls where
