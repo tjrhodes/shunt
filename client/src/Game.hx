@@ -18,6 +18,7 @@ import view.CarView;
 import view.OilView;
 import view.Paint;
 import view.World;
+import sound.Sound;
 import view.effects.Effects;
 
 using shunt.car.CarFrame;
@@ -65,6 +66,7 @@ class Game {
 	final carViews:Array<CarView>;
 	final oilView = new OilView();
 	final effects = new Effects();
+	final sound = new Sound();
 	var race:Race;
 	var drivers:Array<AiDriver>;
 	var posesBefore:Array<Pose>;
@@ -93,6 +95,7 @@ class Game {
 			start: startRacing,
 			resume: startRacing,
 			restart: raceAgain,
+			toggleSound: toggleSound,
 			raceAgain: raceAgain,
 			changeTrack: () -> chooseTrack(chosenTrack)
 		};
@@ -116,6 +119,7 @@ class Game {
 			effects.animate(secondsSinceLastFrame);
 		}
 		if (controls.pauseWasJustPressed()) pressPause();
+		if (controls.muteWasJustPressed()) toggleSound();
 		showEverything();
 		Browser.window.requestAnimationFrame(frame);
 	}
@@ -124,6 +128,7 @@ class Game {
 		for (_ in 0...steps.ticksDue(now)) oneTick();
 		if (race.state.phase == Finished) {
 			mode = RaceOver;
+			sound.rest();
 			panels.showResults(race);
 		}
 	}
@@ -133,6 +138,7 @@ class Game {
 		posesBefore = posesNow();
 		race.step(everyonesInput());
 		effects.afterTick(race);
+		for (event in race.events) sound.hear(event);
 		for (event in race.events) if (event.kind == CarHit || event.kind == WallHit) feelTheHit(event);
 	}
 
@@ -162,6 +168,7 @@ class Game {
 			carViews[seat].show(race.racer(seat).car, heading, before.position + (after.position - before.position) * share);
 		}
 		oilView.show(race.state.oil);
+		if (mode == Racing) sound.follow(race);
 		hud.update(race);
 		world.draw();
 	}
@@ -177,8 +184,10 @@ class Game {
 		for (view in carViews) view.mendDents();
 	}
 
+	/** Racing (again): sound wakes up too (the first time, the press of Start is what browsers wait for). */
 	function startRacing() {
 		mode = Racing;
+		sound.wake(carViews.length);
 		steps.startAfresh();
 		panels.hideAll();
 		Browser.document.body.focus();
@@ -193,8 +202,16 @@ class Game {
 	function pressPause() {
 		if (mode == Racing) {
 			mode = Paused;
+			sound.rest();
+			panels.showSoundAs(sound.isOn);
 			panels.showPause();
 		} else if (mode == Paused) startRacing();
+	}
+
+	/** Sound off, or back on, from a key, a pad button or the pause panel. */
+	function toggleSound() {
+		sound.toggle();
+		panels.showSoundAs(sound.isOn);
 	}
 
 	function posesNow():Array<Pose> {

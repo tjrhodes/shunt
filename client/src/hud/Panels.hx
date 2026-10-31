@@ -13,6 +13,7 @@ typedef PanelActions = {
 	final start:() -> Void;
 	final resume:() -> Void;
 	final restart:() -> Void;
+	final toggleSound:() -> Void;
 	final raceAgain:() -> Void;
 	final changeTrack:() -> Void;
 }
@@ -29,6 +30,7 @@ class Panels {
 	final resultsPanel:Element;
 	final resultsTable:Element;
 	final trackButtons:Array<Element>;
+	final soundButton:Element;
 
 	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions) {
 		this.holder = holder;
@@ -38,12 +40,18 @@ class Panels {
 		Dom.button(Words.start, "button button-go", startPanel, actions.start);
 		for (line in Words.howToDrive) Dom.make("p", "panel-help", line, startPanel);
 		pausePanel = panel(Words.paused, "panel-pause");
-		Dom.button(Words.resume, "button button-go", pausePanel, actions.resume);
-		Dom.button(Words.restart, "button", pausePanel, actions.restart);
+		soundButton = pauseButtonsIn(pausePanel, actions);
 		resultsPanel = panel(Words.results, "panel-results");
 		resultsTable = Dom.make("ol", "results", null, resultsPanel);
 		Dom.button(Words.raceAgain, "button button-go", resultsPanel, actions.raceAgain);
 		Dom.button(Words.changeTrack, "button", resultsPanel, actions.changeTrack);
+	}
+
+	/** Resume, restart and the sound button, in the pause panel; returns the sound button. */
+	function pauseButtonsIn(pausePanel:Element, actions:PanelActions):Element {
+		Dom.button(Words.resume, "button button-go", pausePanel, actions.resume);
+		Dom.button(Words.restart, "button", pausePanel, actions.restart);
+		return Dom.button(Words.soundIsOn, "button", pausePanel, actions.toggleSound);
 	}
 
 	/** The start panel, with the track chosen marked. */
@@ -62,6 +70,12 @@ class Panels {
 
 	public function showPause() {
 		showOnly(pausePanel);
+	}
+
+	/** The pause panel's sound button says whether sound is on. */
+	public function showSoundAs(isOn:Bool) {
+		Dom.setText(soundButton, isOn ? Words.soundIsOn : Words.soundIsOff);
+		soundButton.setAttribute("aria-pressed", '$isOn');
 	}
 
 	public function hideAll() {

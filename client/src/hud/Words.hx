@@ -7,6 +7,8 @@ class Words {
 	public static inline final start = "Start the race";
 	public static inline final raceAgain = "Race again";
 	public static inline final changeTrack = "Change track";
+	public static inline final soundIsOn = "Sound: on";
+	public static inline final soundIsOff = "Sound: off";
 	public static inline final track = "Track";
 	public static inline final resume = "Resume";
 	public static inline final restart = "Restart";
@@ -23,8 +25,8 @@ class Words {
 
 	/** How to drive, one line per way of driving. */
 	public static final howToDrive = [
-		"Keyboard: arrows or WASD; hold a steering key longer to turn harder. R puts you back on the track. Esc pauses.",
-		"Gamepad: right trigger to go, left trigger to brake, stick to steer.",
+		"Keyboard: arrows or WASD; hold a steering key longer to turn harder. R puts you back on the track. Esc pauses. M turns the sound off or on.",
+		"Gamepad: right trigger to go, left trigger to brake, stick to steer. Select turns the sound off or on.",
 		"Touch: hold the left or right side to steer. You accelerate on your own; the pad brakes."
 	];
 
