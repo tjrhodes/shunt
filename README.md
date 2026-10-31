@@ -14,7 +14,9 @@ The plan is in [SPEC.md](SPEC.md).
 
 Phase 1: races on two tracks (an oval and an arena maze, the Serpentine)
 against three AI cars, with contact, damage and oil, in low-poly 3D. The
-driving is tuned. Under way: sound, effects and the design pass.
+driving is tuned, and it has skid marks, smoke, sparks and dents, sound made
+live in the browser, and scenery round every track. Next: same-screen
+multiplayer (phase 2).
 
 ## Playing it
 
