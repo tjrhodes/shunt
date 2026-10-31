@@ -19,7 +19,22 @@ live in the browser, and scenery round every track.
 
 Phase 2: up to four people on one screen, two on the keyboard (WASD and
 the arrows) and the rest on gamepads; press go on yours on the start
-screen to take a seat. AI drivers fill the rest. Next: online (phase 3).
+screen to take a seat. AI drivers fill the rest.
+
+Phase 3: online, at shunt.tomrhodes.it: a quick match, or a room of your
+own with a link to send friends. Everyone at your computer comes too.
+
+## Running the server
+
+The server serves the page and runs the online rooms (needs Node 22):
+
+```sh
+cd client && haxe build.hxml && cd ../server
+npm ci
+npm run build && npm start            # then open http://127.0.0.1:2567
+```
+
+To put it on the VPS: `deploy/deploy.sh you@your-vps [ssh-port]`.
 
 ## Playing it
 

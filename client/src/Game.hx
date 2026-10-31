@@ -1,35 +1,19 @@
-import hud.Hud;
 import hud.Panels;
-import hud.Panels.PanelActions;
-import input.Controller;
+import hud.Words;
 import input.Controls;
-import seats.Lineup;
 import js.Browser;
+import online.HowToJoin;
+import online.OnlineRace;
+import online.OnlineServer;
+import seats.Lineup;
 import shunt.ai.AiDriver;
 import shunt.ai.DriverCharacter;
 import shunt.ai.RacingLine;
 import shunt.car.CarInput;
-import shunt.maths.Numbers.partWay;
-import shunt.maths.Numbers.wrapAngle;
-import shunt.maths.Vector;
+import shunt.online.Pose;
 import shunt.race.Race;
-import shunt.race.RaceEvent;
-import shunt.race.RaceState.Phase;
 import shunt.track.Track;
-import view.CarView;
-import view.OilView;
 import view.Paint;
-import view.World;
-import sound.Sound;
-import view.effects.Effects;
-
-using shunt.car.CarFrame;
-
-/** Where a car was at the end of a tick: enough to draw it between ticks. */
-typedef Pose = {
-	final position:Vector;
-	final heading:Float;
-}
 
 /** What the game is doing. */
 enum GameMode {
@@ -37,6 +21,9 @@ enum GameMode {
 	Racing;
 	Paused;
 	RaceOver;
+
+	/** In an online room: `OnlineRace` runs things until it is left. */
+	Online;
 }
 
 /** The parts of the page the game draws into. */
@@ -49,27 +36,21 @@ typedef PageParts = {
 }
 
 /**
- * The game in the browser (SPEC.md §1, §9): one race at a time on the track
- * chosen, with people in the seats they joined (or one person alone) and AI
- * drivers in the rest, drawn every frame between the last two ticks. Everything about the race itself is in
- * the shared simulation; this only feeds it inputs and shows what it does.
+ * The game in the browser (SPEC.md §1, §9). On this computer: one race at
+ * a time on the track chosen, people in the seats they took (or one person
+ * alone) and AI drivers in the rest, drawn every frame between the last two
+ * ticks. Online, `OnlineRace` takes over until the room is left. Everything
+ * about a race itself is in the shared simulation; this only feeds it
+ * inputs and shows what it does.
  */
 class Game {
-	/** A hit on the player's car this hard (m/s change of speed) or harder shakes the view fully. */
-	static inline final hardestShake = 12.0;
-
 	final tracks:Array<Track>;
 	final racingLines:Array<RacingLine>;
-	final world:World;
-	final hud:Hud;
+	final show:Show;
 	final panels:Panels;
 	final controls:Controls;
 	final lineup = new Lineup(Paint.liveries.length);
 	final steps = new FixedSteps();
-	final carViews:Array<CarView>;
-	final oilView = new OilView();
-	final effects = new Effects();
-	final sound:Sound;
 	var race:Race;
 
 	/** The AI driver in each seat, or nothing where a person drives. */
@@ -78,122 +59,99 @@ class Game {
 	var mode = WaitingToStart;
 	var chosenTrack = 0;
 	var lastFrameTime = -1.0;
+	var online:Null<OnlineRace> = null;
 
 	public function new(tracks:Array<Track>, page:PageParts) {
 		this.tracks = tracks;
 		racingLines = tracks.map(track -> new RacingLine(track));
-		world = new World(page.stage);
-		hud = new Hud(page.hud, lineup.seats);
+		show = new Show(page.stage, page.hud, isOneOfOurs);
 		panels = new Panels(page.panels, tracks, panelActions());
 		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
-		sound = new Sound(lineup.isHuman);
-		carViews = [for (livery in Paint.liveries) new CarView(livery)];
-		for (view in carViews) world.scene.add(view.whole);
-		world.scene.add(oilView.whole);
-		world.scene.add(effects.whole);
 		chooseTrack(0);
+		OnlineServer.lookForOne().then(isThere -> if (isThere) panels.offerOnline(OnlineServer.invitation() != null));
 		Browser.window.requestAnimationFrame(frame);
 	}
 
+	/** Every button does the same thing on this computer and online, where it means asking the room. */
 	function panelActions():PanelActions {
 		return {
-			chooseTrack: chooseTrack,
-			start: startRacing,
-			resume: startRacing,
+			chooseTrack: index -> mode == Online ? online.chooseTrack(index) : chooseTrack(index),
+			start: () -> mode == Online ? online.startRace() : startRacing(),
+			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
 			restart: raceAgain,
 			toggleSound: toggleSound,
-			raceAgain: raceAgain,
-			changeTrack: () -> chooseTrack(chosenTrack)
+			raceAgain: () -> mode == Online ? online.startRace() : raceAgain(),
+			changeTrack: () -> chooseTrack(chosenTrack),
+			quickMatch: () -> goOnline(QuickMatch),
+			raceFriends: () -> goOnline(NewRoom),
+			joinFriends: () -> goOnline(RoomById(OnlineServer.invitation())),
+			leave: () -> if (online != null) online.leave()
 		};
 	}
+
+	/** Whether a person here drives a seat (online: one of this browser's seats). */
+	function isOneOfOurs(seat:Int):Bool {
+		return mode == Online ? online.isOurs(seat) : lineup.isHuman(seat);
+	}
+
+	// ---- On this computer ----
 
 	/** Shows a track with the cars on its grid, waiting for the start. */
 	function chooseTrack(index:Int) {
 		chosenTrack = index;
-		world.showTrack(tracks[index]);
+		show.showTrack(tracks[index]);
 		lineUpANewRace();
 		mode = WaitingToStart;
-		panels.showSeats(lineup);
-		panels.showStart(index);
+		panels.showStart(index, seatLooks());
 	}
 
-	/** One frame: run the ticks that are due and move the sparks and smoke on (while racing), check for pause, and draw. */
+	/** One frame: the ticks due and the sparks and smoke moved on (while racing), the presses that happen once, and drawing. */
 	function frame(now:Float) {
 		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
 		lastFrameTime = now;
-		if (mode == Racing) {
-			runTheTicksDue(now);
-			effects.animate(secondsSinceLastFrame);
-		}
-		if (mode == WaitingToStart) takeSeats();
+		if (mode == WaitingToStart || (mode == Online && online.isBetweenRaces())) takeSeats();
+		if (mode == Online) online.frame(now, secondsSinceLastFrame);
+		else frameOnThisComputer(now, secondsSinceLastFrame);
 		if (controls.pauseWasJustPressed()) pressPause();
 		if (controls.muteWasJustPressed()) toggleSound();
 		if (controls.confirmWasJustPressed()) pressYes();
-		showEverything();
 		Browser.window.requestAnimationFrame(frame);
 	}
 
-	function runTheTicksDue(now:Float) {
-		for (_ in 0...steps.ticksDue(now)) oneTick();
-		if (race.state.phase == Finished) {
-			mode = RaceOver;
-			sound.rest();
-			panels.showResults(race, lineup);
+	function frameOnThisComputer(now:Float, secondsSinceLastFrame:Float) {
+		if (mode == Racing) {
+			for (_ in 0...steps.ticksDue(now)) oneTick();
+			show.animate(secondsSinceLastFrame);
+			if (race.state.phase == Finished) finished();
 		}
+		showEverything();
 	}
 
 	/** Remembers where every car is, moves the race on a tick, and shows what it left behind. */
 	function oneTick() {
-		posesBefore = posesNow();
-		race.step(everyonesInput());
-		effects.afterTick(race);
-		for (event in race.events) sound.hear(event);
-		for (event in race.events) if (event.kind == CarHit || event.kind == WallHit) feelTheHit(event);
+		posesBefore = Poses.of(race.state);
+		race.step([for (seat in 0...race.state.racers.length) inputFor(seat)]);
+		show.afterTick(race);
 	}
 
-	/** A hit dents the cars in it, and shakes the view if the player's car was one of them. */
-	function feelTheHit(hit:RaceEvent) {
-		for (seat in [hit.racer, hit.other]) {
-			if (seat < 0) continue;
-			var car = race.racer(seat).car;
-			carViews[seat].dent(car.inCarTerms(hit.point - car.position), hit.strength);
-		}
-		if (lineup.isHuman(hit.racer) || (hit.other >= 0 && lineup.isHuman(hit.other))) world.shakeFor(hit.strength / hardestShake);
-	}
-
-	/** Each seat's input: from its person's controllers, or from its AI driver. */
-	function everyonesInput():Array<CarInput> {
-		return [for (seat in 0...race.state.racers.length) inputFor(seat)];
-	}
-
+	/** A seat's input: from its person's controllers, or from its AI driver. */
 	function inputFor(seat:Int):CarInput {
 		var driver = drivers[seat];
 		return driver != null ? driver.inputFor(race, seat) : controls.carInputFrom(lineup.controllersFor(seat, controls.every()));
 	}
 
-	/** Before a race, a press of go on a controller takes a seat and a press of brake gives it back; the panel and HUD follow. */
-	function takeSeats() {
-		var joined = Lambda.count(controls.throttleJustPressedOn(), lineup.join) > 0;
-		var left = Lambda.count(controls.brakeJustPressedOn(), lineup.leave) > 0;
-		if (!joined && !left) return;
-		panels.showSeats(lineup);
-		lineUpANewRace();
+	function finished() {
+		mode = RaceOver;
+		show.sound.rest();
+		var isAlone = lineup.people() == 1;
+		panels.showResults(race, {nameOf: seat -> Words.driverName(seat, Paint.liveries[seat].number, lineup.isHuman(seat), isAlone), isOurs: lineup.isHuman});
 	}
 
-	/** Every car drawn part way between its last two ticks, then the oil, the HUD, and the frame. */
+	/** Every car drawn part way between its last two ticks. */
 	function showEverything() {
 		var share = mode == Racing ? steps.shareIntoTheNextTick() : 1;
-		var posesAfter = posesNow();
-		for (seat in 0...carViews.length) {
-			var before = posesBefore[seat];
-			var after = posesAfter[seat];
-			var heading = before.heading + wrapAngle(after.heading - before.heading) * share;
-			carViews[seat].show(race.racer(seat).car, heading, before.position + (after.position - before.position) * share);
-		}
-		oilView.show(race.state.oil);
-		if (mode == Racing) sound.follow(race);
-		hud.update(race);
-		world.draw();
+		var posesNow = Poses.of(race.state);
+		show.draw(race, [for (seat in 0...posesNow.length) Poses.between(posesBefore[seat], posesNow[seat], share)], mode == Racing);
 	}
 
 	/** A fresh race on the chosen track, on a new seed, with new AI drivers, lights red. */
@@ -202,26 +160,51 @@ class Game {
 		var track = tracks[chosenTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
 		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
-		hud.seat(lineup);
-		posesBefore = posesNow();
-		effects.clear();
-		for (view in carViews) view.mendDents();
+		show.hud.seat(lineup.humanSeats());
+		posesBefore = Poses.of(race.state);
+		show.freshRace();
 	}
+
+	// ---- Seats ----
+
+	/** Between races, a press of go on a controller takes a seat here and a press of brake gives it back. */
+	function takeSeats() {
+		var joined = Lambda.count(controls.throttleJustPressedOn(), lineup.join) > 0;
+		var left = Lambda.count(controls.brakeJustPressedOn(), lineup.leave) > 0;
+		if (!joined && !left || mode == Online) return;
+		panels.showSeats(seatLooks());
+		lineUpANewRace();
+	}
+
+	/** Each seat's card on this computer: who (a player or AI) and with what. */
+	function seatLooks():Array<SeatLook> {
+		return [for (seat in 0...lineup.seats) {
+			var controller = lineup.controllerIn(seat);
+			var isHuman = lineup.isHuman(seat);
+			{
+				who: isHuman ? Words.driverName(seat, 0, true, false) : Words.aiDriver,
+				how: controller != null ? Words.controllerName(controller) : (isHuman ? Words.anyControls : ""),
+				isAPerson: isHuman,
+				isOurs: isHuman
+			};
+		}];
+	}
+
+	// ---- Presses ----
 
 	/** A gamepad's A says yes to the panel showing: start, resume, or race again. */
 	function pressYes() {
 		switch mode {
-			case WaitingToStart: startRacing();
-			case Paused: startRacing();
+			case WaitingToStart | Paused: startRacing();
 			case RaceOver: raceAgain();
-			case Racing:
+			case Racing | Online:
 		}
 	}
 
 	/** Racing (again): sound wakes up too (the first time, the press of Start is what browsers wait for). */
 	function startRacing() {
 		mode = Racing;
-		sound.wake(carViews.length);
+		show.sound.wake(Paint.liveries.length);
 		steps.startAfresh();
 		panels.hideAll();
 		Browser.document.body.focus();
@@ -232,23 +215,38 @@ class Game {
 		startRacing();
 	}
 
-	/** Pausing works only during a race; pressing it again resumes. */
+	/** Pausing works only during a race; pressing it again resumes. Online the race can't stop: a menu opens instead. */
 	function pressPause() {
-		if (mode == Racing) {
-			mode = Paused;
-			sound.rest();
-			panels.showSoundAs(sound.isOn);
-			panels.showPause();
-		} else if (mode == Paused) startRacing();
+		switch mode {
+			case Racing:
+				mode = Paused;
+				show.sound.rest();
+				panels.showPause(false, show.sound.isOn);
+			case Paused: startRacing();
+			case Online: online.pressPause(show.sound.isOn);
+			case _:
+		}
 	}
 
 	/** Sound off, or back on, from a key, a pad button or the pause panel. */
 	function toggleSound() {
-		sound.toggle();
-		panels.showSoundAs(sound.isOn);
+		show.sound.toggle();
+		panels.showSoundAs(show.sound.isOn);
 	}
 
-	function posesNow():Array<Pose> {
-		return [for (racer in race.state.racers) {position: racer.car.position, heading: racer.car.heading}];
+	// ---- Online ----
+
+	/** Into an online room; sound wakes now (this press is what browsers wait for). When the room is left, back to the start. */
+	function goOnline(how:HowToJoin) {
+		mode = Online;
+		show.sound.wake(Paint.liveries.length);
+		online = new OnlineRace({tracks: tracks, racingLines: racingLines, show: show, panels: panels, controls: controls, lineup: lineup, whenGone: backFromOnline});
+		online.join(how);
+	}
+
+	function backFromOnline() {
+		online = null;
+		mode = WaitingToStart;
+		chooseTrack(chosenTrack);
 	}
 }

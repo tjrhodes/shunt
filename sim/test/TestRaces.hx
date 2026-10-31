@@ -9,8 +9,11 @@ import shunt.track.Track;
 
 /** Tracks and races for the checks, made the same way every time. */
 class TestRaces {
-	/** Every track, read once from the same list of files the game reads (`tracks/index.json`). */
-	public static final everyTrack:Array<Track> = [for (file in (Json.parse(fileText("index.json")) : Array<String>)) Track.fromJson(fileText(file))];
+	/** The text of every track's file, from the same list the game reads (`tracks/index.json`). */
+	public static final everyTrackText:Array<String> = [for (file in (Json.parse(fileText("index.json")) : Array<String>)) fileText(file)];
+
+	/** Every track, read once. */
+	public static final everyTrack:Array<Track> = everyTrackText.map(Track.fromJson);
 
 	/** The oval, which most checks use: the first track in the list. */
 	public static final oval = everyTrack[0];

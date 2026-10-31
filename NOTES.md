@@ -199,3 +199,33 @@ designed once, for several players.
   `/dev/hidraw` directly, which a Snap browser can't reach even with
   `joystick` connected. Firefox and unsandboxed browsers read it fine. The
   game now carries on with no pads if the browser refuses them.
+
+## 31 Oct 2026, evening: phase 3, online
+
+Tom chose quick match plus room links, its own subdomain
+(shunt.tomrhodes.it, nginx), and keeping seats per controller online.
+
+- **Colyseus moved on to 0.18** since the spec was written: a new client
+  package (`@colyseus/sdk`) and its own prediction helpers. Neither was
+  needed: the room is driven by our own Haxe (`RaceRoom`), and the
+  browser's prediction is our own too (`Prediction`), so the same code is
+  checked on Node with a pretend network.
+- **No schema.** The spec said to write the state schema in TypeScript and
+  generate it for Haxe. The race is already plain data that copies as
+  JSON, so snapshots send it as it is; a schema would have been every
+  field written a second time.
+- **The pretend network** (`OnlineHarness`) turns every message into JSON
+  and back, so nothing is shared between "server" and "browser" by
+  accident. The first measurements were tiny: the person in each browser
+  is an AI driver, which drives smoothly; real people will make bigger
+  corrections. Worth measuring again on the real server.
+- **Colyseus answers its own HTTP requests** (finding and joining rooms):
+  the page server first answered everything with 404, so the matchmaking
+  failed. It is now an Express middleware that passes on anything that
+  isn't one of the game's files.
+- **Checked in two browsers** against the server here: a link room, the
+  second browser joining by the link, the host starting, both driving,
+  AI in the other seats.
+- **Deploying from here wasn't possible** (no route to the VPS), so
+  `deploy/deploy.sh` does it from Tom's computer.
+- Colyseus needs Node 22 or newer; the script checks.

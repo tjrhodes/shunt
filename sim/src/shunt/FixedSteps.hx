@@ -1,3 +1,5 @@
+package shunt;
+
 /**
  * Keeps the race in step with real time (SPEC.md §3). The screen draws
  * whenever it can (60, 90, 144 times a second...), but the race only ever

@@ -37,3 +37,7 @@ jobs:
       - name: The browser game builds
         working-directory: client
         run: haxe build.hxml
+
+      - name: The server builds (Haxe room and TypeScript)
+        working-directory: server
+        run: npm ci && npm run build

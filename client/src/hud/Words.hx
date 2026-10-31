@@ -29,6 +29,29 @@ class Words {
 	public static inline final anyControls = "Keys, pad or touch";
 	public static inline final joinHint = "More players: press go on your own keys (W or ↑) or gamepad (right trigger) to take a seat; brake to give it back.";
 
+	// ---- Online ----
+	public static inline final online = "Online";
+	public static inline final raceOnline = "Race online";
+	public static inline final quickMatch = "Quick match";
+	public static inline final raceFriends = "Race friends";
+	public static inline final joinFriends = "Join your friends' race";
+	public static inline final onlineHelp = "Quick match puts you in with anyone looking for a race. Race friends gives you a link to send them. Everyone on this computer comes too.";
+	public static inline final connecting = "Getting you a seat…";
+	public static inline final cantConnect = "Couldn't reach the race. It may have finished, or the server is down. Try again in a moment.";
+	public static inline final roomLink = "Send this link to the people you want to race:";
+	public static inline final copy = "Copy";
+	public static inline final copied = "Copied";
+	public static inline final leave = "Leave";
+	public static inline final youAreTheHost = "You're the host: pick a track and start when everyone's in.";
+	public static inline final waitingForTheHost = "Waiting for the host to start.";
+	public static inline final waitingToStart = "Waiting for one more person to start.";
+	public static inline final watching = "Every seat is taken: you're watching this race, and get a seat in the next.";
+
+	/** A quick match's start, counting down. */
+	public static function startsIn(seconds:Float):String {
+		return 'Starting in ${Math.ceil(seconds)} s';
+	}
+
 	/** The made-up sponsors on the billboards round the track. */
 	public static final billboards = ["SHUNT", "LAP COLA", "DENTCO", "GRIPSTER TYRES", "OIL? NO", "BUMPER & SONS"];
 
@@ -47,10 +70,10 @@ class Words {
 		return '$position$ending';
 	}
 
-	/** A seat's name: "You" for someone racing alone, "Player 2" when several race, or the AI car's number. */
-	public static function driverName(seat:Int, number:Int, isHuman:Bool, isAlone:Bool):String {
-		if (!isHuman) return 'No. $number';
-		return isAlone ? you : 'Player ${seat + 1}';
+	/** A seat's name: "You" for the one person here racing alone, "Player 2" for anyone else, or the AI car's number. */
+	public static function driverName(seat:Int, number:Int, isAPerson:Bool, isYouAlone:Bool):String {
+		if (!isAPerson) return 'No. $number';
+		return isYouAlone ? you : 'Player ${seat + 1}';
 	}
 
 	/** A person's short tag in the HUD: "P2". */
