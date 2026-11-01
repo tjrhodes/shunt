@@ -30,8 +30,18 @@ export function servePage(request: IncomingMessage, response: ServerResponse, pa
 	sendFile(response, file);
 }
 
+/**
+ * How long a browser may keep a file without asking again. The game's script
+ * is renamed on every build (shunt-1a2b3c4d.js), so it can be kept for good;
+ * everything else (the page, the track files) must be checked each time, or
+ * a new track list waits an hour to show up (1 Nov).
+ */
+function keepFor(file: string): string {
+	return /shunt-[0-9a-f]+\.js$/.test(file) ? "public, max-age=31536000, immutable" : "no-cache";
+}
+
 function sendFile(response: ServerResponse, file: string) {
-	response.writeHead(200, { "Content-Type": kinds[extname(file)] ?? "application/octet-stream", "Cache-Control": file.endsWith(".html") ? "no-cache" : "public, max-age=3600" });
+	response.writeHead(200, { "Content-Type": kinds[extname(file)] ?? "application/octet-stream", "Cache-Control": keepFor(file) });
 	createReadStream(file).pipe(response);
 }
 
