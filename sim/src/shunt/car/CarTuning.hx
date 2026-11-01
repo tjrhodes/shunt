@@ -14,18 +14,19 @@ class CarTuning {
 	// ---- The body ----
 
 	/**
-	 * Bumper to bumper, and side to side: a small 1960s rally saloon (Tom,
-	 * 1 Nov; it was 4.8 by 1.9, stock-car size, until then).
+	 * Bumper to bumper, and side to side: a small 1960s rally saloon, drawn
+	 * a little larger than life so it reads on screen (Tom, 1 Nov: 4.8 by
+	 * 1.9, stock-car size, until then; briefly 3.6 by 1.6, too small to see).
 	 */
-	public static inline final length = 3.6;
-	public static inline final width = 1.6;
+	public static inline final length = 4.2;
+	public static inline final width = 1.75;
 
 	/** Kept from the stock car, so it pulls away, brakes and grips just as before. */
 	public static inline final mass = 1400.0;
 
 	/** Where the axles sit, measured from the car's centre of mass: right out at the corners. */
-	public static inline final frontAxleAhead = 1.05;
-	public static inline final rearAxleBehind = 1.05;
+	public static inline final frontAxleAhead = 1.25;
+	public static inline final rearAxleBehind = 1.25;
 	public static inline final wheelbase = frontAxleAhead + rearAxleBehind;
 
 	/** How hard it is to start (or stop) the car spinning: that of a solid box this size. */

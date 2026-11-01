@@ -14,20 +14,28 @@ import view.Paint.Livery;
  * chrome bumpers, round lamps and a pair of rally spotlights, and its
  * number on the roof and on both doors.
  *
+ * Everything is drawn inside the box the race uses for the car, wheels
+ * and bumpers and lamps included: anything poking out would look like
+ * cars sinking into each other when they are only touching.
+ *
  * The front wheels turn as the car's wheels do, and hits dent the body
  * (drawn only: the simulation's damage zones are what count, SPEC.md §10).
  */
 class CarView {
 	// ---- Sizes, in metres ----
-	static inline final rideHeight = 0.16;
-	static inline final bodyHeight = 0.56;
-	static inline final cabinLength = 1.75;
-	static inline final cabinHeight = 0.5;
+	static inline final rideHeight = 0.18;
+	static inline final bodyHeight = 0.62;
+	static inline final cabinLength = 2.0;
+	static inline final cabinHeight = 0.58;
 	static inline final cabinBack = -0.2;
-	static inline final roofThickness = 0.06;
-	static inline final wheelRadius = 0.27;
-	static inline final wheelWidth = 0.22;
-	static inline final lampRadius = 0.09;
+	static inline final roofThickness = 0.09;
+	static inline final wheelRadius = 0.32;
+	static inline final wheelWidth = 0.26;
+	static inline final lampRadius = 0.11;
+
+	/** The bumpers take up this much of each end of the car's box, and the wheels this much of each side, so the body is that much smaller. */
+	static inline final bumperDepth = 0.1;
+	static inline final wheelsStickOutBy = 0.08;
 
 	/** The cabin narrows towards the roof: its top is this share of its bottom's length and width. */
 	static inline final cabinTopShare = 0.82;
@@ -49,6 +57,8 @@ class CarView {
 
 	static inline final halfLength = CarTuning.length / 2;
 	static inline final halfWidth = CarTuning.width / 2;
+	static inline final bodyHalfLength = halfLength - bumperDepth;
+	static inline final bodyHalfWidth = halfWidth - wheelsStickOutBy;
 
 	public final whole = new Group();
 	final frontWheels:Array<Mesh> = [];
@@ -76,7 +86,7 @@ class CarView {
 
 	/** The body: a box the car's size, its top sloping down over the bonnet and the boot. */
 	static function bodyShape():BufferGeometry {
-		var shape = new BoxGeometry(CarTuning.length, bodyHeight, CarTuning.width, piecesAlong, piecesUp, piecesAcross);
+		var shape = new BoxGeometry(bodyHalfLength * 2, bodyHeight, bodyHalfWidth * 2, piecesAlong, piecesUp, piecesAcross);
 		var corners = shape.attributes.position;
 		for (corner in 0...corners.count) slopeTheEnds(corners.array, corner);
 		shape.computeVertexNormals();
@@ -88,16 +98,16 @@ class CarView {
 		var x = numbers[corner * 3];
 		var isOnTop = numbers[corner * 3 + 1] > 0;
 		var beyondTheCabin = x > cabinBack + cabinLength / 2 ? x - (cabinBack + cabinLength / 2) : (x < cabinBack - cabinLength / 2 ? (cabinBack - cabinLength / 2) - x : 0);
-		var shareToTheEnd = beyondTheCabin / (halfLength - cabinLength / 2 + Math.abs(cabinBack));
+		var shareToTheEnd = beyondTheCabin / (bodyHalfLength - cabinLength / 2 + Math.abs(cabinBack));
 		if (isOnTop) numbers[corner * 3 + 1] -= endsDropBy * Math.min(1, shareToTheEnd);
 	}
 
 	/** The glasshouse, narrowing as it rises, and the roof on top, a little wider, in the roof colour. */
 	function addCabinAndRoof(livery:Livery) {
-		var cabin = new BoxGeometry(cabinLength, cabinHeight, CarTuning.width * 0.9);
+		var cabin = new BoxGeometry(cabinLength, cabinHeight, bodyHalfWidth * 2 * 0.92);
 		narrowTowardsTheTop(cabin);
 		whole.add(shadowed(new Mesh(cabin, new MeshLambertMaterial({color: Paint.glass})), rideHeight + bodyHeight + cabinHeight / 2, cabinBack));
-		var roof = new BoxGeometry(cabinLength * cabinTopShare + 0.08, roofThickness, CarTuning.width * 0.9 * cabinTopShare + 0.08);
+		var roof = new BoxGeometry(cabinLength * cabinTopShare + 0.1, roofThickness, bodyHalfWidth * 2 * 0.92 * cabinTopShare + 0.1);
 		whole.add(shadowed(new Mesh(roof, new MeshLambertMaterial({color: Paint.roof})), roofHeight() - roofThickness / 2, cabinBack));
 		whole.add(roofNumber(livery));
 	}
@@ -118,11 +128,11 @@ class CarView {
 
 	// ---- Wheels, bumpers and lamps ----
 
-	/** A pair of round wheels on an axle, pushed out to the car's sides. The front pair are remembered, to steer. */
+	/** A pair of round wheels on an axle, out at the car's sides (just inside its box). The front pair are remembered, to steer. */
 	function addWheels(howFarAhead:Float) {
 		for (side in [1, -1]) {
 			var wheel = shadowed(new Mesh(new CylinderGeometry(wheelRadius, wheelRadius, wheelWidth, 12).rotateX(Math.PI / 2), new MeshLambertMaterial({color: Paint.tyre})), wheelRadius, howFarAhead);
-			wheel.position.z = side * (halfWidth - wheelWidth * 0.3);
+			wheel.position.z = side * (halfWidth - wheelWidth / 2);
 			whole.add(wheel);
 			if (howFarAhead > 0) frontWheels.push(wheel);
 		}
@@ -130,14 +140,14 @@ class CarView {
 
 	/** A chrome bumper across one end, with two round lamps above it: headlights at the front (1), tail lights at the back (-1). */
 	function addBumperAndLamps(end:Int) {
-		var bumper = shadowed(new Mesh(new BoxGeometry(0.1, 0.1, CarTuning.width + 0.06), new MeshLambertMaterial({color: Paint.chrome})), rideHeight + 0.1, end * (halfLength + 0.02));
+		var bumper = shadowed(new Mesh(new BoxGeometry(bumperDepth, 0.12, CarTuning.width - 0.04), new MeshLambertMaterial({color: Paint.chrome})), rideHeight + 0.12, end * (halfLength - bumperDepth / 2));
 		whole.add(bumper);
-		for (side in [1, -1]) whole.add(roundLamp(end > 0 ? lampRadius : lampRadius * 0.7, end > 0 ? Paint.headlight : Paint.tailLight, end * (halfLength + 0.01), rideHeight + bodyHeight * 0.62, side * halfWidth * 0.62));
+		for (side in [1, -1]) whole.add(roundLamp(end > 0 ? lampRadius : lampRadius * 0.7, end > 0 ? Paint.headlight : Paint.tailLight, end * (bodyHalfLength + 0.01), rideHeight + bodyHeight * 0.62, side * bodyHalfWidth * 0.62));
 	}
 
 	/** Two rally spotlights on the front bumper, close together. */
 	function addSpotlights() {
-		for (side in [1, -1]) whole.add(roundLamp(lampRadius * 0.85, Paint.headlight, halfLength + 0.09, rideHeight + 0.26, side * halfWidth * 0.22));
+		for (side in [1, -1]) whole.add(roundLamp(lampRadius * 0.85, Paint.headlight, halfLength - 0.03, rideHeight + 0.3, side * halfWidth * 0.24));
 	}
 
 	/** A round lamp facing out of the car's end, glowing (unlit by anything). */
@@ -158,15 +168,15 @@ class CarView {
 
 	/** The number, lying flat on the roof, readable from the car's left as the camera mostly sees it. */
 	static function roofNumber(livery:Livery):Mesh {
-		var square = new Mesh(new PlaneGeometry(0.85, 0.85).rotateX(-Math.PI / 2), numberPicture(livery));
+		var square = new Mesh(new PlaneGeometry(1.0, 1.0).rotateX(-Math.PI / 2), numberPicture(livery));
 		square.position.set(cabinBack, roofHeight() + 0.01, 0);
 		return square;
 	}
 
 	/** The number on a door, standing on one side of the car (1: left, -1: right), facing out. */
 	static function doorNumber(livery:Livery, side:Int):Mesh {
-		var panel = new Mesh(new PlaneGeometry(0.62, 0.42), numberPicture(livery));
-		panel.position.set(cabinBack + 0.15, rideHeight + bodyHeight * 0.55, -side * (halfWidth + 0.01));
+		var panel = new Mesh(new PlaneGeometry(0.5, 0.5), numberPicture(livery));
+		panel.position.set(cabinBack + 0.15, rideHeight + bodyHeight * 0.5, -side * (bodyHalfWidth + 0.01));
 		panel.rotation.y = side > 0 ? Math.PI : 0;
 		return panel;
 	}

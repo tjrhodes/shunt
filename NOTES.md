@@ -284,3 +284,18 @@ Tom chose quick match plus room links, its own subdomain
   turned 44° instead of under 35°: the steadying hand went from 4 to 5,
   and every check passes again (the gentle-bend check now uses a lighter
   touch, 0.075 of lock, as the shorter wheelbase turns tighter).
+- **Cars looking inside each other, side by side (offline):** the race
+  kept them apart (pressed side by side at up to 40 m/s, steering into
+  each other, they never sank more than 2 cm), but the drawn car stuck out
+  of its own box: the wheels by about 15 cm each side, the bumpers and
+  spotlights at the ends. Everything drawn now sits inside the race's box.
+- **Bigger cars:** 4.2 by 1.75 m (axles 1.25 m from the middle), between
+  the stock car and a true small car, with a taller cabin, a thicker roof
+  and bigger wheels so they read on screen. Every check passes unchanged.
+- **The flick on keys:** holding a key builds steering up from a third,
+  and switching sides started that again, so the left turn came in weak
+  while the weight settled. Going straight from one side to the other
+  (even with a gap of up to 0.15 s between keys) now keeps what has built
+  up. The keyboard's build-up is now checked too (`client/test/FlickTests`,
+  driven through the very same `SteeringRamp`): at 30 m/s, left off a
+  straight slides 10°; a tap right first, 21°.

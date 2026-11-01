@@ -40,7 +40,7 @@ class TouchPads {
 		return {
 			throttle: isBraking ? 0 : 1,
 			brake: isBraking ? 1 : 0,
-			steer: steeringRamp.steering(Lambda.fold([for (side in fingersOnTheScreen) side], (side, total) -> total + side, 0.0)),
+			steer: steeringRamp.steering(Lambda.fold([for (side in fingersOnTheScreen) side], (side, total) -> total + side, 0.0), Browser.window.performance.now() / 1000),
 			recover: false,
 			pause: isPausing,
 			mute: false,
