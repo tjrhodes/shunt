@@ -47,7 +47,9 @@ class Paint {
 	public static final crowd = [0xe8e4da, 0xc8402f, 0x2f6fc8, 0xf2b134, 0x3f9a5c, 0x8a5bb5, 0x23262c];
 
 	// ---- Car details ----
-	public static inline final spoiler = 0x16181c;
+	public static inline final roof = 0xf1eee6;
+	public static inline final chrome = 0xc9ced4;
+	public static inline final wheelArch = 0x1a1c20;
 	public static inline final headlight = 0xfff6d8;
 	public static inline final tailLight = 0xd8281e;
 

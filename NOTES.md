@@ -272,3 +272,15 @@ Tom chose quick match plus room links, its own subdomain
   The first version also weakened the rear when countersteering a slide
   (which also asks against the weight), so catching a power slide got
   harder; the "turning the new way" condition keeps countersteering a catch.
+- **Smaller cars, and a car of our own** (Tom wanted a simplified 60s
+  small car). The models he found were ripped from games (Forza Horizon,
+  Colin McRae Rally 2005), and a copy of a real car design isn't ours to
+  use, so the car is our own little 1960s rally saloon: chunky boxes, a
+  sloping bonnet and boot, a narrowing glasshouse under a white roof,
+  round wheels out at the corners, chrome bumpers, round lamps, two
+  spotlights, and the number on the roof and both doors. The race's cars
+  shrank to match: 3.6 by 1.6 m (from 4.8 by 1.9), axles 1.05 m from the
+  middle. A short car spins up faster, so a quick correction at top speed
+  turned 44° instead of under 35°: the steadying hand went from 4 to 5,
+  and every check passes again (the gentle-bend check now uses a lighter
+  touch, 0.075 of lock, as the shorter wheelbase turns tighter).

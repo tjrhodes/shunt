@@ -432,8 +432,11 @@ split screen, and the simulation didn't change at all.
 - **Dents**: the car body is a low-poly mesh; a contact pushes in the
   vertices near its point, scaled by the damage it did. Drawn only, never fed
   back into the physics (the simulation's damage zones are the truth).
-- **Low-poly** flat-shaded cars, walls, infield, stands and lights; cars built
-  in Blender and loaded as glTF, simple boxes until then. Big readable
+- **Low-poly** flat-shaded cars, walls, infield, stands and lights. The car
+  is our own small 1960s rally saloon, built from simple shapes in code
+  (`view/CarView.hx`, 1 Nov): 3.6 by 1.6 m, white roof, round lamps, two
+  spotlights, its number on the roof and both doors. Models found online
+  were ripped from games, so none is used. Big readable
   numbers on the car roofs (the player's car marked clearly).
 - **Feel** (done 31 Oct): skid marks and tyre smoke from sideways slide;
   sparks, dents and a short screen shake from hits (no shake if the viewer

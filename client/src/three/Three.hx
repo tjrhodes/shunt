@@ -96,6 +96,7 @@ import js.html.CanvasElement;
 	var attributes(default, null):{position:Float32BufferAttribute};
 
 	function rotateX(angle:Float):BufferGeometry;
+	function rotateZ(angle:Float):BufferGeometry;
 	function translate(x:Float, y:Float, z:Float):BufferGeometry;
 }
 
@@ -109,6 +110,10 @@ import js.html.CanvasElement;
 
 @:native("THREE.CircleGeometry") extern class CircleGeometry extends BufferGeometry {
 	function new(radius:Float, segments:Int);
+}
+
+@:native("THREE.CylinderGeometry") extern class CylinderGeometry extends BufferGeometry {
+	function new(radiusTop:Float, radiusBottom:Float, height:Float, segments:Int);
 }
 
 @:native("THREE.ConeGeometry") extern class ConeGeometry extends BufferGeometry {
