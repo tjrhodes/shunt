@@ -148,9 +148,9 @@ class Panels {
 		if (holder.querySelector(".panel:not([hidden])") != roomPanel) showOnly(roomPanel);
 	}
 
-	/** Something went wrong online. */
-	public function showCantConnect() {
-		room.showProblem(Words.cantConnect);
+	/** Something went wrong online: what it means, and (small) the reason given. */
+	public function showCantConnect(reason:String) {
+		room.showProblem(Words.cantConnect, reason);
 		showOnly(roomPanel);
 	}
 
@@ -231,7 +231,9 @@ class SeatCards {
 
 /** The online room panel's parts. */
 class RoomParts {
+	final panel:Element;
 	final status:Element;
+	final reason:Element;
 	final linkRow:Element;
 	final link:Element;
 	final copyButton:Element;
@@ -241,7 +243,9 @@ class RoomParts {
 	final leaveButton:Element;
 
 	public function new(panel:Element, everyTrack:Array<Track>, actions:PanelActions) {
+		this.panel = panel;
 		status = Dom.make("p", "panel-tagline", null, panel);
+		reason = Dom.make("p", "panel-help room-reason", null, panel);
 		linkRow = Dom.make("div", "room-link", null, panel);
 		Dom.make("p", "panel-help", Words.roomLink, linkRow);
 		link = Dom.make("code", "room-link-text", null, linkRow);
@@ -256,15 +260,18 @@ class RoomParts {
 		showProblem(Words.connecting);
 	}
 
-	/** Just a line of words (and a way out): connecting, or a problem. */
-	public function showProblem(words:String) {
+	/** Just a line of words, perhaps a reason, and a way out: connecting, or a problem. */
+	public function showProblem(words:String, ?why:String) {
 		Dom.setText(status, words);
-		for (part in [linkRow, startButton]) part.hidden = true;
-		tracks.mark(-1, false);
+		Dom.setText(reason, why ?? "");
+		reason.hidden = why == null;
+		panel.classList.add("is-just-words");
 	}
 
 	public function show(view:RoomView, looks:Array<SeatLook>, isHost:Bool, roomLink:Null<String>) {
 		Dom.setText(status, statusOf(view, isHost, Lambda.exists(looks, look -> look.isOurs)));
+		reason.hidden = true;
+		panel.classList.remove("is-just-words");
 		linkRow.hidden = roomLink == null;
 		Dom.setText(link, roomLink ?? "");
 		Dom.setText(copyButton, Words.copy);

@@ -160,9 +160,10 @@ ends.
   of a barrier is caught too. Joints where a wall carries on smoothly are
   not ends: treating them as ends pushed a car straight back along its
   length and stopped it dead, which made it spear into the oval's wall
-  (found on Tom's third drive). Restitution 0.2, sliding friction 0.3 (a
-  top-speed graze keeps about three quarters of the speed), the same
-  push-out.
+  (found on Tom's third drive). Restitution 0.2, sliding friction 0.5
+  (0.3 until 1 Nov, when Tom asked for walls to slow you a little more:
+  a top-speed graze now drops you to about two thirds of the speed at
+  worst, rather than three quarters), the same push-out.
 - Each contact adds a `RaceEvent` with its point and strength, for sparks,
   sound and screen shake.
 
@@ -393,8 +394,12 @@ split screen, and the simulation didn't change at all.
   input.
 - **Corrections** (`Smoothing`): eased in over 0.15 s, or snapped if over
   4 m (a crash seen differently).
-- **Other people's cars** (`ShownBehind`): drawn 0.1 s in the past,
-  between the snapshots either side.
+- **Other people's cars** are drawn where this browser predicts them,
+  carrying on with their last input, and eased like your own when a
+  snapshot says otherwise. (They were first drawn 0.1 s in the past, as
+  smooth as could be, but then your car, drawn ahead, met them where they
+  weren't shown: Tom drove straight through Player 2's car. A bump has to
+  happen where it is seen.)
 - **Measured** (`OnlineTests`, a pretend network in the checks, one person
   per browser driven by an AI as a person would): at 50, 100 and 200 ms
   each way the browser finishes with the server's results; its own car is

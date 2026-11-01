@@ -11,6 +11,9 @@ class FixedSteps {
 	/** At most this many ticks in one frame: after a stall (a hidden tab), the race doesn't race to catch up. */
 	static inline final mostTicksPerFrame = 8;
 
+	/** Adding up times leaves tiny rounding errors: without this, a tick that is due now can wait a frame and two come together. */
+	static inline final roundingSlack = 1e-6;
+
 	var lastSeconds = -1.0;
 	var timeNotYetTicked = 0.0;
 
@@ -21,7 +24,7 @@ class FixedSteps {
 		var now = nowMilliseconds / 1000;
 		if (lastSeconds >= 0) timeNotYetTicked += now - lastSeconds;
 		lastSeconds = now;
-		var due = Math.floor(timeNotYetTicked / Tick.seconds);
+		var due = Math.floor(timeNotYetTicked / Tick.seconds + roundingSlack);
 		timeNotYetTicked -= due * Tick.seconds;
 		if (due <= mostTicksPerFrame) return due;
 		timeNotYetTicked = 0;

@@ -133,7 +133,7 @@ class ContactTests {
 		return race;
 	}
 
-	static function carAt(x:Float, y:Float, heading:Float, velocity:Vector):Car {
+	public static function carAt(x:Float, y:Float, heading:Float, velocity:Vector):Car {
 		var car = Cars.parkedAt(new Vector(x, y), heading);
 		car.velocity = velocity;
 		return car;

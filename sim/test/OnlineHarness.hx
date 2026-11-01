@@ -50,6 +50,7 @@ class OnlineHarness {
 	final tracks:Array<Track>;
 	final lines:Array<RacingLine>;
 	public var now(default, null) = 0.0;
+	var ticksSoFar = 0;
 
 	public function new(oneWaySeconds:Float, quick:Bool) {
 		this.oneWaySeconds = oneWaySeconds;
@@ -69,7 +70,7 @@ class OnlineHarness {
 
 	/** Moves time on by a tick: the server, then every browser, then the network. */
 	public function tick() {
-		now += Tick.seconds;
+		now = ++ticksSoFar / Tick.perSecond;
 		room.advance(now * 1000);
 		for (browser in browsers) browserTick(browser);
 		deliverWhatHasArrived();

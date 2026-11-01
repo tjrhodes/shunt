@@ -143,6 +143,9 @@
     font: 500 14px/1.3 ui-monospace, monospace; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--plate-edge); border-radius: 3px;
   }
   .room-link .button { margin-top: 0; }
+  .room-reason { font-family: ui-monospace, monospace; font-size: 12px; overflow-wrap: anywhere; }
+  /* Connecting, or a problem: just the words and the way out. */
+  .panel-room.is-just-words > :not(.panel-title):not(.panel-tagline):not(.room-reason):not(.button:last-child) { display: none; }
 
   .results { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
   .result {
@@ -191,6 +194,6 @@
 <button id="pause-button" type="button" hidden></button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="shunt-e28059f2.js" charset="utf-8"></script>
+<script src="shunt-e36b8c42.js" charset="utf-8"></script>
 </body>
 </html>

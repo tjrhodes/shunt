@@ -22,9 +22,6 @@ class OnlineTuning {
 	 */
 	public static inline final mostInputsWaiting = 12;
 
-	/** Other people's cars are drawn this far in the past, between two snapshots, so they move smoothly. */
-	public static inline final othersShownSecondsBehind = 0.1;
-
 	/** When the server corrects your car, the difference is eased in over this long rather than jumping. */
 	public static inline final correctionEasedOverSeconds = 0.15;
 

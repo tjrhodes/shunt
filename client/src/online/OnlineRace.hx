@@ -12,7 +12,6 @@ import shunt.online.InputQueue.NumberedInputs;
 import shunt.online.Messages;
 import shunt.online.Pose;
 import shunt.online.Prediction;
-import shunt.online.ShownBehind;
 import shunt.online.Smoothing;
 import shunt.race.Race;
 import shunt.track.Track;
@@ -36,12 +35,13 @@ typedef Surroundings = {
  * seat for each person here, and racing the server's race. This browser's
  * cars are predicted (`Prediction`), so they answer at once; corrections
  * from the server are eased in (`Smoothing`); other people's cars are drawn
- * a moment in the past, smoothly between snapshots (`ShownBehind`).
+ * where this browser predicts them too (carrying on with their last
+ * input), so a bump happens where it is seen; when the server says
+ * otherwise, they are eased there as well.
  */
 class OnlineRace {
 	final around:Surroundings;
 	final steps = new FixedSteps();
-	final behind = new ShownBehind();
 	final waitingToSend:Array<NumberedInputs> = [];
 	var room:Null<ColyseusRoom> = null;
 	var view:Null<RoomView> = null;
@@ -66,7 +66,14 @@ class OnlineRace {
 			case NewRoom: client.create("race", {quick: false});
 			case RoomById(id): client.joinById(id);
 		}
-		joining.then(entered, _ -> around.panels.showCantConnect());
+		joining.then(entered, problem -> around.panels.showCantConnect(whatWentWrong(problem)));
+	}
+
+	/** The reason a join failed, in the words of whatever failed (shown small, so it can be passed on to fix it). */
+	static function whatWentWrong(problem:Dynamic):String {
+		var code = problem?.code != null ? ' (${problem.code})' : "";
+		Browser.console.warn("Couldn't join the room:", problem);
+		return '${problem?.message ?? problem}$code';
 	}
 
 	/** In: listen to the room, then ask for a seat for each person here. */
@@ -116,7 +123,6 @@ class OnlineRace {
 		gatheringRace = null;
 		smoothings = [for (_ in start.seats) new Smoothing()];
 		posesBefore = Poses.of(prediction.race.state);
-		behind.clear();
 		waitingToSend.resize(0);
 		steps.startAfresh();
 		around.show.hud.seat(prediction.mySeats());
@@ -129,9 +135,8 @@ class OnlineRace {
 		var before = Poses.of(prediction.race.state);
 		prediction.catchUpWith(snapshot);
 		var after = Poses.of(prediction.race.state);
-		for (seat in prediction.mySeats()) smoothings[seat].corrected(before[seat], after[seat]);
+		for (seat in 0...after.length) smoothings[seat].corrected(before[seat], after[seat]);
 		posesBefore = after;
-		behind.arrived(secondsNow(), Poses.of(snapshot.state));
 		if (snapshot.state.phase == Finished) showThePanel();
 	}
 
@@ -175,7 +180,7 @@ class OnlineRace {
 		room.send(Messages.inputs, Prediction.batchOf(waitingToSend.splice(0, waitingToSend.length)));
 	}
 
-	/** Our cars part way into the next tick, eased; everyone else's a moment in the past; the grid between races. */
+	/** Every car part way into the next tick, with any correction eased in; the grid between races. */
 	function draw(secondsSinceLastFrame:Float) {
 		var race = prediction?.race ?? gatheringRace;
 		if (race == null) return;
@@ -187,8 +192,7 @@ class OnlineRace {
 
 	function poseToShow(seat:Int, now:Array<Pose>, share:Float, secondsSinceLastFrame:Float):Pose {
 		if (prediction == null) return now[seat];
-		if (isOurs(seat)) return smoothings[seat].shown(Poses.between(posesBefore[seat], now[seat], share), secondsSinceLastFrame);
-		return behind.poseOf(seat, secondsNow()) ?? now[seat];
+		return smoothings[seat].shown(Poses.between(posesBefore[seat], now[seat], share), secondsSinceLastFrame);
 	}
 
 	// ---- What shows ----
@@ -266,7 +270,4 @@ class OnlineRace {
 		return Lambda.find(view.browsers, browser -> browser.session == room.sessionId)?.people ?? 0;
 	}
 
-	static function secondsNow():Float {
-		return Browser.window.performance.now() / 1000;
-	}
 }

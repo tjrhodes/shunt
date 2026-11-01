@@ -236,3 +236,21 @@ Tom chose quick match plus room links, its own subdomain
   leads with "Join the race" (racing alone is a quiet second choice, and
   the offline start, track picker and seat cards are hidden). Panels were
   also slightly wider than a phone screen (no `box-sizing`), now fixed.
+
+## 1 Nov 2026: first races with other people
+
+- **Through Player 2's car:** your car is drawn ahead (predicted), and
+  other people's were drawn 0.1 s in the past, so over a phone network
+  the two were a few metres apart on screen from where the server had
+  them, and you could drive through a car without touching it. Everyone's
+  car is now drawn where the browser predicts it, with corrections eased.
+- **Walls slow you a little more** (Tom): wall friction 0.5 (from 0.3).
+  Measured flat out at 40 m/s into the oval's wall: the slowest a graze
+  leaves you is 25 to 30 m/s, from 28 to 33.
+- **"Couldn't reach the race" on Tom's son's phone**, twice, while Tom's
+  own phone and computer joined fine. Cause not known yet: the panel now
+  shows the reason the join failed, small, under the message.
+- The no-delay online check is now "all but exactly": the other person's
+  latest input is always a tick away, so a bump can differ by millimetres.
+- Rounding in `FixedSteps` could hold a due tick for a frame and run two
+  together; it now allows a millionth of a second of slack.
