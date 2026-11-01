@@ -299,3 +299,24 @@ Tom chose quick match plus room links, its own subdomain
   up. The keyboard's build-up is now checked too (`client/test/FlickTests`,
   driven through the very same `SteeringRamp`): at 30 m/s, left off a
   straight slides 10°; a tap right first, 21°.
+
+## 1 Nov 2026, late: a dozen tracks
+
+Tom asked for a dozen tracks in the spirit of his screenshots, and higher
+walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
+
+- **Crossings** worked with one change to `Track`: edge walls lying on a
+  far-off part of the road are left out, so the road is open where it
+  crosses. Laps, recovery and the AI already only ever look at the part of
+  the track a car is near, so nothing else needed to know.
+- **The first Hook and Twister had walls in knots** at their corners: the
+  rounded corners were a cluster of points, and the straights between them
+  had none, and the game's smoothing (Catmull-Rom, evenly spaced along the
+  points) looped back on itself there. The generator now fills long
+  stretches with points no more than 8 m apart.
+- **All twelve pass first time**: 100 AI races on each, every car that
+  isn't wrecked finishing, none put back more than three times, no car
+  ever outside an arena. The whole set of checks now takes about 7
+  minutes, most of it those 1,200 races.
+- The camera still picks a straight-on view for some box arenas (the
+  Comb); that's for the design pass.

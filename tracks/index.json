@@ -1,4 +1,14 @@
 [
  "oval.json",
- "serpentine.json"
+ "serpentine.json",
+ "comb.json",
+ "slalom.json",
+ "hexagon.json",
+ "kidney.json",
+ "snake.json",
+ "hook.json",
+ "twister.json",
+ "hourglass.json",
+ "pretzel.json",
+ "trefoil.json"
 ]

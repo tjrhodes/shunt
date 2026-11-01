@@ -258,8 +258,21 @@ centreline only guiding laps, recovery and the AI. A file can also give its
 own `laps`. `tracks/index.json` lists the tracks, for the game and the
 checks alike. The second track is **Serpentine** (`tools/make-serpentine.py`):
 a 170 × 100 m arena, four rows zigzagging up round fence tips in hairpins,
-a return lane down the east side; about 650 m a lap, 3 laps. Gaps for a
-crossing are still to come, with the figure-of-eight.
+a return lane down the east side; about 650 m a lap, 3 laps.
+
+**Twelve tracks (1 Nov).** `tools/make-tracks.py` writes ten more, each an
+original layout made of simple shapes, in the three families:
+*arena mazes* Comb (fingers from both sides), Slalom (a split box with
+fences to weave round), Hexagon (a ring round an island, fences from both
+walls); *flowing circuits* Kidney, Snake, Hook (a hairpin folded inside),
+Twister (corners of every kind); *crossings* Hourglass (a figure of eight),
+Pretzel (a loop inside a loop) and Trefoil (three crossings). A road that
+crosses itself needs nothing in its file: where an edge wall would lie on
+another part of the road (one more than 40 m away along the track), the
+track leaves it open, and the walls either side end in free tips. Points
+on a centreline must be spaced fairly evenly: bunched corner points next
+to long empty straights made the smoothing loop back on itself, so the
+generator fills long stretches in. Walls are drawn 1.3 m high (from 0.9).
 
 Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
 a few points round the centreline (each with the track's width there) and

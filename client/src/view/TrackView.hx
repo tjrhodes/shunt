@@ -13,7 +13,7 @@ import three.Three;
  */
 class TrackView {
 	/** How tall the walls are, in metres. */
-	static inline final wallHeight = 0.9;
+	static inline final wallHeight = 1.3;
 
 	/** How much bigger than the track the grass reaches. */
 	static inline final grassBeyondTheTrack = 3000.0;
