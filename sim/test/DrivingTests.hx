@@ -89,7 +89,8 @@ class DrivingTests {
 	 */
 	static function holdsAGentleBend() {
 		var drive = new TestDrive().holdUntil(floored, car -> car.speed() >= 25, 10);
-		var car = drive.follow(_ -> pedals(holdSpeed(drive.car, 25), 0, 0.1), 5).car;
+		// A light touch on the wheel: 0.075 of full lock (it was 0.1 before the cars shrank; the shorter wheelbase turns tighter for the same touch).
+		var car = drive.follow(_ -> pedals(holdSpeed(drive.car, 25), 0, 0.075), 5).car;
 		between(Math.abs(car.sidewaysSpeed()), 0, 1.5, "sideways slide on a gentle bend");
 		between(Math.abs(car.spin), 0.1, 1.0, "steady turning rate");
 	}

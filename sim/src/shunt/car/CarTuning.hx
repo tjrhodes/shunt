@@ -13,15 +13,19 @@ import shunt.maths.Numbers.degrees;
 class CarTuning {
 	// ---- The body ----
 
-	/** Bumper to bumper, and side to side. */
-	public static inline final length = 4.8;
-	public static inline final width = 1.9;
+	/**
+	 * Bumper to bumper, and side to side: a small 1960s rally saloon (Tom,
+	 * 1 Nov; it was 4.8 by 1.9, stock-car size, until then).
+	 */
+	public static inline final length = 3.6;
+	public static inline final width = 1.6;
 
+	/** Kept from the stock car, so it pulls away, brakes and grips just as before. */
 	public static inline final mass = 1400.0;
 
-	/** Where the axles sit, measured from the car's centre of mass. */
-	public static inline final frontAxleAhead = 1.4;
-	public static inline final rearAxleBehind = 1.4;
+	/** Where the axles sit, measured from the car's centre of mass: right out at the corners. */
+	public static inline final frontAxleAhead = 1.05;
+	public static inline final rearAxleBehind = 1.05;
 	public static inline final wheelbase = frontAxleAhead + rearAxleBehind;
 
 	/** How hard it is to start (or stop) the car spinning: that of a solid box this size. */
@@ -114,7 +118,7 @@ class CarTuning {
 	 * small correction growing into a spin, and makes countersteering catch a
 	 * slide; drift is still there, but it goes where the wheels point.
 	 */
-	public static inline final steadying = 4.0;
+	public static inline final steadying = 6.0;
 
 	/**
 	 * Steering held at full lock lets the car turn this much more than its
