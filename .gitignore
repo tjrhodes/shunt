@@ -6,3 +6,4 @@ client/www/tracks/
 node_modules/
 client/test/bin/
 server/lib/*.cjs
+client/www/index.html
