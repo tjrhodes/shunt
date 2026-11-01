@@ -254,3 +254,21 @@ Tom chose quick match plus room links, its own subdomain
   latest input is always a tick away, so a bump can differ by millimetres.
 - Rounding in `FixedSteps` could hold a due tick for a frame and run two
   together; it now allows a millionth of a second of slack.
+- **Cars passing through each other, offline too** (Tom): the hit test
+  looked only for a corner of one car inside the other. Two cars lying
+  across each other like a plus sign, or one nose-first into the other's
+  side, have no corner inside, so nothing happened. Now a proper box
+  overlap test (the separating-axis test): checked with a plus sign and a
+  nose into a side, and 1,000 random hits (flat out into parked cars at
+  any angle, and side by side at speed steering into each other): the
+  deepest two cars ever sink into each other is 7 cm.
+- **The flick** (Tom: "turn right slightly then hard left and it drifts,
+  as I've chucked the weight over"): the car now carries where its weight
+  leans (`sidewaysLoad`, rolling over in about 0.35 s). While the weight is
+  still over one side and the wheels ask hard for the other, once the car
+  has started turning the new way, the rear loses up to 45 % of its grip
+  and the steadying hand most of its hold. At 30 m/s: hard left off a
+  straight slides 10°; after a little right first, 27°, without spinning.
+  The first version also weakened the rear when countersteering a slide
+  (which also asks against the weight), so catching a power slide got
+  harder; the "turning the new way" condition keeps countersteering a catch.

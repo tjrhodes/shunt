@@ -124,6 +124,25 @@ class CarTuning {
 	public static inline final extraTurnAtFullLock = 0.25;
 	public static inline final extraTurnFromLock = 0.75;
 
+	// ---- Weight shift (the flick) ----
+
+	/** How long the body takes to roll its weight over to a new side, in seconds. */
+	public static inline final weightRollsOverIn = 0.35;
+
+	/**
+	 * A full flick: the weight still leaning this hard one way (in g) times
+	 * the wheels asking this hard the other (in g). A little right then hard
+	 * left is about half of one; a hard right then hard left, all of one.
+	 */
+	public static inline final fullFlick = 1.2;
+
+	/** The flick only counts once the car is turning the new way at least this fast (radians per second). */
+	public static inline final flickOnceTurningAt = 0.3;
+
+	/** At a full flick the rear tyres lose this share of their grip, and the steadying hand this share of its hold. */
+	public static inline final rearGripLostInAFlick = 0.45;
+	public static inline final steadyingLostInAFlick = 0.75;
+
 	/**
 	 * Below this speed (m/s) the tyre sums get jumpy, so the car rolls where
 	 * its wheels point instead, blending into the tyre model as it speeds up.

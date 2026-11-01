@@ -75,9 +75,14 @@ class Tyres {
 		return ground.gripAt(car.spotUnder(new Vector(howFarAhead, 0)));
 	}
 
-	/** The accelerator takes some of the rear tyres' grip, to spin the wheels: that is power oversteer. */
+	/**
+	 * The accelerator takes some of the rear tyres' grip, to spin the wheels:
+	 * that is power oversteer. Weight swinging across takes some too: the flick.
+	 */
 	static function rearGripLimitNow(car:Car):Float {
-		return Tuning.rearGripLimit * (1 - Tuning.rearGripLostToThrottle * car.throttle);
+		var lostToThrottle = Tuning.rearGripLostToThrottle * car.throttle;
+		var lostToTheFlick = Tuning.rearGripLostInAFlick * WeightShift.swing(car);
+		return Tuning.rearGripLimit * (1 - lostToThrottle) * (1 - lostToTheFlick);
 	}
 
 	/**
