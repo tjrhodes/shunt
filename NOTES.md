@@ -359,3 +359,13 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   and off the side of the screen. The panels' grid sized its one column to
   fit everything inside it, here the whole row of cards; it now has one
   column that is never wider than the screen.
+- **The track cards as a 3D ring** (Tom: "cards in a circle, the current
+  one comes out and turns to show its content"): `view/CardRing.hx`, its
+  own small three.js view in the track panel. Cards stand in a circle with
+  their backs out; the chosen one slides towards you, rises, grows and
+  turns half round to face you; choosing another turns the ring the short
+  way round while the old card swings back. Everything eases (exponential,
+  7 per second), so running through the cards flows; with reduced motion it
+  jumps. The faces are painted on canvases (`view/CardFaces.hx`), the map
+  from the same path data as before (`view/TrackMap.hx`, used by both).
+  The plain buttons stay underneath, out of sight, for screen readers.

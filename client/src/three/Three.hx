@@ -40,6 +40,7 @@ import js.html.CanvasElement;
 	var visible:Bool;
 	var castShadow:Bool;
 	var receiveShadow:Bool;
+	var parent(default, null):Null<Object3D>;
 	function add(child:Object3D):Void;
 	function remove(child:Object3D):Void;
 	function updateMatrix():Void;
@@ -52,7 +53,28 @@ import js.html.CanvasElement;
 
 @:native("THREE.Group") extern class Group extends Object3D {}
 
-@:native("THREE.OrthographicCamera") extern class OrthographicCamera extends Object3D {
+/** Any camera: something the renderer can look through. */
+@:native("THREE.Camera") extern class Camera extends Object3D {}
+
+/** A camera that sees as an eye does: further things smaller. */
+@:native("THREE.PerspectiveCamera") extern class PerspectiveCamera extends Camera {
+	function new(fieldOfView:Float, aspect:Float, near:Float, far:Float);
+	var aspect:Float;
+	function updateProjectionMatrix():Void;
+}
+
+/** Finds what is under a point on the screen, by casting a ray from the camera through it. */
+@:native("THREE.Raycaster") extern class Raycaster {
+	function new();
+	function setFromCamera(screenPoint:Vector2, camera:Camera):Void;
+	function intersectObjects(objects:Array<Object3D>, ?recursive:Bool):Array<{object:Object3D}>;
+}
+
+@:native("THREE.Vector2") extern class Vector2 {
+	function new(x:Float, y:Float);
+}
+
+@:native("THREE.OrthographicCamera") extern class OrthographicCamera extends Camera {
 	function new(left:Float, right:Float, top:Float, bottom:Float, near:Float, far:Float);
 	var left:Float;
 	var right:Float;
@@ -64,12 +86,12 @@ import js.html.CanvasElement;
 }
 
 @:native("THREE.WebGLRenderer") extern class WebGLRenderer {
-	function new(options:{antialias:Bool});
+	function new(options:{antialias:Bool, ?alpha:Bool});
 	var domElement(default, null):CanvasElement;
 	var shadowMap(default, null):{enabled:Bool};
 	function setSize(width:Float, height:Float, ?updateStyle:Bool):Void;
 	function setPixelRatio(ratio:Float):Void;
-	function render(scene:Scene, camera:OrthographicCamera):Void;
+	function render(scene:Scene, camera:Camera):Void;
 }
 
 @:native("THREE.BufferAttribute") extern class BufferAttribute {

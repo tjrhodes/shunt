@@ -48,6 +48,15 @@ class Paint {
 	/** The crowd's shirts. */
 	public static final crowd = [0xf6f2e8, 0xe9c93a, 0xd9730f, 0x6983b6, 0xc54b12, 0xdbd2b9, 0x151a2b];
 
+	// ---- The track cards (the ring) ----
+	public static inline final cardFace = 0x293b5f;
+	public static inline final cardBack = 0x1b2848;
+	public static inline final cardStripes = 0x22335a;
+	public static inline final cardEdge = 0x465d8c;
+	public static inline final cardMap = 0xe9c93a;
+	public static inline final cardWords = 0xf6f2e8;
+	public static inline final cardQuietWords = 0xa89775;
+
 	// ---- Car details ----
 	public static inline final roof = 0xf6f2e8;
 	public static inline final chrome = 0xc9ced4;

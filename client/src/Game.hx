@@ -142,6 +142,7 @@ class Game {
 		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
 		lastFrameTime = now;
 		if (mode == ChoosingTrack) browseTheCards();
+		panels.animate(secondsSinceLastFrame);
 		if (mode == ChoosingDrivers || (mode == Online && online.isBetweenRaces())) takeSeats();
 		if (mode == Online) online.frame(now, secondsSinceLastFrame);
 		else frameOnThisComputer(now, secondsSinceLastFrame);

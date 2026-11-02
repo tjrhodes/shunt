@@ -143,6 +143,12 @@
   #hud { transition: opacity 200ms ease; }
   body.is-starting #hud { opacity: 0; }
 
+  /* Out of sight, but there for screen readers and keyboards. */
+  .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* The ring of track cards, drawn in 3D (view/CardRing.hx). */
+  .card-ring { display: block; width: calc(100% + 52px); margin: 0 -26px; height: clamp(260px, 46vh, 420px); cursor: pointer; }
+
   /* The first stage: a carousel of track cards, the chosen one in the middle (it slides there). */
   .panel-tracks { width: min(100%, 64rem); }
   .track-cards {

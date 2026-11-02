@@ -97,6 +97,11 @@ class Panels {
 		trackCards.mark(chosen);
 	}
 
+	/** Moves anything moving in the panels on by some seconds (the ring of track cards, while it shows). */
+	public function animate(seconds:Float) {
+		if (!trackPanel.hidden) trackCards.animate(seconds);
+	}
+
 	/** The chosen track changed while the cards show. */
 	public function markTrack(chosen:Int) {
 		trackCards.mark(chosen);
