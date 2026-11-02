@@ -84,13 +84,13 @@ class Game {
 	/** Every button does the same thing on this computer and online, where it means asking the room. */
 	function panelActions():PanelActions {
 		return {
-			chooseTrack: index -> mode == Online ? online.chooseTrack(index) : pickCard(index),
-			raceHere: toDrivers,
+			chooseTrack: index -> mode == Online ? online.pickCard(index) : pickCard(index),
+			raceHere: () -> mode == Online ? online.doneWithTracks() : toDrivers(),
 			start: () -> mode == Online ? online.startRace() : startRacing(),
 			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
 			toggleSound: toggleSound,
 			raceAgain: () -> mode == Online ? online.startRace() : raceAgain(),
-			changeTrack: showTrackCards,
+			changeTrack: () -> mode == Online ? online.browseTracks() : showTrackCards(),
 			goOnline: goOnline,
 			joinFriends: () -> goOnline(RoomById(OnlineServer.invitation())),
 			raceAlone: forgetTheInvitation,
@@ -131,17 +131,19 @@ class Game {
 		panels.showDrivers(chosenTrack, seatLooks());
 	}
 
-	/** On the track cards, a push left or right on any controller (keys, stick) moves to the next card. */
+	/** On the track cards, a push left or right on any controller (keys, stick) moves to the next card (online: the room's next track). */
 	function browseTheCards() {
 		var push = controls.sidewaysJustPushed();
-		if (push != 0) previewTrack(chosenTrack + push);
+		if (push == 0) return;
+		if (mode == Online) online.nextCard(push);
+		else previewTrack(chosenTrack + push);
 	}
 
 	/** One frame: the ticks due and the sparks and smoke moved on (while racing), the presses that happen once, and drawing. */
 	function frame(now:Float) {
 		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
 		lastFrameTime = now;
-		if (mode == ChoosingTrack) browseTheCards();
+		if (panels.isShowingTheTracks()) browseTheCards();
 		panels.animate(secondsSinceLastFrame);
 		if (mode == ChoosingDrivers || (mode == Online && online.isBetweenRaces())) takeSeats();
 		if (mode == Online) online.frame(now, secondsSinceLastFrame);
@@ -178,7 +180,7 @@ class Game {
 		mode = RaceOver;
 		show.sound.rest();
 		var isAlone = lineup.people() == 1;
-		panels.showResults(race, {nameOf: seat -> Words.driverName(seat, Paint.liveries[seat].number, lineup.isHuman(seat), isAlone), isOurs: lineup.isHuman});
+		panels.showResults(race, {nameOf: seat -> Words.driverName(seat, Words.aiKinds[DriverCharacters.kindOf(seed, seat)], lineup.isHuman(seat), isAlone), isOurs: lineup.isHuman});
 	}
 
 	/** Every car drawn part way between its last two ticks. */
@@ -217,7 +219,7 @@ class Game {
 			var isHuman = lineup.isHuman(seat);
 			var kind = DriverCharacters.kindOf(seed, seat);
 			{
-				who: isHuman ? Words.driverName(seat, 0, true, false) : Words.aiKinds[kind],
+				who: isHuman ? Words.driverName(seat, "", true, false) : Words.aiKinds[kind],
 				how: controller != null ? Words.controllerName(controller) : (isHuman ? Words.anyControls : Words.aiKindsAre[kind]),
 				isAPerson: isHuman,
 				isOurs: isHuman
@@ -233,7 +235,8 @@ class Game {
 			case ChoosingTrack: toDrivers();
 			case ChoosingDrivers | Paused: startRacing();
 			case RaceOver: raceAgain();
-			case Racing | Online:
+			case Online: if (panels.isShowingTheTracks()) online.doneWithTracks();
+			case Racing:
 		}
 	}
 

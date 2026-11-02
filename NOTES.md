@@ -340,8 +340,15 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   pale stone, lichen yellow, ochre, rust, ember); fonts Fira Sans and Fira
   Sans Condensed (900 for titles and numbers), also for the car numbers and
   billboards (`view/Lettering.hx`).
-- The track picker shows twelve tracks three to a row, name over laps; the
-  four seat cards fit on one row.
+- The online room no longer has its own track picker (2 Nov): it shows
+  its track as one line with a small map, and the host's "Change track"
+  opens the same ring of cards as on this computer ("Use this track" goes
+  back). Every card chosen there is the room's track at once.
+- Results lead with the winner ("Ace wins", "You win!") and the track;
+  the winner's row stands out. AI drivers are named by their kind (Ace,
+  Bruiser, Steady) on the results, offline and online, instead of "No. N".
+- A quick match's countdown now ticks down on the room panel each frame,
+  from the last time the room said how long was left.
 - The camera now prefers a diagonal view unless a straight one fills the
   screen 1.45 times better (was 1.25): the Comb came out straight-on.
 - **Starting a race in stages** (Tom: "a carousel of tracks on cards, then

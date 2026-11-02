@@ -1,6 +1,5 @@
 package hud;
 
-import js.Browser;
 import js.html.Element;
 import view.CardRing;
 import view.TrackMap;
@@ -44,7 +43,6 @@ class TrackCards {
 		ring.animate(seconds);
 	}
 
-
 	/** One track's card: its map, then its name, family, and laps and length. */
 	static function card(track:Track, row:Element, pick:() -> Void):Element {
 		var card = Dom.button("", "track-card", row, pick);
@@ -57,14 +55,10 @@ class TrackCards {
 	}
 
 	/** The track's map, as a small SVG drawing (`TrackMap` works out the lines). */
-	static function mapOf(track:Track):Element {
+	public static function mapOf(track:Track):Element {
 		var room = TrackMap.size;
 		var drawing = Svg.part("svg", null, ["viewBox" => '-4 -4 ${room + 8} ${room + 8}', "class" => "track-card-map", "aria-hidden" => "true"]);
 		Svg.part("path", drawing, ["d" => TrackMap.pathOf(track), "stroke-width" => '$wallThickness']);
 		return drawing;
-	}
-
-	static function reducedMotion():Bool {
-		return Browser.window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 	}
 }

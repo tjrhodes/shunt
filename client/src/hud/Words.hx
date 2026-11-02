@@ -26,6 +26,7 @@ class Words {
 	public static inline final noTimeYet = "–";
 	public static inline final drivers = "Drivers";
 	public static inline final aiDriver = "AI";
+	public static inline final freeSeat = "Free seat";
 
 	/** The three kinds of AI driver, in `DriverCharacters`' order, and what each is like. */
 	public static final aiKinds = ["Ace", "Bruiser", "Steady"];
@@ -37,6 +38,7 @@ class Words {
 	public static inline final previousTrack = "Previous track";
 	public static inline final nextTrack = "Next track";
 	public static inline final back = "Back";
+	public static inline final useThisTrack = "Use this track";
 
 	/** The drivers panel says which track the race is on: "Serpentine, 3 laps". */
 	public static function racingOn(name:String, laps:Int):String {
@@ -68,7 +70,7 @@ class Words {
 	public static inline final copy = "Copy";
 	public static inline final copied = "Copied";
 	public static inline final leave = "Leave";
-	public static inline final youAreTheHost = "You're the host: pick a track and start when everyone's in.";
+	public static inline final youAreTheHost = "You're the host: change the track if you like, and start when everyone's in.";
 	public static inline final waitingForTheHost = "Waiting for the host to start.";
 	public static inline final waitingToStart = "Waiting for one more person to start.";
 	public static inline final watching = "Every seat is taken: you're watching this race, and get a seat in the next.";
@@ -96,10 +98,15 @@ class Words {
 		return '$position$ending';
 	}
 
-	/** A seat's name: "You" for the one person here racing alone, "Player 2" for anyone else, or the AI car's number. */
-	public static function driverName(seat:Int, number:Int, isAPerson:Bool, isYouAlone:Bool):String {
-		if (!isAPerson) return 'No. $number';
+	/** A seat's name: "You" for the one person here racing alone, "Player 2" for anyone else, or an AI driver's name (its kind). */
+	public static function driverName(seat:Int, aiName:String, isAPerson:Bool, isYouAlone:Bool):String {
+		if (!isAPerson) return aiName;
 		return isYouAlone ? you : 'Player ${seat + 1}';
+	}
+
+	/** The results' headline: who won. */
+	public static function winner(name:String):String {
+		return name == you ? "You win!" : '$name wins';
 	}
 
 	/** A person's short tag in the HUD: "P2". */
@@ -124,11 +131,6 @@ class Words {
 		var wholeSeconds = Std.int((tenths % 600) / 10);
 		var secondsText = minutes > 0 && wholeSeconds < 10 ? '0$wholeSeconds' : '$wholeSeconds';
 		return (minutes > 0 ? '$minutes:' : "") + '$secondsText.${tenths % 10}';
-	}
-
-	/** A track as the online room's picker offers it: its name, and its laps on a line of their own. */
-	public static function trackChoice(name:String, laps:Int):String {
-		return '$name\n$laps laps';
 	}
 
 	/** A count out of a total, as the HUD shows laps and places: "3 / 5". */

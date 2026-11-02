@@ -56,6 +56,7 @@ class Panels {
 	final pausePanel:Element;
 	final resultsPanel:Element;
 	final trackCards:TrackCards;
+	final tracksGo:Element;
 	final tracks:Array<Track>;
 	final drivers:DriverParts;
 	final room:RoomParts;
@@ -67,10 +68,10 @@ class Panels {
 		this.tracks = tracks;
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
 		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack);
-		Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
+		tracksGo = Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
 		drivers = new DriverParts(driversPanel = panel(Words.drivers, "panel-drivers"), actions);
 		invitePanel = invitation(actions);
-		room = new RoomParts(roomPanel = panel(Words.online, "panel-room"), tracks, actions);
+		room = new RoomParts(roomPanel = panel(Words.online, "panel-room"), actions);
 		pause = new PauseParts(pausePanel = panel(Words.paused, "panel-pause"), actions);
 		results = new ResultsParts(resultsPanel = panel(Words.results, "panel-results"), actions);
 	}
@@ -91,8 +92,9 @@ class Panels {
 
 	// ---- Starting a race ----
 
-	/** The first stage: the track cards, the chosen one marked and in the middle. */
-	public function showTracks(chosen:Int) {
+	/** The first stage: the track cards, the chosen one marked and in the middle. Online the go button says the track is chosen, rather than "race here". */
+	public function showTracks(chosen:Int, isOnline = false) {
+		Dom.setText(tracksGo, isOnline ? Words.useThisTrack : Words.thisTrack);
 		showOnly(trackPanel);
 		trackCards.mark(chosen);
 	}
@@ -158,19 +160,19 @@ class Panels {
 
 	/** The online room before a race: its link, who sits where, the track, and starting. */
 	public function showRoom(view:RoomView, seats:Array<SeatLook>, isHost:Bool, link:Null<String>) {
-		room.show(view, seats, isHost, link);
+		room.show(view, tracks[view.track], seats, isHost, link);
 		if (holder.querySelector(".panel:not([hidden])") != roomPanel) showOnly(roomPanel);
+	}
+
+	/** A quick match's countdown, ticking down while the room shows. */
+	public function showCountdown(seconds:Float) {
+		if (!roomPanel.hidden) room.showCountdown(seconds);
 	}
 
 	/** Something went wrong online: what it means, and (small) the reason given. */
 	public function showCantConnect(reason:String) {
 		room.showProblem(Words.cantConnect, reason);
 		showOnly(roomPanel);
-	}
-
-	/** Whether a panel shows that a press of yes (a gamepad's A) shouldn't go through: the online room, where only the host's start counts. */
-	public function isShowingTheRoom():Bool {
-		return !roomPanel.hidden;
 	}
 
 	// ---- Every panel ----
@@ -188,7 +190,7 @@ class Panels {
 	function showOnly(wanted:Null<Element>, ?focusOn:Element) {
 		for (box in everyPanel) box.hidden = box != wanted;
 		holder.classList.toggle("is-showing", wanted != null);
-		Browser.document.body.classList.toggle("is-starting", [trackPanel, driversPanel, invitePanel].contains(wanted));
+		Browser.document.body.classList.toggle("is-starting", [trackPanel, driversPanel, invitePanel, roomPanel].contains(wanted));
 		if (wanted == null) return;
 		var main = focusOn ?? firstShowing(wanted.querySelectorAll(".button-go:not(.button-join)"));
 		if (main != null) main.focus();
@@ -197,26 +199,6 @@ class Panels {
 	static function firstShowing(buttons:js.html.NodeList):Null<Element> {
 		for (index in 0...buttons.length) if (!(cast buttons.item(index) : Element).hidden) return cast buttons.item(index);
 		return null;
-	}
-}
-
-/** A button per track, side by side under a label; pressing one chooses it. Online only the host may. */
-class TrackPicker {
-	final buttons:Array<Element>;
-
-	public function new(parent:Element, tracks:Array<Track>, choose:Int -> Void) {
-		var picker = Dom.make("div", "track-picker", null, parent);
-		picker.setAttribute("role", "group");
-		picker.setAttribute("aria-label", Words.track);
-		buttons = [for (index in 0...tracks.length) Dom.button(Words.trackChoice(tracks[index].name, tracks[index].laps), "button track-choice", picker, () -> choose(index))];
-	}
-
-	/** Marks the track chosen; the buttons work only for whoever may choose. */
-	public function mark(chosen:Int, mayChoose:Bool) {
-		for (index in 0...buttons.length) {
-			buttons[index].setAttribute("aria-pressed", '${index == chosen}');
-			buttons[index].toggleAttribute("disabled", !mayChoose);
-		}
 	}
 }
 
@@ -292,15 +274,16 @@ class RoomParts {
 	final panel:Element;
 	final status:Element;
 	final reason:Element;
+	final trackRow:Element;
+	final changeTrackButton:Element;
 	final linkRow:Element;
 	final link:Element;
 	final copyButton:Element;
-	final tracks:TrackPicker;
 	final seats:SeatCards;
 	final startButton:Element;
 	final leaveButton:Element;
 
-	public function new(panel:Element, everyTrack:Array<Track>, actions:PanelActions) {
+	public function new(panel:Element, actions:PanelActions) {
 		this.panel = panel;
 		status = Dom.make("p", "panel-tagline", null, panel);
 		reason = Dom.make("p", "panel-help room-reason", null, panel);
@@ -308,7 +291,9 @@ class RoomParts {
 		Dom.make("p", "panel-help", Words.roomLink, linkRow);
 		link = Dom.make("code", "room-link-text", null, linkRow);
 		copyButton = Dom.button(Words.copy, "button", linkRow, copyTheLink);
-		tracks = new TrackPicker(panel, everyTrack, actions.chooseTrack);
+		var trackBox = Dom.make("div", "room-track", null, panel);
+		trackRow = Dom.make("div", "room-track-what", null, trackBox);
+		changeTrackButton = Dom.button(Words.changeTrack, "button", trackBox, actions.changeTrack);
 		seats = new SeatCards(panel);
 		startButton = Dom.button(Words.start, "button button-go", panel, actions.start);
 		leaveButton = Dom.button(Words.leave, "button", panel, actions.leave);
@@ -316,6 +301,10 @@ class RoomParts {
 
 	public function showConnecting() {
 		showProblem(Words.connecting);
+	}
+
+	public function showCountdown(seconds:Float) {
+		Dom.setText(status, Words.startsIn(Math.max(0, seconds)));
 	}
 
 	/** Just a line of words, perhaps a reason, and a way out: connecting, or a problem. */
@@ -326,16 +315,27 @@ class RoomParts {
 		panel.classList.add("is-just-words");
 	}
 
-	public function show(view:RoomView, looks:Array<SeatLook>, isHost:Bool, roomLink:Null<String>) {
+	public function show(view:RoomView, track:Track, looks:Array<SeatLook>, isHost:Bool, roomLink:Null<String>) {
 		Dom.setText(status, statusOf(view, isHost, Lambda.exists(looks, look -> look.isOurs)));
 		reason.hidden = true;
 		panel.classList.remove("is-just-words");
 		linkRow.hidden = roomLink == null;
 		Dom.setText(link, roomLink ?? "");
 		Dom.setText(copyButton, Words.copy);
-		tracks.mark(view.track, isHost);
+		showTrack(track);
+		changeTrackButton.hidden = !isHost;
 		seats.show(looks);
 		startButton.hidden = !isHost;
+	}
+
+	/** The room's track: a small map of it, its name, and its laps and length (the host can change it, on the cards). */
+	function showTrack(track:Track) {
+		if (trackRow.dataset.track == track.name) return;
+		trackRow.dataset.track = track.name;
+		trackRow.innerHTML = "";
+		trackRow.appendChild(TrackCards.mapOf(track));
+		Dom.make("span", "room-track-name", track.name, trackRow);
+		Dom.make("span", "room-track-laps", Words.lapsAndLength(track.laps, track.length), trackRow);
 	}
 
 	/** One line on what happens next. */
@@ -382,6 +382,8 @@ class PauseParts {
 
 /** The results panel's parts. */
 class ResultsParts {
+	final headline:Element;
+	final trackLine:Element;
 	final table:Element;
 	final status:Element;
 	final raceAgainButton:Element;
@@ -389,6 +391,8 @@ class ResultsParts {
 	final leaveButton:Element;
 
 	public function new(panel:Element, actions:PanelActions) {
+		headline = panel.querySelector(".panel-title");
+		trackLine = Dom.make("p", "panel-tagline", null, panel);
 		table = Dom.make("ol", "results", null, panel);
 		status = Dom.make("p", "panel-help", Words.waitingForTheHost, panel);
 		raceAgainButton = Dom.button(Words.raceAgain, "button button-go", panel, actions.raceAgain);
@@ -399,6 +403,8 @@ class ResultsParts {
 	/** The results, in finishing order; the buttons for on this computer, or online (the host starts the next race). */
 	public function show(race:Race, drivers:Drivers, online:Null<{isHost:Bool}>) {
 		table.innerHTML = "";
+		Dom.setText(headline, Words.winner(drivers.nameOf(race.state.order[0])));
+		Dom.setText(trackLine, Words.racingOn(race.track.name, race.state.laps));
 		for (place in 0...race.state.order.length) row(race, drivers, race.state.order[place], place + 1);
 		raceAgainButton.hidden = online != null && !online.isHost;
 		status.hidden = online == null || online.isHost;

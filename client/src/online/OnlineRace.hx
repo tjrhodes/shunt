@@ -6,6 +6,7 @@ import input.Controls;
 import js.Browser;
 import online.Colyseus;
 import seats.Lineup;
+import shunt.ai.DriverCharacter;
 import shunt.ai.RacingLine;
 import shunt.car.CarInput;
 import shunt.online.InputQueue.NumberedInputs;
@@ -50,6 +51,15 @@ class OnlineRace {
 	var smoothings:Array<Smoothing> = [];
 	var posesBefore:Array<Pose> = [];
 	var isMenuShowing = false;
+
+	/** Whether the host is choosing the room's track on the cards (a stage of its own, off the room panel). */
+	var isChoosingTrack = false;
+
+	/** The seed of the race under way (or just finished), or -1 before the first: the AI drivers' kinds come from it. */
+	var raceSeed = -1;
+
+	/** When the room last said how long until a quick match starts (seconds on the page's clock), to count down from. */
+	var countdownHeardAt = 0.0;
 
 	public function new(around:Surroundings) {
 		this.around = around;
@@ -100,6 +110,7 @@ class OnlineRace {
 
 	function heardAboutTheRoom(heard:RoomView) {
 		view = heard;
+		countdownHeardAt = secondsNow();
 		if (prediction != null && view.phase == Racing) prediction.reseat(view.seats);
 		if (view.phase == Gathering) prediction = null;
 		if (view.phase == Gathering) gatherOn(view.track);
@@ -120,6 +131,7 @@ class OnlineRace {
 		around.show.showTrack(track);
 		around.show.freshRace();
 		prediction = new Prediction(track, around.racingLines[start.track], start, room.sessionId);
+		raceSeed = start.seed;
 		gatheringRace = null;
 		smoothings = [for (_ in start.seats) new Smoothing()];
 		posesBefore = Poses.of(prediction.race.state);
@@ -149,6 +161,7 @@ class OnlineRace {
 			sendWhatIsWaiting();
 			around.show.animate(secondsSinceLastFrame);
 		} else if (view != null && view.phase != Racing && around.lineup.people() != peopleAsked() && whoIsHere()) askForSeats();
+		if (view != null && view.startsIn >= 0 && !isRacing()) around.panels.showCountdown(view.startsIn - (secondsNow() - countdownHeardAt));
 		draw(secondsSinceLastFrame);
 	}
 
@@ -200,6 +213,8 @@ class OnlineRace {
 	/** The panel for where the room has got to: the room before a race, the results after; none while racing (unless the menu is open). */
 	function showThePanel() {
 		if (view == null || isMenuShowing) return;
+		if (isChoosingTrack && view.phase == Gathering && isHost()) return around.panels.markTrack(view.track);
+		isChoosingTrack = false;
 		if (view.phase == Gathering || (view.phase == Racing && prediction == null)) showTheRoom();
 		else if (view.phase == Results && prediction != null) around.panels.showResults(prediction.race, drivers(), {isHost: isHost()});
 		else if (view.phase == Results) showTheRoom();
@@ -214,7 +229,7 @@ class OnlineRace {
 	function seatLooks():Array<SeatLook> {
 		return [for (seat in 0...view.seats.length) {
 			var holder = view.seats[seat];
-			{who: drivers().nameOf(seat), how: holder.owner == "" ? Words.aiDriver : "", isAPerson: holder.owner != "", isOurs: holder.owner == room.sessionId};
+			{who: drivers().nameOf(seat), how: holder.owner == "" ? Words.freeSeat : "", isAPerson: holder.owner != "", isOurs: holder.owner == room.sessionId};
 		}];
 	}
 
@@ -222,9 +237,14 @@ class OnlineRace {
 	function drivers():Drivers {
 		var oursCount = Lambda.count(view.seats, holder -> holder.owner == room.sessionId);
 		return {
-			nameOf: seat -> Words.driverName(seat, Paint.liveries[seat].number, view.seats[seat].owner != "", isOurs(seat) && oursCount == 1),
+			nameOf: seat -> Words.driverName(seat, aiNameOf(seat), view.seats[seat].owner != "", isOurs(seat) && oursCount == 1),
 			isOurs: isOurs
 		};
+	}
+
+	/** An AI seat's name: its kind once a race has started (its drivers come from the race's seed), plain "AI" before. */
+	function aiNameOf(seat:Int):String {
+		return raceSeed < 0 ? Words.aiDriver : Words.aiKinds[DriverCharacters.kindOf(raceSeed, seat)];
 	}
 
 	/** The pause key online: the race can't stop, but a menu opens (sound, leave) and closes again. */
@@ -243,6 +263,30 @@ class OnlineRace {
 
 	public function chooseTrack(track:Int) {
 		if (room != null) room.send(Messages.chooseTrack, ({track: track} : TrackChoice));
+	}
+
+	/** The host's "Change track": the track cards, as on this computer; each card chosen is the room's track at once. */
+	public function browseTracks() {
+		if (view == null || !isHost()) return;
+		isChoosingTrack = true;
+		around.panels.showTracks(view.track, true);
+	}
+
+	/** A card pressed: the first press chooses it, a second on the chosen one goes back to the room. */
+	public function pickCard(track:Int) {
+		if (track == view.track) doneWithTracks();
+		else chooseTrack(track);
+	}
+
+	/** A push left or right while the cards show: the next card along. */
+	public function nextCard(push:Int) {
+		if (isChoosingTrack) chooseTrack((view.track + push + around.tracks.length) % around.tracks.length);
+	}
+
+	/** Back from the cards to the room. */
+	public function doneWithTracks() {
+		isChoosingTrack = false;
+		showThePanel();
 	}
 
 	public function startRace() {
@@ -270,4 +314,8 @@ class OnlineRace {
 		return Lambda.find(view.browsers, browser -> browser.session == room.sessionId)?.people ?? 0;
 	}
 
+
+	static function secondsNow():Float {
+		return Browser.window.performance.now() / 1000;
+	}
 }
