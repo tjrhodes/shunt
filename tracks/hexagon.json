@@ -1,5 +1,6 @@
 {
  "name": "Hexagon",
+ "family": "arena",
  "laps": 4,
  "edgeWalls": false,
  "centreline": [

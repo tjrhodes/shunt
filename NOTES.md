@@ -344,3 +344,18 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   four seat cards fit on one row.
 - The camera now prefers a diagonal view unless a straight one fills the
   screen 1.45 times better (was 1.25): the Comb came out straight-on.
+- **Starting a race in stages** (Tom: "a carousel of tracks on cards, then
+  a new screen to pick the drivers... nice clutter-free layouts for each
+  stage"). First the track cards (`hud/TrackCards.hx`): a sliding row, one
+  card per track, each with a map drawn from the track's own walls, its
+  name, its family (a new `family` in each track file), and laps and
+  length; the chosen card sits in the middle and the 3D track behind
+  changes with it. Left and right on keys, stick or touch move through
+  them. Then the drivers: the four seats, the AI ones named for their kind
+  (Ace, Bruiser, Steady, from the race's seed), Back and Start, and racing
+  online. A friend's link opens on its own small panel. The HUD fades away
+  while starting.
+- **Found on the way:** on a phone the track panel came out 1,024 px wide
+  and off the side of the screen. The panels' grid sized its one column to
+  fit everything inside it, here the whole row of cards; it now has one
+  column that is never wider than the screen.

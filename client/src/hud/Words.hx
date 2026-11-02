@@ -26,6 +26,30 @@ class Words {
 	public static inline final noTimeYet = "–";
 	public static inline final drivers = "Drivers";
 	public static inline final aiDriver = "AI";
+
+	/** The three kinds of AI driver, in `DriverCharacters`' order, and what each is like. */
+	public static final aiKinds = ["Ace", "Bruiser", "Steady"];
+	public static final aiKindsAre = ["Quick and clean", "Shoves you aside", "Keeps out of trouble"];
+
+	// ---- Choosing a track, then the drivers ----
+	public static inline final chooseATrack = "Choose a track";
+	public static inline final thisTrack = "Race here";
+	public static inline final previousTrack = "Previous track";
+	public static inline final nextTrack = "Next track";
+	public static inline final back = "Back";
+
+	/** The drivers panel says which track the race is on: "Serpentine, 3 laps". */
+	public static function racingOn(name:String, laps:Int):String {
+		return '$name, $laps laps';
+	}
+
+	/** What each family of track is called on its card (by the family's name in the track file). */
+	public static final families = ["oval" => "Oval", "arena" => "Arena maze", "circuit" => "Circuit", "crossing" => "Crossing"];
+
+	/** A track's laps and length, on its card: "3 laps · 650 m". */
+	public static function lapsAndLength(laps:Int, metres:Float):String {
+		return '$laps laps · ${Math.round(metres / 10) * 10} m';
+	}
 	public static inline final anyControls = "Keys, pad or touch";
 	public static inline final joinHint = "More players: press go on your own keys (W or ↑) or gamepad (right trigger) to take a seat; brake to give it back.";
 
@@ -102,7 +126,7 @@ class Words {
 		return (minutes > 0 ? '$minutes:' : "") + '$secondsText.${tenths % 10}';
 	}
 
-	/** A track as the picker offers it: its name, and its laps on a line of their own. */
+	/** A track as the online room's picker offers it: its name, and its laps on a line of their own. */
 	public static function trackChoice(name:String, laps:Int):String {
 		return '$name\n$laps laps';
 	}

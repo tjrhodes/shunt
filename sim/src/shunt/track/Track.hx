@@ -50,6 +50,9 @@ class Track {
 	public final samples:Array<TrackSample>;
 	public final length:Float;
 	public final laps:Int;
+
+	/** Which family of track it is (see `TrackFile`), or "" if its file doesn't say. */
+	public final family:String;
 	public final walls:Array<Wall>;
 
 	/** A road has walls down its edges; an arena is an open floor inside its outline (see `TrackFile`). */
@@ -66,6 +69,7 @@ class Track {
 		length = loopLength(places);
 		samples = [for (index in 0...places.length) sampleAt(places, index, length)];
 		laps = file.laps ?? RaceTuning.defaultLaps;
+		family = file.family ?? "";
 		isARoad = file.edgeWalls ?? true;
 		var loops = [for (loop in file.loops ?? []) spotsOf(loop)];
 		arenaOutline = isARoad || loops.length == 0 ? [] : loops[0];

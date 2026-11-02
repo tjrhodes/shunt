@@ -39,7 +39,7 @@ def centreline():
 
 def main():
     points = [{"x": round(x, 3), "y": round(y, 3), "width": WIDTH} for x, y in centreline()]
-    track = {"name": "Oval", "centreline": points, "barriers": []}
+    track = {"name": "Oval", "family": "oval", "centreline": points, "barriers": []}
     path = Path(__file__).resolve().parent.parent / "tracks" / "oval.json"
     path.write_text(json.dumps(track, indent=1) + "\n", encoding="utf8")
     print(f"{path}: {len(points)} points")

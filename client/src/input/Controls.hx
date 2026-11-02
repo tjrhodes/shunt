@@ -15,8 +15,11 @@ using input.Controller.Controllers;
  * once per press.
  */
 class Controls {
-	/** A pedal pressed further than this counts as pressed, for joining and leaving a seat. */
+	/** A pedal pressed further than this counts as pressed, for joining and leaving a seat... */
 	static inline final pressedFurtherThan = 0.5;
+
+	/** ...and steering pushed further than this (a key's first touch gives 0.3), for moving through cards. */
+	static inline final pushedFurtherThan = 0.2;
 
 	final keyboard = new Keyboard();
 	final gamepads = new Gamepads();
@@ -24,6 +27,8 @@ class Controls {
 	final pausePresses = new PressedOnce();
 	final mutePresses = new PressedOnce();
 	final confirmPresses = new PressedOnce();
+	final leftPushes = new PressedOnce();
+	final rightPushes = new PressedOnce();
 	final throttlePresses = new Map<String, PressedOnce>();
 	final brakePresses = new Map<String, PressedOnce>();
 
@@ -60,6 +65,13 @@ class Controls {
 	/** True once each time anyone's yes button (a gamepad's A) goes down. */
 	public function confirmWasJustPressed():Bool {
 		return confirmPresses.justNow(everyonesHands().confirm);
+	}
+
+	/** A push left (-1) or right (1) on anyone's steering that has just begun, or 0: for moving through cards. */
+	public function sidewaysJustPushed():Int {
+		var steer = everyonesHands().steer;
+		if (leftPushes.justNow(steer < -pushedFurtherThan)) return -1;
+		return rightPushes.justNow(steer > pushedFurtherThan) ? 1 : 0;
 	}
 
 	/** The controllers whose throttle has just gone down: asking to join. */

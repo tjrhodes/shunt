@@ -1,5 +1,6 @@
 {
  "name": "Comb",
+ "family": "arena",
  "laps": 3,
  "edgeWalls": false,
  "centreline": [

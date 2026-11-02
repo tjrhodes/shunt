@@ -1,5 +1,6 @@
 {
  "name": "Kidney",
+ "family": "circuit",
  "laps": 4,
  "centreline": [
   {

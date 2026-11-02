@@ -41,6 +41,11 @@ class DriverCharacters {
 		{pace: Ai.steadyPace, aggression: 0.0, skill: 0.7}
 	];
 
+	/** Which kind of driver (0 Ace, 1 Bruiser, 2 Steady) an AI driver in a seat is, in a race with this seed. */
+	public static function kindOf(seed:Int, seat:Int):Int {
+		return (seat + seed) % kinds.length;
+	}
+
 	/**
 	 * A driver for a seat in a race, from the race's seed. Seats next to each
 	 * other get different kinds, so three AI cars are one of each; which seat
@@ -48,7 +53,7 @@ class DriverCharacters {
 	 * track comes from the seed too.
 	 */
 	public static function forSeat(seed:Int, seat:Int):DriverCharacter {
-		var kind = kinds[(seat + seed) % kinds.length];
+		var kind = kinds[kindOf(seed, seat)];
 		var lane = SeededRandom.asFraction(SeededRandom.next(SeededRandom.startingFrom(seed * 7919 + seat * 104729 + 1)));
 		return {pace: kind.pace, aggression: kind.aggression, skill: kind.skill, favouriteLane: lane * 2 - 1};
 	}

@@ -17,7 +17,12 @@ import view.Paint;
 
 /** What the game is doing. */
 enum GameMode {
-	WaitingToStart;
+	/** The first stage of starting: browsing the track cards. */
+	ChoosingTrack;
+
+	/** The second: the drivers, seat by seat. */
+	ChoosingDrivers;
+
 	Racing;
 	Paused;
 	RaceOver;
@@ -56,7 +61,10 @@ class Game {
 	/** The AI driver in each seat, or nothing where a person drives. */
 	var drivers:Array<Null<AiDriver>>;
 	var posesBefore:Array<Pose>;
-	var mode = WaitingToStart;
+	var mode = ChoosingTrack;
+
+	/** The seed of the race lined up: its AI drivers (and so their kinds, on the seat cards) come from it. */
+	var seed = 1;
 	var chosenTrack = 0;
 	var lastFrameTime = -1.0;
 	var online:Null<OnlineRace> = null;
@@ -67,22 +75,23 @@ class Game {
 		show = new Show(page.stage, page.hud, isOneOfOurs);
 		panels = new Panels(page.panels, tracks, panelActions());
 		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
-		chooseTrack(0);
-		OnlineServer.lookForOne().then(isThere -> if (isThere) panels.offerOnline(OnlineServer.invitation() != null));
+		previewTrack(0);
+		showTrackCards();
+		OnlineServer.lookForOne().then(isThere -> if (isThere) onlineIsHere());
 		Browser.window.requestAnimationFrame(frame);
 	}
 
 	/** Every button does the same thing on this computer and online, where it means asking the room. */
 	function panelActions():PanelActions {
 		return {
-			chooseTrack: index -> mode == Online ? online.chooseTrack(index) : chooseTrack(index),
+			chooseTrack: index -> mode == Online ? online.chooseTrack(index) : pickCard(index),
+			raceHere: toDrivers,
 			start: () -> mode == Online ? online.startRace() : startRacing(),
 			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
 			toggleSound: toggleSound,
 			raceAgain: () -> mode == Online ? online.startRace() : raceAgain(),
-			changeTrack: () -> chooseTrack(chosenTrack),
-			quickMatch: () -> goOnline(QuickMatch),
-			raceFriends: () -> goOnline(NewRoom),
+			changeTrack: showTrackCards,
+			goOnline: goOnline,
 			joinFriends: () -> goOnline(RoomById(OnlineServer.invitation())),
 			raceAlone: forgetTheInvitation,
 			leave: () -> if (online != null) online.leave()
@@ -96,20 +105,44 @@ class Game {
 
 	// ---- On this computer ----
 
-	/** Shows a track with the cars on its grid, waiting for the start. */
-	function chooseTrack(index:Int) {
-		chosenTrack = index;
-		show.showTrack(tracks[index]);
+	/** The first stage of starting: the track cards. */
+	function showTrackCards() {
+		mode = ChoosingTrack;
+		panels.showTracks(chosenTrack);
+	}
+
+	/** A track chosen on the cards: shown behind them, with the cars on its grid. */
+	function previewTrack(index:Int) {
+		chosenTrack = (index + tracks.length) % tracks.length;
+		show.showTrack(tracks[chosenTrack]);
 		lineUpANewRace();
-		mode = WaitingToStart;
-		panels.showStart(index, seatLooks());
+		panels.markTrack(chosenTrack);
+	}
+
+	/** A card pressed: the first press chooses it, a second press on the chosen one goes on to the drivers. */
+	function pickCard(index:Int) {
+		if (index == chosenTrack) toDrivers();
+		else previewTrack(index);
+	}
+
+	/** The second stage: the drivers, for a race on the chosen track. */
+	function toDrivers() {
+		mode = ChoosingDrivers;
+		panels.showDrivers(chosenTrack, seatLooks());
+	}
+
+	/** On the track cards, a push left or right on any controller (keys, stick) moves to the next card. */
+	function browseTheCards() {
+		var push = controls.sidewaysJustPushed();
+		if (push != 0) previewTrack(chosenTrack + push);
 	}
 
 	/** One frame: the ticks due and the sparks and smoke moved on (while racing), the presses that happen once, and drawing. */
 	function frame(now:Float) {
 		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
 		lastFrameTime = now;
-		if (mode == WaitingToStart || (mode == Online && online.isBetweenRaces())) takeSeats();
+		if (mode == ChoosingTrack) browseTheCards();
+		if (mode == ChoosingDrivers || (mode == Online && online.isBetweenRaces())) takeSeats();
 		if (mode == Online) online.frame(now, secondsSinceLastFrame);
 		else frameOnThisComputer(now, secondsSinceLastFrame);
 		if (controls.pauseWasJustPressed()) pressPause();
@@ -156,7 +189,7 @@ class Game {
 
 	/** A fresh race on the chosen track, on a new seed, with new AI drivers, lights red. */
 	function lineUpANewRace() {
-		var seed = Std.random(1000000000) + 1;
+		seed = Std.random(1000000000) + 1;
 		var track = tracks[chosenTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
 		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
@@ -181,9 +214,10 @@ class Game {
 		return [for (seat in 0...lineup.seats) {
 			var controller = lineup.controllerIn(seat);
 			var isHuman = lineup.isHuman(seat);
+			var kind = DriverCharacters.kindOf(seed, seat);
 			{
-				who: isHuman ? Words.driverName(seat, 0, true, false) : Words.aiDriver,
-				how: controller != null ? Words.controllerName(controller) : (isHuman ? Words.anyControls : ""),
+				who: isHuman ? Words.driverName(seat, 0, true, false) : Words.aiKinds[kind],
+				how: controller != null ? Words.controllerName(controller) : (isHuman ? Words.anyControls : Words.aiKindsAre[kind]),
 				isAPerson: isHuman,
 				isOurs: isHuman
 			};
@@ -195,7 +229,8 @@ class Game {
 	/** A gamepad's A says yes to the panel showing: start, resume, or race again. */
 	function pressYes() {
 		switch mode {
-			case WaitingToStart | Paused: startRacing();
+			case ChoosingTrack: toDrivers();
+			case ChoosingDrivers | Paused: startRacing();
 			case RaceOver: raceAgain();
 			case Racing | Online:
 		}
@@ -244,16 +279,21 @@ class Game {
 		online.join(how);
 	}
 
-	/** Back to the plain start panel: no invitation any more (declined, or that race has been left). */
+	/** There is a server here: the drivers panel offers racing online, and a friend's link opens on its own panel. */
+	function onlineIsHere() {
+		panels.offerOnline();
+		if (OnlineServer.invitation() != null && mode == ChoosingTrack) panels.showInvitation();
+	}
+
+	/** Back to the track cards: no invitation any more (declined, or that race has been left). */
 	function forgetTheInvitation() {
 		OnlineServer.forgetInvitation();
-		panels.offerOnline(false);
+		showTrackCards();
 	}
 
 	function backFromOnline() {
-		forgetTheInvitation();
 		online = null;
-		mode = WaitingToStart;
-		chooseTrack(chosenTrack);
+		previewTrack(chosenTrack);
+		forgetTheInvitation();
 	}
 }

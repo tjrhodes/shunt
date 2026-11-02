@@ -222,6 +222,7 @@ def hexagon_side(k):
 def arena(name, path, outline, fences, laps, more_loops=()):
     return {
         "name": name,
+        "family": "arena",
         "laps": laps,
         "edgeWalls": False,
         "centreline": as_points(evenly(path), width=ARENA_WIDTH),
@@ -265,8 +266,8 @@ def twister():
     return road("Twister", without_repeats(rounded(corners, 22, steps=5)), laps=4)
 
 
-def road(name, path, laps):
-    return {"name": name, "laps": laps, "centreline": as_points(evenly(shrunk_to_fit(path)), width=ROAD_WIDTH), "barriers": []}
+def road(name, path, laps, family="circuit"):
+    return {"name": name, "family": family, "laps": laps, "centreline": as_points(evenly(shrunk_to_fit(path)), width=ROAD_WIDTH), "barriers": []}
 
 
 def shrunk_to_fit(path):
@@ -286,7 +287,7 @@ def hourglass():
     def at(share):
         t = 2 * math.pi * share
         return (120 * math.sin(t), 70 * math.sin(t) * math.cos(t) * 1.6)
-    return road("Hourglass", curve(at, 56), laps=4)
+    return road("Hourglass", curve(at, 56), laps=4, family="crossing")
 
 
 def pretzel():
@@ -295,7 +296,7 @@ def pretzel():
         t = 2 * math.pi * share
         radius = 45 + 85 * math.cos(t)
         return (radius * math.cos(t), radius * math.sin(t) * 1.15)
-    return road("Pretzel", starting_at(curve(at, 64), 32), laps=4)
+    return road("Pretzel", starting_at(curve(at, 64), 32), laps=4, family="crossing")
 
 
 def trefoil():
@@ -303,7 +304,7 @@ def trefoil():
     def at(share):
         t = 2 * math.pi * share
         return (42 * (math.sin(t) + 2 * math.sin(2 * t)), 42 * (math.cos(t) - 2 * math.cos(2 * t)))
-    return road("Trefoil", curve(at, 72), laps=3)
+    return road("Trefoil", curve(at, 72), laps=3, family="crossing")
 
 
 # ---- Writing them ----
