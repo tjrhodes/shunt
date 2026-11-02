@@ -26,9 +26,14 @@ class AiTuning {
 
 	// ---- Character ----
 
-	/** Drivers drive at between these shares of the racing line's speeds. */
-	public static inline final slowestPace = 0.88;
-	public static inline final fastestPace = 0.98;
+	/**
+	 * Each kind of driver's share of the racing line's speeds (which already
+	 * keep a margin of grip in hand: over 1 eats into it). They were 0.88 to
+	 * 0.98, at random, until 2 Nov: too easy to beat.
+	 */
+	public static inline final acePace = 1.08;
+	public static inline final bruiserPace = 1.04;
+	public static inline final steadyPace = 0.97;
 
 	/**
 	 * How far from the middle a driver's favourite lane can be, as a share of

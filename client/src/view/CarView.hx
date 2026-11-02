@@ -191,7 +191,7 @@ class CarView {
 		paint.arc(64, 64, 60, 0, 2 * Math.PI);
 		paint.fill();
 		paint.fillStyle = Paint.css(Paint.roofNumber);
-		paint.font = "800 76px 'Saira Condensed', sans-serif";
+		paint.font = Lettering.heavy(76);
 		paint.textAlign = "center";
 		paint.textBaseline = "middle";
 		paint.fillText('${livery.number}', 64, 68);

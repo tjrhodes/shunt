@@ -42,7 +42,7 @@ class IsometricCamera {
 	 * isometric look, and shows walls best; it is chosen unless another
 	 * way fills the screen this much better.
 	 */
-	static inline final diagonalPreference = 1.25;
+	static inline final diagonalPreference = 1.45;
 
 	/** Frames the track for a screen this many pixels wide and high. */
 	public function frame(width:Float, height:Float) {

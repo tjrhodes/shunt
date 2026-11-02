@@ -27,6 +27,8 @@ from pathlib import Path
 
 TRACKS = Path(__file__).resolve().parent.parent / "tracks"
 ROAD_WIDTH = 14.0       # a circuit's road, wall to wall: three cars wide
+LONGEST_ROAD = 185.0    # a circuit is shrunk until its centreline fits this many metres across (about the oval's size):
+                        # the camera fits the whole track on screen, so a bigger track means tinier cars (Tom, 1 Nov)
 ARENA_WIDTH = 18.0      # how wide an arena's course counts as, for the AI and recovery
 
 
@@ -214,7 +216,7 @@ def snake():
     def at(share):
         t = 2 * math.pi * share
         x = 130 * math.cos(t)
-        y = 48 * math.sin(t) + 14 * math.sin(3 * (x / 130) * math.pi)
+        y = 48 * math.sin(t) + 10 * math.sin(3 * (x / 130) * math.pi)
         return (x, y)
     return road("Snake", curve(at, 64), laps=4)
 
@@ -232,7 +234,17 @@ def twister():
 
 
 def road(name, path, laps):
-    return {"name": name, "laps": laps, "centreline": as_points(evenly(path), width=ROAD_WIDTH), "barriers": []}
+    return {"name": name, "laps": laps, "centreline": as_points(evenly(shrunk_to_fit(path)), width=ROAD_WIDTH), "barriers": []}
+
+
+def shrunk_to_fit(path):
+    """The path made smaller about its middle, if it is wider or taller than `LONGEST_ROAD`."""
+    xs, ys = [x for x, _ in path], [y for _, y in path]
+    longest = max(max(xs) - min(xs), max(ys) - min(ys))
+    if longest <= LONGEST_ROAD:
+        return path
+    middle = ((max(xs) + min(xs)) / 2, (max(ys) + min(ys)) / 2)
+    return [add(middle, scale(sub(spot, middle), LONGEST_ROAD / longest)) for spot in path]
 
 
 # ---- Crossings ----

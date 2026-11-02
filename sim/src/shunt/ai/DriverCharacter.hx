@@ -1,7 +1,6 @@
 package shunt.ai;
 
 import shunt.ai.AiTuning as Ai;
-import shunt.maths.Numbers.partWay;
 import shunt.maths.SeededRandom;
 
 /**
@@ -22,19 +21,35 @@ typedef DriverCharacter = {
 	final favouriteLane:Float;
 }
 
+/** One of the three kinds of AI driver: how fast, how rough, how sharp-eyed for oil. */
+typedef Kind = {
+	final pace:Float;
+	final aggression:Float;
+	final skill:Float;
+}
+
 class DriverCharacters {
-	/** A driver for a seat in a race, from the race's seed. */
+	/**
+	 * The three kinds of AI driver (Tom, 2 Nov: "the AIs might need to get a
+	 * bit faster, one could be aggressive"). An Ace, quickest and clean; a
+	 * Bruiser, nearly as quick, who would rather bump you out of the way than
+	 * go round; and a Steady, the one to beat, who keeps out of trouble.
+	 */
+	static final kinds:Array<Kind> = [
+		{pace: Ai.acePace, aggression: 0.1, skill: 0.9},
+		{pace: Ai.bruiserPace, aggression: 0.95, skill: 0.5},
+		{pace: Ai.steadyPace, aggression: 0.0, skill: 0.7}
+	];
+
+	/**
+	 * A driver for a seat in a race, from the race's seed. Seats next to each
+	 * other get different kinds, so three AI cars are one of each; which seat
+	 * gets which changes from race to race. Where it likes to be across the
+	 * track comes from the seed too.
+	 */
 	public static function forSeat(seed:Int, seat:Int):DriverCharacter {
-		var state = SeededRandom.startingFrom(seed * 7919 + seat * 104729 + 1);
-		function nextFraction() {
-			state = SeededRandom.next(state);
-			return SeededRandom.asFraction(state);
-		}
-		return {
-			pace: partWay(Ai.slowestPace, Ai.fastestPace, nextFraction()),
-			aggression: nextFraction(),
-			skill: nextFraction(),
-			favouriteLane: nextFraction() * 2 - 1
-		};
+		var kind = kinds[(seat + seed) % kinds.length];
+		var lane = SeededRandom.asFraction(SeededRandom.next(SeededRandom.startingFrom(seed * 7919 + seat * 104729 + 1)));
+		return {pace: kind.pace, aggression: kind.aggression, skill: kind.skill, favouriteLane: lane * 2 - 1};
 	}
 }

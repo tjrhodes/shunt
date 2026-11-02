@@ -7,23 +7,23 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Saira+Condensed:wght@600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600&family=Fira+Sans+Condensed:wght@700;800;900&display=swap">
 <style>
   /* Layout: the track fills the screen; small HUD plates sit in its top
      corners like a TV race graphic; panels float over a dimmed track.
      One look on purpose: a night race under floodlights. */
   :root {
-    --night: #101318;          /* matches the 3D sky (view/Paint.hx) */
-    --plate: rgba(12, 14, 18, 0.78);
-    --plate-edge: rgba(255, 244, 224, 0.14);
-    --ink: #f1efe8;
-    --ink-quiet: #a9a8a1;
-    --lamp-off: #2a2d33;
-    --lamp-red: #e5402f;
+    --night: #151a2b;          /* matches the 3D sky (view/Paint.hx): the portfolio's rock palette */
+    --plate: rgba(21, 26, 43, 0.84);
+    --plate-edge: rgba(219, 210, 185, 0.18);
+    --ink: #f6f2e8;
+    --ink-quiet: #a89775;
+    --lamp-off: #293b5f;
+    --lamp-red: #e0461a;
     --lamp-green: #36d06a;
-    --player: #f2b134;         /* replaced at start-up from view/Paint.hx */
-    --display: "Saira Condensed", "Arial Narrow", sans-serif;
-    --body: "Barlow", "Helvetica Neue", Arial, sans-serif;
+    --player: #e9c93a;         /* replaced at start-up from view/Paint.hx */
+    --display: "Fira Sans Condensed", "Arial Narrow", sans-serif;
+    --body: "Fira Sans", "Helvetica Neue", Arial, sans-serif;
     --gutter-left: max(16px, env(safe-area-inset-left, 0px));
     --gutter-right: max(16px, env(safe-area-inset-right, 0px));
     color-scheme: dark;
@@ -56,7 +56,7 @@
     font: 600 11px/1 var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-quiet);
   }
   .figure-value {
-    font: 800 28px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
+    font: 900 28px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: 0.01em;
   }
   .plate-times .figure-value { font-size: 22px; min-width: 3.4ch; }
 
@@ -89,7 +89,7 @@
     display: flex; flex-direction: column; gap: 10px;
   }
   .panel-title {
-    margin: 0; font: 800 clamp(40px, 9vw, 64px)/0.9 var(--display); letter-spacing: -0.01em; text-wrap: balance;
+    margin: 0; font: 900 clamp(40px, 9vw, 64px)/0.9 var(--display); letter-spacing: -0.01em; text-wrap: balance;
   }
   .panel-start .panel-title { font-size: clamp(64px, 16vw, 104px); }
   .panel-tagline { margin: 0 0 6px; font: 500 18px/1.35 var(--body); }
@@ -99,15 +99,17 @@
     font: 800 20px/1 var(--display); letter-spacing: 0.04em; text-transform: uppercase;
     color: var(--ink); background: transparent; border: 1px solid var(--plate-edge); border-radius: 3px;
   }
-  .button-go { margin-top: 14px; color: #14110a; background: var(--player); border-color: var(--player); }
+  .button-go { margin-top: 14px; color: #151a2b; background: var(--player); border-color: var(--player); }
   .button:hover { filter: brightness(1.1); }
   .button:focus-visible, #brake-pad:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 
-  .track-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .track-choice { margin-top: 0; flex: 1 1 10rem; font-size: 17px; text-transform: none; letter-spacing: 0.02em; }
+  /* Twelve tracks: three to a row, compact, name over laps. */
+  .track-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 6px; margin-top: 4px; }
+  .track-choice { margin-top: 0; padding: 8px 10px; font-size: 16px; line-height: 1.2; white-space: pre-line; text-transform: none; letter-spacing: 0.02em; }
+  .track-choice::first-line { font: 800 18px/1.2 var(--display); }
   .track-choice[aria-pressed="true"] { border-color: var(--player); color: var(--player); box-shadow: inset 0 0 0 1px var(--player); }
 
-  .seat-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr)); gap: 8px; margin-top: 8px; }
+  .seat-picker { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); gap: 8px; margin-top: 8px; }
   .seat {
     display: flex; flex-direction: column; gap: 4px; padding: 9px 10px 10px;
     border: 1px solid var(--plate-edge); border-top: 3px solid var(--player); border-radius: 3px;

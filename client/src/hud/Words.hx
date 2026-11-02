@@ -102,9 +102,9 @@ class Words {
 		return (minutes > 0 ? '$minutes:' : "") + '$secondsText.${tenths % 10}';
 	}
 
-	/** A track as the picker offers it: "Serpentine · 3 laps". */
+	/** A track as the picker offers it: its name, and its laps on a line of their own. */
 	public static function trackChoice(name:String, laps:Int):String {
-		return '$name · $laps laps';
+		return '$name\n$laps laps';
 	}
 
 	/** A count out of a total, as the HUD shows laps and places: "3 / 5". */

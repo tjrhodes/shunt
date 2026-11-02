@@ -320,3 +320,27 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   minutes, most of it those 1,200 races.
 - The camera still picks a straight-on view for some box arenas (the
   Comb); that's for the design pass.
+
+## 2 Nov 2026: smaller tracks, sharper AI, the portfolio's look
+
+- **Tracks too big** (Tom: cars tiny on the Trefoil, Hourglass, Snake):
+  the camera fits the whole track, so size is everything. Every road
+  circuit is now shrunk to fit 185 m across (about the oval's 177 m), the
+  road staying 14 m wide: Trefoil 244 → 199 m, Snake 274 → 199, Twister
+  258 → 199, Hourglass 254 → 199. The Snake's wiggles were softened, as
+  they pinched at the smaller size.
+- **AI drivers have characters** (Tom: faster, and one aggressive): an
+  Ace (pace 1.08 of the racing line, clean), a Bruiser (1.04, bumps rather
+  than passes) and a Steady (0.97, clean); three AI cars are always one of
+  each, in seats that change from race to race. They were 0.88 to 0.98 at
+  random. Over 20 races on each track, the Ace won most, the Bruiser the
+  rest bar a few; none was put back more than twice; all checks pass.
+- **The portfolio's palette and type**: Paint.hx and the page's colours
+  are now the rock-and-lichen palette from tomrhodes.it (night-blue rock,
+  pale stone, lichen yellow, ochre, rust, ember); fonts Fira Sans and Fira
+  Sans Condensed (900 for titles and numbers), also for the car numbers and
+  billboards (`view/Lettering.hx`).
+- The track picker shows twelve tracks three to a row, name over laps; the
+  four seat cards fit on one row.
+- The camera now prefers a diagonal view unless a straight one fills the
+  screen 1.45 times better (was 1.25): the Comb came out straight-on.
