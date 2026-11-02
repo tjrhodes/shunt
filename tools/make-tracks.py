@@ -111,26 +111,39 @@ def starting_at(spots, index):
 
 # ---- Arena mazes ----
 
+COMB = {"lane": 28.0, "lanes": 6, "top": 125.0, "fence_y": 26.0, "gap": 24.0}
+
+
 def comb():
     """Six lanes side by side, fingers alternately rising from a fence near the
     bottom and hanging from the top wall; the race snakes up and down the lanes,
     and a lane along the bottom brings it back."""
-    lane, lanes, top, fence_y, gap = 28.0, 6, 125.0, 26.0, 24.0
-    wide = lane * lanes
-    middles = [lane * (i + 0.5) for i in range(lanes)]
+    wide, top, lane = COMB["lane"] * COMB["lanes"], COMB["top"], COMB["lane"]
+    path = without_repeats(rounded(clean_corners(comb_corners()), lane / 2))
+    return arena("Comb", path, [(0, 0), (wide, 0), (wide, top), (0, top)], comb_fences(), laps=3)
+
+
+def comb_corners():
+    """The corners of the comb's way round: west along the bottom lane, then up
+    and down each lane in turn, the last bringing it back to the bottom lane."""
+    lane, lanes, top, fence_y, gap = (COMB[key] for key in ("lane", "lanes", "top", "fence_y", "gap"))
     bottom, high, low = fence_y / 2, top - gap / 2, fence_y + gap / 2
-    corners = [(wide * 0.55, bottom), (middles[0], bottom)]
-    for i, x in enumerate(middles):
+    corners = [(lane * lanes * 0.55, bottom), (lane / 2, bottom)]
+    for i in range(lanes):
         going_up = i % 2 == 0
         enter = bottom if i == 0 else (low if going_up else high)
         leave = bottom if i == lanes - 1 else (high if going_up else low)
-        corners += [(x, enter), (x, leave)]
-    fences = [[(lane, fence_y), (wide - lane, fence_y)]]
+        corners += [(lane * (i + 0.5), enter), (lane * (i + 0.5), leave)]
+    return corners
+
+
+def comb_fences():
+    """The long fence over the bottom lane, and the fingers: odd ones rise from it, even ones hang from the top wall."""
+    lane, lanes, top, fence_y, gap = (COMB[key] for key in ("lane", "lanes", "top", "fence_y", "gap"))
+    fences = [[(lane, fence_y), (lane * (lanes - 1), fence_y)]]
     for i in range(1, lanes):
-        x = lane * i
-        fences.append([(x, fence_y), (x, top - gap)] if i % 2 == 1 else [(x, top), (x, fence_y + gap)])
-    path = without_repeats(rounded(clean_corners(corners), lane / 2))
-    return arena("Comb", path, [(0, 0), (wide, 0), (wide, top), (0, top)], fences, laps=3)
+        fences.append([(lane * i, fence_y), (lane * i, top - gap)] if i % 2 == 1 else [(lane * i, top), (lane * i, fence_y + gap)])
+    return fences
 
 
 def clean_corners(corners):
@@ -147,44 +160,63 @@ def is_straight_through(before, here, after):
     return abs(into[0] * out[1] - into[1] * out[0]) < 1e-6 and dot(into, out) > 0
 
 
+SLALOM = {"long": 240.0, "deep": 72.0, "gap_end": 26.0, "fence_long": 21.0, "every": 34.0, "clear": 75.0}
+
+
 def slalom():
     """A long box split down the middle by a fence; east along one half and back
     west along the other, weaving round short fences from the walls and from the
     middle fence. A clear straight at the start leaves room for the grid."""
-    long, deep, gap_end, fence_long, every, clear = 240.0, 72.0, 26.0, 21.0, 34.0, 75.0
-    middle = deep / 2
-    xs = [clear + every * i for i in range(int((long - gap_end - clear) / every))]
-    fences = [[(gap_end, middle), (long - gap_end, middle)]]
-    east, west = [], []
-    for i, x in enumerate(xs):
-        from_wall = i % 2 == 0
-        fences.append([(x, 0.0), (x, fence_long)] if from_wall else [(x, middle), (x, middle - fence_long)])
-        east.append((x, (fence_long + middle) / 2 if from_wall else (middle - fence_long) / 2))
-        fences.append([(x, deep), (x, deep - fence_long)] if not from_wall else [(x, middle), (x, middle + fence_long)])
-        west.append((x, (deep - fence_long + middle) / 2 if not from_wall else (middle + fence_long + deep) / 2))
+    long, deep, gap_end, clear = (SLALOM[key] for key in ("long", "deep", "gap_end", "clear"))
+    fences, east, west = slalom_weave()
     quarter, three_quarters = deep * 0.25, deep * 0.75
     path = ([(clear - 18, quarter)] + east + [(long - gap_end / 2, quarter), (long - gap_end / 2, three_quarters)]
             + west[::-1] + [(gap_end / 2, three_quarters), (gap_end / 2, quarter)])
     return arena("Slalom", without_repeats(rounded(path, 15, steps=6)), [(0, 0), (long, 0), (long, deep), (0, deep)], fences, laps=3)
 
 
+def slalom_weave():
+    """The fences (the middle one, then a pair at each step, one in each half) and
+    where the race passes each pair: east along the bottom half, west along the top."""
+    long, deep, gap_end, fence_long, every, clear = (SLALOM[key] for key in ("long", "deep", "gap_end", "fence_long", "every", "clear"))
+    middle = deep / 2
+    fences, east, west = [[(gap_end, middle), (long - gap_end, middle)]], [], []
+    for i, x in enumerate(clear + every * i for i in range(int((long - gap_end - clear) / every))):
+        from_wall = i % 2 == 0
+        fences.append([(x, 0.0), (x, fence_long)] if from_wall else [(x, middle), (x, middle - fence_long)])
+        fences.append([(x, middle), (x, middle + fence_long)] if from_wall else [(x, deep), (x, deep - fence_long)])
+        east.append((x, (fence_long + middle) / 2 if from_wall else (middle - fence_long) / 2))
+        west.append((x, (middle + fence_long + deep) / 2 if from_wall else (deep - fence_long + middle) / 2))
+    return fences, east, west
+
+
+HEXAGON = {"outer": 88.0, "island": 34.0, "poke": 30.0}
+
+
 def hexagon():
     """A six-sided ring round a six-sided island; fences reach in from the outer
     wall and out from the island in turn, so the race weaves in and out."""
-    outer, island, poke = 88.0, 34.0, 30.0
-    outer_flat, island_flat = outer * math.cos(math.radians(30)), island * math.cos(math.radians(30))
     fences, path = [], []
     for k in range(6):
-        angle = math.radians(30 + 60 * k)
-        direction = (math.cos(angle), math.sin(angle))
-        from_outside = k % 2 == 0
-        tip = outer_flat - poke if from_outside else island_flat + poke
-        fences.append([scale(direction, outer_flat if from_outside else island_flat), scale(direction, tip)])
-        path.append(scale(direction, (island_flat + tip) / 2 if from_outside else (tip + outer_flat) / 2))
-        between = math.radians(60 + 60 * k)
-        path.append(scale((math.cos(between), math.sin(between)), (island + outer) / 2))
+        fence, passing, between = hexagon_side(k)
+        fences.append(fence)
+        path += [passing, between]
     smooth = without_repeats(rounded(starting_at(path, 1), 30, steps=6))
-    return arena("Hexagon", smooth, polygon(6, outer), fences, laps=4, more_loops=[polygon(6, island)])
+    return arena("Hexagon", smooth, polygon(6, HEXAGON["outer"]), fences, laps=4, more_loops=[polygon(6, HEXAGON["island"])])
+
+
+def hexagon_side(k):
+    """Side k of the ring: its fence (from the outer wall on even sides, from the
+    island on odd ones), where the race passes it, and a point half way to the next."""
+    outer, island, poke = HEXAGON["outer"], HEXAGON["island"], HEXAGON["poke"]
+    outer_flat, island_flat = outer * math.cos(math.radians(30)), island * math.cos(math.radians(30))
+    angle, between = math.radians(30 + 60 * k), math.radians(60 + 60 * k)
+    direction = (math.cos(angle), math.sin(angle))
+    from_outside = k % 2 == 0
+    tip = outer_flat - poke if from_outside else island_flat + poke
+    fence = [scale(direction, outer_flat if from_outside else island_flat), scale(direction, tip)]
+    passing = scale(direction, (island_flat + tip) / 2 if from_outside else (tip + outer_flat) / 2)
+    return fence, passing, scale((math.cos(between), math.sin(between)), (island + outer) / 2)
 
 
 def arena(name, path, outline, fences, laps, more_loops=()):
