@@ -31,9 +31,14 @@ class CardRing {
 	/** How quickly things ease to where they should be: this share of the way per... */
 	static inline final easing = 7.0;
 
-	/** A swipe is a finger moved sideways at least this far (CSS pixels); each this-far again is one more card along. */
+	/**
+	 * Dragging turns the ring one card for every this many CSS pixels the
+	 * finger (or mouse) moves sideways. A finger moved at least
+	 * `swipeAtLeast` is a swipe rather than a tap: even a short quick one
+	 * moves on a card.
+	 */
+	static inline final pixelsPerCard = 90;
 	static inline final swipeAtLeast = 30;
-	static inline final swipePerCard = 90;
 
 	/** The canvas the faces are painted on: this many pixels per metre of card. */
 	static inline final pixelsPerMetre = 420;
@@ -48,11 +53,14 @@ class CardRing {
 	final picked:Int -> Void;
 	final swiped:Int -> Void;
 
-	/** Where a finger (or mouse) went down on the ring, to tell a swipe from a tap; and whether the last one was a swipe, so its click is ignored. */
+	/** Where a finger (or mouse) went down on the ring, or nothing while none is down; and whether the last one was a swipe, so its click is ignored. */
 	var downAtX:Null<Float> = null;
 	var wasASwipe = false;
+
+	/** How far the ring turns: where it is now, where it is going, and how many cards (and part of one) a drag adds to that. */
 	var turn = 0.0;
 	var turnWanted = 0.0;
+	var dragged = 0.0;
 
 	public function new(tracks:Array<Track>, picked:Int -> Void, swiped:Int -> Void) {
 		this.picked = picked;
@@ -64,24 +72,42 @@ class CardRing {
 		for (card in cards) scene.add(card);
 		camera.position.set(0, 0.75, 6.0);
 		camera.lookAt(0, 0.1, -0.6);
+		listenForFingers();
+	}
+
+	/** Taps pick a card; dragging turns the ring (an up-and-down scroll of the panel cancels a drag). */
+	function listenForFingers() {
 		element.addEventListener("click", whereClicked);
-		element.addEventListener("pointerdown", (event:js.html.PointerEvent) -> downAtX = event.clientX);
+		element.addEventListener("pointerdown", fingerDown);
+		element.addEventListener("pointermove", (event:js.html.PointerEvent) -> if (downAtX != null) dragged = -(event.clientX - downAtX) / pixelsPerCard);
 		element.addEventListener("pointerup", fingerUp);
-		element.addEventListener("pointercancel", () -> downAtX = null);
+		element.addEventListener("pointercancel", () -> {
+			downAtX = null;
+			dragged = 0;
+		});
+	}
+
+	/** A finger (or mouse) down: the ring follows it from here, even if it strays off the ring. */
+	function fingerDown(event:js.html.PointerEvent) {
+		downAtX = event.clientX;
+		dragged = 0;
+		element.setPointerCapture(event.pointerId);
 	}
 
 	/**
-	 * A finger let go: if it moved far enough sideways it was a swipe, and
-	 * the ring moves on that many cards (a swipe to the left brings the
-	 * next card, as when flicking through a stack).
+	 * A finger let go: the ring settles on the card nearest where the drag
+	 * left it (dragging to the left brings the next cards, as when flicking
+	 * through a stack). A quick short swipe still moves on one card.
 	 */
 	function fingerUp(event:js.html.PointerEvent) {
 		var moved = downAtX == null ? 0 : event.clientX - downAtX;
+		var cardsAlong = Math.round(dragged);
 		downAtX = null;
+		dragged = 0;
 		wasASwipe = Math.abs(moved) >= swipeAtLeast;
-		if (!wasASwipe) return;
-		var cardsAlong = Std.int(Math.max(1, Math.round(Math.abs(moved) / swipePerCard)));
-		swiped(moved < 0 ? cardsAlong : -cardsAlong);
+		if (wasASwipe && cardsAlong == 0) cardsAlong = moved < 0 ? 1 : -1;
+		turnWanted += cardsAlong;
+		if (cardsAlong != 0) swiped(cardsAlong);
 	}
 
 	/** A card chosen: the ring turns the short way round to bring it out. */
@@ -93,13 +119,19 @@ class CardRing {
 		if (prefersLessMotion()) turn = turnWanted;
 	}
 
-	/** Moves everything on by some seconds of easing, and draws. */
+	/**
+	 * Moves everything on by some seconds of easing, and draws. The ring
+	 * turns towards where it is aimed (while dragging it keeps right up with
+	 * the finger), and each card comes out as far as it is close to that aim:
+	 * the chosen card all the way, and mid-drag two cards part way, one going
+	 * back as the next comes out past it.
+	 */
 	public function animate(seconds:Float) {
-		var share = prefersLessMotion() ? 1 : 1 - Math.exp(-easing * seconds);
-		turn += (turnWanted - turn) * share;
-		var chosen = wrapped(Math.round(turnWanted));
+		var share = prefersLessMotion() || downAtX != null ? 1 : 1 - Math.exp(-easing * seconds);
+		var aim = turnWanted + dragged;
+		turn += (aim - turn) * share;
 		for (index in 0...cards.length) {
-			outness[index] += ((index == chosen ? 1 : 0) - outness[index]) * share;
+			outness[index] += (Math.max(0, 1 - Math.abs(cardsAway(index, aim))) - outness[index]) * share;
 			place(cards[index], index);
 		}
 		fitTheView();
@@ -112,7 +144,7 @@ class CardRing {
 	 * rises, grows, and turns half round to face it.
 	 */
 	function place(card:Group, index:Int) {
-		var angle = 2 * Math.PI * placeInTheRing(index) / cards.length;
+		var angle = 2 * Math.PI * cardsAway(index, turn) / cards.length;
 		var out = smoothly(outness[index]);
 		var inRingX = ringRadius * Math.sin(angle);
 		var inRingZ = ringRadius * Math.cos(angle) - ringRadius;
@@ -121,17 +153,13 @@ class CardRing {
 		card.scale.set(1 + growsBy * out, 1 + growsBy * out, 1);
 	}
 
-	/** How many places round from the front of the ring a card is (between half the ring back and half forward). */
-	function placeInTheRing(index:Int):Float {
+	/** How many places round the ring a card is from a turn of it (the front, when it is the ring's turn now): between half the ring back and half forward. */
+	function cardsAway(index:Int, from:Float):Float {
 		var count = cards.length;
-		var away = (index - turn) % count;
+		var away = (index - from) % count;
 		if (away > count / 2) away -= count;
 		if (away < -count / 2) away += count;
 		return away;
-	}
-
-	function wrapped(index:Int):Int {
-		return ((index % cards.length) + cards.length) % cards.length;
 	}
 
 	/** An ease in and out (0 to 1, gentle at both ends). */

@@ -376,10 +376,12 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   jumps. The faces are painted on canvases (`view/CardFaces.hx`), the map
   from the same path data as before (`view/TrackMap.hx`, used by both).
   The plain buttons stay underneath, out of sight, for screen readers.
-- 3 Nov (Tom): the card ring takes swipes (sideways only; up and down
-  still scroll the panel). A swipe to the left brings the next card, and a
-  longer swipe moves on more than one. The click that ends a swipe is
-  ignored, so a swipe never picks a card by accident.
+- 3 Nov (Tom): the card ring follows a drag (finger or mouse, sideways
+  only; up and down still scroll the panel): one card per 90 px, the front
+  card going back as the next comes out past it, in step with the finger.
+  On letting go it settles on the nearest card; a quick short swipe (30 px
+  or more) still moves on one. Dragging left brings the next cards. The
+  click that ends a drag is ignored, so it never picks a card by accident.
 - The card backs now show the track's map in a quiet blue with its name, so
   the cards in the ring aren't a mystery; only the chosen card's map is yellow.
 - Touch braking is a bar right across the bottom of the screen instead of a
