@@ -113,7 +113,7 @@ class OnlineRace {
 		countdownHeardAt = secondsNow();
 		if (prediction != null && view.phase == Racing) prediction.reseat(view.seats);
 		if (view.phase == Gathering) prediction = null;
-		if (view.phase == Gathering) gatherOn(view.track);
+		if (view.phase == Gathering && !isChoosingTrack) gatherOn(view.track);
 		showThePanel();
 	}
 
@@ -287,7 +287,13 @@ class OnlineRace {
 	/** Back from the cards to the room. */
 	public function doneWithTracks() {
 		isChoosingTrack = false;
+		if (view.phase == Gathering) gatherOn(view.track);
 		showThePanel();
+	}
+
+	/** While the host turns the ring of cards, the track behind follows it (the room's own track may already be further on). */
+	public function showTrackBehind(track:Int) {
+		if (isChoosingTrack) gatherOn(track);
 	}
 
 	public function startRace() {

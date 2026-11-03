@@ -23,8 +23,8 @@ class TrackCards {
 	 * plain buttons stay underneath, out of sight, for screen readers and
 	 * anything that can't draw 3D.
 	 */
-	public function new(parent:Element, tracks:Array<Track>, choose:Int -> Void, moveAlong:Int -> Void) {
-		ring = new CardRing(tracks, choose, moveAlong);
+	public function new(parent:Element, tracks:Array<Track>, choose:Int -> Void, moveAlong:Int -> Void, faced:Int -> Void) {
+		ring = new CardRing(tracks, choose, moveAlong, faced);
 		parent.appendChild(ring.element);
 		var row = Dom.make("div", "track-cards visually-hidden", null, parent);
 		row.setAttribute("role", "listbox");
@@ -41,6 +41,11 @@ class TrackCards {
 	/** Moves the ring on by some seconds, and draws it. */
 	public function animate(seconds:Float) {
 		ring.animate(seconds);
+	}
+
+	/** How far the track behind should be faded out, as the ring turns between cards (see `CardRing.fadeBehind`). */
+	public function fadeBehind():Float {
+		return ring.fadeBehind();
 	}
 
 	/** One track's card: its map, then its name, family, and laps and length. */

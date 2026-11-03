@@ -150,6 +150,8 @@
 
   /* While starting a race, the HUD steps aside: one thing on screen at a time. */
   #hud { transition: opacity 200ms ease; }
+  /* The fade of the track behind the cards, as the ring turns from one to the next. */
+  .track-veil { position: fixed; inset: 0; pointer-events: none; background: var(--night); opacity: 0; }
   body.is-starting #hud { opacity: 0; }
 
   /* Out of sight, but there for screen readers and keyboards. */

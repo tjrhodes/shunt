@@ -16,6 +16,9 @@ typedef PanelActions = {
 
 	/** A swipe on the cards: this many cards along (negative: back). */
 	final moveAlongTheCards:Int -> Void;
+
+	/** The ring has turned to face another card: the track behind should be that one. */
+	final trackFacing:Int -> Void;
 	final raceHere:() -> Void;
 	final start:() -> Void;
 	final resume:() -> Void;
@@ -60,6 +63,9 @@ class Panels {
 	final resultsPanel:Element;
 	final trackCards:TrackCards;
 	final tracksGo:Element;
+
+	/** A veil in the night's colour over the track behind, for the fades between cards. */
+	final veil:Element;
 	final tracks:Array<Track>;
 	final drivers:DriverParts;
 	final room:RoomParts;
@@ -69,8 +75,10 @@ class Panels {
 	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions) {
 		this.holder = holder;
 		this.tracks = tracks;
+		veil = Dom.make("div", "track-veil", null, null);
+		holder.parentElement.insertBefore(veil, holder);
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
-		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards);
+		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards, actions.trackFacing);
 		tracksGo = Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
 		drivers = new DriverParts(driversPanel = panel(Words.drivers, "panel-drivers"), actions);
 		invitePanel = invitation(actions);
@@ -102,9 +110,10 @@ class Panels {
 		trackCards.mark(chosen);
 	}
 
-	/** Moves anything moving in the panels on by some seconds (the ring of track cards, while it shows). */
+	/** Moves anything moving in the panels on by some seconds: the ring of track cards while it shows, and the fade of the track behind it. */
 	public function animate(seconds:Float) {
 		if (!trackPanel.hidden) trackCards.animate(seconds);
+		veil.style.opacity = trackPanel.hidden ? "0" : '${trackCards.fadeBehind()}';
 	}
 
 	/** The chosen track changed while the cards show. */

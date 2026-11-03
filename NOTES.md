@@ -388,3 +388,10 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   round pad in the corner, so the left thumb can brake while the right one
   steers right. The HUD's bottom plates and the start lights sit above it,
   and the touch buttons hide while a panel shows.
+- The track behind the cards fades with the ring (Tom, 3 Nov): a veil in
+  the night's colour deepens as the ring turns towards halfway to the next
+  card, the track changes there unseen, and it lifts as the card comes out.
+  So every card passed gets its own fade, in step with a drag too. The
+  chosen track and the one behind can differ mid-turn (`Game.shownTrack`);
+  going on to the drivers puts the chosen one behind straight away. Online,
+  the room's track shows the same way while the host turns the ring.

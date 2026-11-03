@@ -66,6 +66,9 @@ class Game {
 	/** The seed of the race lined up: its AI drivers (and so their kinds, on the seat cards) come from it. */
 	var seed = 1;
 	var chosenTrack = 0;
+
+	/** The track the world behind shows, and the race lined up on: the chosen one, except while the ring of cards is still turning towards it. */
+	var shownTrack = -1;
 	var lastFrameTime = -1.0;
 	var online:Null<OnlineRace> = null;
 
@@ -76,6 +79,7 @@ class Game {
 		panels = new Panels(page.panels, tracks, panelActions());
 		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
 		previewTrack(0);
+		showTrackBehind(0);
 		showTrackCards();
 		OnlineServer.lookForOne().then(isThere -> if (isThere) onlineIsHere());
 		Browser.window.requestAnimationFrame(frame);
@@ -84,7 +88,7 @@ class Game {
 	/** Every button does the same thing on this computer and online, where it means asking the room. */
 	function panelActions():PanelActions {
 		return {
-			chooseTrack: pickCard, moveAlongTheCards: moveAlongTheCards,
+			chooseTrack: pickCard, moveAlongTheCards: moveAlongTheCards, trackFacing: showTrackBehind,
 			raceHere: () -> mode == Online ? online.doneWithTracks() : toDrivers(),
 			start: () -> mode == Online ? online.startRace() : startRacing(),
 			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
@@ -111,12 +115,23 @@ class Game {
 		panels.showTracks(chosenTrack);
 	}
 
-	/** A track chosen on the cards: shown behind them, with the cars on its grid. */
+	/** A track chosen on the cards: the ring turns to it (and the track behind follows, see `showTrackBehind`). */
 	function previewTrack(index:Int) {
 		chosenTrack = (index % tracks.length + tracks.length) % tracks.length;
-		show.showTrack(tracks[chosenTrack]);
-		lineUpANewRace();
 		panels.markTrack(chosenTrack);
+	}
+
+	/**
+	 * The track behind the cards, with the cars on its grid: it changes as the
+	 * ring turns past each card (under the fade, see `CardRing.fadeBehind`).
+	 * Online, the room's track shows the same way while the host chooses.
+	 */
+	function showTrackBehind(index:Int) {
+		if (mode == Online) return online.showTrackBehind(index);
+		if (index == shownTrack) return;
+		shownTrack = index;
+		show.showTrack(tracks[shownTrack]);
+		lineUpANewRace();
 	}
 
 	/** A card pressed: the first press chooses it, a second press on the chosen one goes on to the drivers (online, `OnlineRace` decides). */
@@ -128,6 +143,7 @@ class Game {
 
 	/** The second stage: the drivers, for a race on the chosen track. */
 	function toDrivers() {
+		showTrackBehind(chosenTrack);
 		mode = ChoosingDrivers;
 		panels.showDrivers(chosenTrack, seatLooks());
 	}
@@ -195,12 +211,12 @@ class Game {
 		show.draw(race, [for (seat in 0...posesNow.length) Poses.between(posesBefore[seat], posesNow[seat], share)], mode == Racing);
 	}
 
-	/** A fresh race on the chosen track, on a new seed, with new AI drivers, lights red. */
+	/** A fresh race on the track shown, on a new seed, with new AI drivers, lights red. */
 	function lineUpANewRace() {
 		seed = Std.random(1000000000) + 1;
-		var track = tracks[chosenTrack];
+		var track = tracks[shownTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
-		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[chosenTrack], seat)];
+		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[shownTrack], seat)];
 		show.hud.seat(lineup.humanSeats());
 		posesBefore = Poses.of(race.state);
 		show.freshRace();
@@ -302,7 +318,8 @@ class Game {
 
 	function backFromOnline() {
 		online = null;
-		previewTrack(chosenTrack);
+		shownTrack = -1;
+		showTrackBehind(chosenTrack);
 		forgetTheInvitation();
 	}
 }

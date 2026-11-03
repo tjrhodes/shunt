@@ -52,6 +52,10 @@ class CardRing {
 	final raycaster = new Raycaster();
 	final picked:Int -> Void;
 	final swiped:Int -> Void;
+	final faced:Int -> Void;
+
+	/** The card at the front of the ring as it turns (the track behind follows it), or -1 before the first. */
+	var facingNow = -1;
 
 	/** Where a finger (or mouse) went down on the ring, or nothing while none is down; and whether the last one was a swipe, so its click is ignored. */
 	var downAtX:Null<Float> = null;
@@ -62,9 +66,10 @@ class CardRing {
 	var turnWanted = 0.0;
 	var dragged = 0.0;
 
-	public function new(tracks:Array<Track>, picked:Int -> Void, swiped:Int -> Void) {
+	public function new(tracks:Array<Track>, picked:Int -> Void, swiped:Int -> Void, faced:Int -> Void) {
 		this.picked = picked;
 		this.swiped = swiped;
+		this.faced = faced;
 		element = renderer.domElement;
 		element.className = "card-ring";
 		cards = [for (track in tracks) cardFor(track)];
@@ -130,6 +135,7 @@ class CardRing {
 		var share = prefersLessMotion() || downAtX != null ? 1 : 1 - Math.exp(-easing * seconds);
 		var aim = turnWanted + dragged;
 		turn += (aim - turn) * share;
+		tellWhichCardFaces();
 		for (index in 0...cards.length) {
 			outness[index] += (Math.max(0, 1 - Math.abs(cardsAway(index, aim))) - outness[index]) * share;
 			place(cards[index], index);
@@ -160,6 +166,26 @@ class CardRing {
 		if (away > count / 2) away -= count;
 		if (away < -count / 2) away += count;
 		return away;
+	}
+
+	/** When the ring turns past halfway to the next card, that card is the one facing: the track behind changes to it. */
+	function tellWhichCardFaces() {
+		var count = cards.length;
+		var facing = (Math.round(turn) % count + count) % count;
+		if (facing == facingNow) return;
+		facingNow = facing;
+		faced(facing);
+	}
+
+	/**
+	 * How far to fade out the track behind (0: not at all, 1: right out):
+	 * nothing with a card at the front, deepening as the ring turns towards
+	 * halfway to the next, where the track changes unseen, then lifting
+	 * again. So every card the ring passes gets its own fade, in step with
+	 * the turn (a drag included).
+	 */
+	public function fadeBehind():Float {
+		return smoothly(Math.min(1, 2 * Math.abs(turn - Math.round(turn))));
 	}
 
 	/** An ease in and out (0 to 1, gentle at both ends). */
