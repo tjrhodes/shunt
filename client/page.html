@@ -32,6 +32,8 @@
     color-scheme: dark;
   }
   [hidden] { display: none !important; }
+  /* Phones flash a box over whatever is tapped (the whole card ring, the stage): not in a game. Focus outlines still show for keys. */
+  * { -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body { background: var(--night); color: var(--ink); font-family: var(--body); overflow: hidden; }
   #stage { position: fixed; inset: 0; touch-action: none; }
