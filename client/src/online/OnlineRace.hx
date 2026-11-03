@@ -278,9 +278,10 @@ class OnlineRace {
 		else chooseTrack(track);
 	}
 
-	/** A push left or right while the cards show: the next card along. */
-	public function nextCard(push:Int) {
-		if (isChoosingTrack) chooseTrack((view.track + push + around.tracks.length) % around.tracks.length);
+	/** A push or swipe while the cards show: that many cards along. */
+	public function nextCard(cards:Int) {
+		var count = around.tracks.length;
+		if (isChoosingTrack) chooseTrack(((view.track + cards) % count + count) % count);
 	}
 
 	/** Back from the cards to the room. */

@@ -10,7 +10,7 @@ import js.Browser;
  * Driving by touch (SPEC.md §1): hold the left half of the screen to steer
  * left and the right half to steer right (both, and it goes straight),
  * building the longer a finger is held. The
- * car accelerates by itself once touch is in use; a pad in the corner brakes,
+ * car accelerates by itself once touch is in use; a bar across the bottom brakes,
  * and a button at the top pauses. Both appear at the first touch.
  */
 class TouchPads {

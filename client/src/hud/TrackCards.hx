@@ -23,8 +23,8 @@ class TrackCards {
 	 * plain buttons stay underneath, out of sight, for screen readers and
 	 * anything that can't draw 3D.
 	 */
-	public function new(parent:Element, tracks:Array<Track>, choose:Int -> Void) {
-		ring = new CardRing(tracks, choose);
+	public function new(parent:Element, tracks:Array<Track>, choose:Int -> Void, moveAlong:Int -> Void) {
+		ring = new CardRing(tracks, choose, moveAlong);
 		parent.appendChild(ring.element);
 		var row = Dom.make("div", "track-cards visually-hidden", null, parent);
 		row.setAttribute("role", "listbox");

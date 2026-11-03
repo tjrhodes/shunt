@@ -26,6 +26,9 @@
     --body: "Fira Sans", "Helvetica Neue", Arial, sans-serif;
     --gutter-left: max(16px, env(safe-area-inset-left, 0px));
     --gutter-right: max(16px, env(safe-area-inset-right, 0px));
+    --edge-top: calc(12px + env(safe-area-inset-top, 0px));
+    --edge-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    --brake-bar: 64px;
     color-scheme: dark;
   }
   [hidden] { display: none !important; }
@@ -36,8 +39,6 @@
 
   #hud {
     position: fixed; inset: 0; pointer-events: none;
-    --edge-top: calc(12px + env(safe-area-inset-top, 0px));
-    --edge-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
   /* One plate per person, a corner each in seat order; the lap times take the top right when one races alone. */
   #hud > .plate { position: absolute; }
@@ -153,7 +154,7 @@
   .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
   /* The ring of track cards, drawn in 3D (view/CardRing.hx). */
-  .card-ring { display: block; width: calc(100% + 52px); margin: 0 -26px; height: clamp(260px, 46vh, 420px); cursor: pointer; }
+  .card-ring { display: block; width: calc(100% + 52px); margin: 0 -26px; height: clamp(260px, 46vh, 420px); cursor: pointer; touch-action: pan-y; user-select: none; -webkit-user-select: none; }  /* sideways swipes are ours; up and down still scroll the panel */
 
   /* The first stage: a carousel of track cards, the chosen one in the middle (it slides there). */
   .panel-tracks { width: min(100%, 64rem); }
@@ -201,14 +202,19 @@
   .result-swatch { width: 14px; height: 14px; border-radius: 2px; }
   .result-time { font: 800 19px/1 var(--display); }
 
+  /* Brake by touch: a bar right across the bottom (Tom, 3 Nov), so either thumb can reach it, even while the other steers right. */
   #brake-pad {
-    position: fixed; width: 96px; height: 96px; border-radius: 50%;
-    right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-    font: 800 18px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase;
-    color: var(--ink); background: var(--plate); border: 2px solid var(--lamp-red);
+    position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--brake-bar) + env(safe-area-inset-bottom, 0px));
+    padding: 0 0 env(safe-area-inset-bottom, 0px); border-radius: 0;
+    font: 800 20px/1 var(--display); letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--ink); background: var(--plate); border: 0; border-top: 2px solid var(--lamp-red);
     touch-action: none; user-select: none; -webkit-user-select: none;
   }
   #brake-pad:active { background: var(--lamp-red); }
+  /* The touch buttons are for racing: out of the way while a panel shows. */
+  #panels.is-showing ~ #brake-pad, #panels.is-showing ~ #pause-button { visibility: hidden; }
+  /* While the brake bar shows, everything along the bottom sits above it. */
+  :root:has(#brake-pad:not([hidden])) { --edge-bottom: calc(var(--brake-bar) + 12px + env(safe-area-inset-bottom, 0px)); }
   #pause-button {
     position: fixed; left: 50%; transform: translateX(-50%);
     top: calc(12px + env(safe-area-inset-top, 0px)); padding: 9px 14px;
@@ -223,7 +229,7 @@
     .plate { gap: 12px; padding: 6px 10px 8px; }
     .figure-value { font-size: 22px; }
     .plate-times .figure-value { font-size: 17px; }
-    .lights { top: auto; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+    .lights { top: auto; bottom: calc(var(--edge-bottom) + 6px); }
     #pause-button { top: calc(76px + env(safe-area-inset-top, 0px)); }
     .lamp { width: 20px; height: 20px; }
   }

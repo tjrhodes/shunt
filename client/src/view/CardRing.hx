@@ -31,6 +31,10 @@ class CardRing {
 	/** How quickly things ease to where they should be: this share of the way per... */
 	static inline final easing = 7.0;
 
+	/** A swipe is a finger moved sideways at least this far (CSS pixels); each this-far again is one more card along. */
+	static inline final swipeAtLeast = 30;
+	static inline final swipePerCard = 90;
+
 	/** The canvas the faces are painted on: this many pixels per metre of card. */
 	static inline final pixelsPerMetre = 420;
 
@@ -42,11 +46,17 @@ class CardRing {
 	final outness:Array<Float>;
 	final raycaster = new Raycaster();
 	final picked:Int -> Void;
+	final swiped:Int -> Void;
+
+	/** Where a finger (or mouse) went down on the ring, to tell a swipe from a tap; and whether the last one was a swipe, so its click is ignored. */
+	var downAtX:Null<Float> = null;
+	var wasASwipe = false;
 	var turn = 0.0;
 	var turnWanted = 0.0;
 
-	public function new(tracks:Array<Track>, picked:Int -> Void) {
+	public function new(tracks:Array<Track>, picked:Int -> Void, swiped:Int -> Void) {
 		this.picked = picked;
+		this.swiped = swiped;
 		element = renderer.domElement;
 		element.className = "card-ring";
 		cards = [for (track in tracks) cardFor(track)];
@@ -55,6 +65,23 @@ class CardRing {
 		camera.position.set(0, 0.75, 6.0);
 		camera.lookAt(0, 0.1, -0.6);
 		element.addEventListener("click", whereClicked);
+		element.addEventListener("pointerdown", (event:js.html.PointerEvent) -> downAtX = event.clientX);
+		element.addEventListener("pointerup", fingerUp);
+		element.addEventListener("pointercancel", () -> downAtX = null);
+	}
+
+	/**
+	 * A finger let go: if it moved far enough sideways it was a swipe, and
+	 * the ring moves on that many cards (a swipe to the left brings the
+	 * next card, as when flicking through a stack).
+	 */
+	function fingerUp(event:js.html.PointerEvent) {
+		var moved = downAtX == null ? 0 : event.clientX - downAtX;
+		downAtX = null;
+		wasASwipe = Math.abs(moved) >= swipeAtLeast;
+		if (!wasASwipe) return;
+		var cardsAlong = Std.int(Math.max(1, Math.round(Math.abs(moved) / swipePerCard)));
+		swiped(moved < 0 ? cardsAlong : -cardsAlong);
 	}
 
 	/** A card chosen: the ring turns the short way round to bring it out. */
@@ -114,11 +141,11 @@ class CardRing {
 
 	// ---- The cards themselves ----
 
-	/** One track's card: its face (the map, name, family, laps) on the front, the game's pattern on the back. */
+	/** One track's card: its face (the map, name, family, laps) on the front; on the back, the game's pattern with a quiet map, so the cards in the ring aren't a mystery. */
 	static function cardFor(track:Track):Group {
 		var card = new Group();
 		var front = new Mesh(new PlaneGeometry(cardWide, cardTall), new MeshBasicMaterial({map: new CanvasTexture(CardFaces.front(track, canvasOfACard()))}));
-		var back = new Mesh(new PlaneGeometry(cardWide, cardTall), new MeshBasicMaterial({map: new CanvasTexture(CardFaces.back(canvasOfACard()))}));
+		var back = new Mesh(new PlaneGeometry(cardWide, cardTall), new MeshBasicMaterial({map: new CanvasTexture(CardFaces.back(track, canvasOfACard()))}));
 		back.rotation.y = Math.PI;
 		card.add(front);
 		card.add(back);
@@ -147,8 +174,9 @@ class CardRing {
 		camera.updateProjectionMatrix();
 	}
 
-	/** A click on a card picks it (the one already out, or one in the ring). */
+	/** A click (or tap) on a card picks it (the one already out, or one in the ring); not the click a swipe ends with. */
 	function whereClicked(event:js.html.MouseEvent) {
+		if (wasASwipe) return;
 		var bounds = element.getBoundingClientRect();
 		var x = (event.clientX - bounds.left) / bounds.width * 2 - 1;
 		var y = -((event.clientY - bounds.top) / bounds.height * 2 - 1);

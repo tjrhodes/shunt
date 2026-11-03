@@ -16,20 +16,27 @@ class CardFaces {
 		var paint = canvas.getContext2d();
 		var wide = canvas.width;
 		cardGround(paint, canvas, Paint.cardFace);
-		drawTheMap(paint, track, wide * 0.1, wide * 0.1, wide * 0.8);
+		drawTheMap(paint, track, Paint.cardMap, wide * 0.1, wide * 0.1, wide * 0.8);
 		words(paint, track.name, Lettering.heavy(Math.round(wide * 0.15)), Paint.cardWords, wide * 0.1, canvas.height * 0.8);
 		words(paint, (Words.families.get(track.family) ?? "").toUpperCase(), '600 ${Math.round(wide * 0.05)}px "Fira Sans", sans-serif', Paint.cardQuietWords, wide * 0.1, canvas.height * 0.87);
 		words(paint, Words.lapsAndLength(track.laps, track.length), '500 ${Math.round(wide * 0.06)}px "Fira Sans", sans-serif', Paint.cardQuietWords, wide * 0.1, canvas.height * 0.94);
 		return canvas;
 	}
 
-	/** A card's back: the game's name across it, on stripes in the palette. */
-	public static function back(canvas:CanvasElement):CanvasElement {
+	/**
+	 * A card's back, as it shows in the ring: stripes in the palette, the
+	 * track's map in a quiet colour (not the yellow of the chosen card), and
+	 * its name small underneath, so you can see what you'd be picking.
+	 */
+	public static function back(track:Track, canvas:CanvasElement):CanvasElement {
 		var paint = canvas.getContext2d();
+		var wide = canvas.width;
 		cardGround(paint, canvas, Paint.cardBack);
 		stripes(paint, canvas);
+		drawTheMap(paint, track, Paint.cardBackMap, wide * 0.12, canvas.height * 0.2, wide * 0.76);
 		paint.textAlign = "center";
-		words(paint, Words.gameName, Lettering.heavy(Math.round(canvas.width * 0.24)), Paint.cardWords, canvas.width / 2, canvas.height * 0.55);
+		words(paint, Words.gameName, Lettering.heavy(Math.round(wide * 0.1)), Paint.cardQuietWords, wide / 2, canvas.height * 0.12);
+		words(paint, track.name, Lettering.heavy(Math.round(wide * 0.11)), Paint.cardBackMap, wide / 2, canvas.height * 0.9);
 		return canvas;
 	}
 
@@ -55,13 +62,13 @@ class CardFaces {
 		paint.strokeRect(0, 0, canvas.width, canvas.height);
 	}
 
-	/** The track's walls (from `TrackMap`), in a square at a place on the card. */
-	static function drawTheMap(paint:CanvasRenderingContext2D, track:Track, left:Float, top:Float, across:Float) {
+	/** The track's walls (from `TrackMap`), in a colour, in a square at a place on the card. */
+	static function drawTheMap(paint:CanvasRenderingContext2D, track:Track, colour:Int, left:Float, top:Float, across:Float) {
 		paint.save();
 		paint.translate(left, top);
 		paint.scale(across / TrackMap.size, across / TrackMap.size);
-		paint.strokeStyle = Paint.css(Paint.cardMap);
-		paint.lineWidth = 1.8;
+		paint.strokeStyle = Paint.css(colour);
+		paint.lineWidth = 2.2;
 		paint.lineCap = "round";
 		paint.stroke(new js.html.Path2D(TrackMap.pathOf(track)));
 		paint.restore();

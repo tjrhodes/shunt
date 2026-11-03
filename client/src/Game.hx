@@ -84,7 +84,7 @@ class Game {
 	/** Every button does the same thing on this computer and online, where it means asking the room. */
 	function panelActions():PanelActions {
 		return {
-			chooseTrack: index -> mode == Online ? online.pickCard(index) : pickCard(index),
+			chooseTrack: pickCard, moveAlongTheCards: moveAlongTheCards,
 			raceHere: () -> mode == Online ? online.doneWithTracks() : toDrivers(),
 			start: () -> mode == Online ? online.startRace() : startRacing(),
 			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
@@ -113,15 +113,16 @@ class Game {
 
 	/** A track chosen on the cards: shown behind them, with the cars on its grid. */
 	function previewTrack(index:Int) {
-		chosenTrack = (index + tracks.length) % tracks.length;
+		chosenTrack = (index % tracks.length + tracks.length) % tracks.length;
 		show.showTrack(tracks[chosenTrack]);
 		lineUpANewRace();
 		panels.markTrack(chosenTrack);
 	}
 
-	/** A card pressed: the first press chooses it, a second press on the chosen one goes on to the drivers. */
+	/** A card pressed: the first press chooses it, a second press on the chosen one goes on to the drivers (online, `OnlineRace` decides). */
 	function pickCard(index:Int) {
-		if (index == chosenTrack) toDrivers();
+		if (mode == Online) online.pickCard(index);
+		else if (index == chosenTrack) toDrivers();
 		else previewTrack(index);
 	}
 
@@ -131,12 +132,16 @@ class Game {
 		panels.showDrivers(chosenTrack, seatLooks());
 	}
 
-	/** On the track cards, a push left or right on any controller (keys, stick) moves to the next card (online: the room's next track). */
+	/** On the track cards, a push left or right on any controller (keys, stick) moves to the next card. */
 	function browseTheCards() {
 		var push = controls.sidewaysJustPushed();
-		if (push == 0) return;
-		if (mode == Online) online.nextCard(push);
-		else previewTrack(chosenTrack + push);
+		if (push != 0) moveAlongTheCards(push);
+	}
+
+	/** Some cards along (from a push, or a swipe): the next track here, or online the room's next. */
+	function moveAlongTheCards(cards:Int) {
+		if (mode == Online) online.nextCard(cards);
+		else previewTrack(chosenTrack + cards);
 	}
 
 	/** One frame: the ticks due and the sparks and smoke moved on (while racing), the presses that happen once, and drawing. */

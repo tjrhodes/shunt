@@ -34,7 +34,7 @@ One small, finished, fun race beats a big unfinished season.
 | Feature | Detail |
 |---|---|
 | Race | Four cars on the chosen track: the player and three AI drivers. Grid start, 3-2-1 lights, 5 laps. Finishing order by laps done, then distance round the lap. |
-| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD; holding a steering key turns harder, up to full after 0.6 s. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
+| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD; holding a steering key turns harder, up to full after 0.6 s. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake bar right across the bottom (either thumb reaches it). |
 | Contact | Cars bump, push and spin each other. A tap on a rear quarter turns the car hit; a hit square from behind shoves it. Walls take speed off and send sparks. |
 | Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil, which takes away the grip of whoever drives over it. Walls are kinder than cars. Damage lasts the whole race (section 4b). |
 | Recover | A car stuck or facing the wrong way for 3 s is put back on the centreline at the nearest point, facing the right way, at walking pace. Also on a key (R / gamepad Y). |

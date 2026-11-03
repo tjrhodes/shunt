@@ -54,6 +54,9 @@ class Paint {
 	public static inline final cardStripes = 0x22335a;
 	public static inline final cardEdge = 0x465d8c;
 	public static inline final cardMap = 0xe9c93a;
+
+	/** The map on a card's back: quiet, so only the chosen card's map is yellow. */
+	public static inline final cardBackMap = 0x6983b6;
 	public static inline final cardWords = 0xf6f2e8;
 	public static inline final cardQuietWords = 0xa89775;
 

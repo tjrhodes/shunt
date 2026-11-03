@@ -13,6 +13,9 @@ import view.Paint;
 /** What each panel's buttons do; the game decides (on this computer or online). */
 typedef PanelActions = {
 	final chooseTrack:Int -> Void;
+
+	/** A swipe on the cards: this many cards along (negative: back). */
+	final moveAlongTheCards:Int -> Void;
 	final raceHere:() -> Void;
 	final start:() -> Void;
 	final resume:() -> Void;
@@ -67,7 +70,7 @@ class Panels {
 		this.holder = holder;
 		this.tracks = tracks;
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
-		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack);
+		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards);
 		tracksGo = Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
 		drivers = new DriverParts(driversPanel = panel(Words.drivers, "panel-drivers"), actions);
 		invitePanel = invitation(actions);
