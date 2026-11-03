@@ -32,7 +32,7 @@
     color-scheme: dark;
   }
   [hidden] { display: none !important; }
-  /* Phones flash a box over whatever is tapped (the whole card ring, the stage): not in a game. Focus outlines still show for keys. */
+  /* Phones flash a box over whatever is tapped (the whole card ring, the stage): not in a game. */
   * { -webkit-tap-highlight-color: transparent; }
   html, body { height: 100%; }
   body { background: var(--night); color: var(--ink); font-family: var(--body); overflow: hidden; }
@@ -104,7 +104,9 @@
   }
   .button-go { margin-top: 14px; color: #151a2b; background: var(--player); border-color: var(--player); }
   .button:hover { filter: brightness(1.1); }
-  .button:focus-visible, #brake-pad:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+  /* No white focus ring round the buttons (Tom, 3 Nov). Moving through them with Tab, the one you're on still shows: its edge goes bright. */
+  .button:focus, #brake-pad:focus, .track-card:focus { outline: none; }
+  .button:not(.button-go):focus-visible { border-color: var(--ink); }
 
   /* Twelve tracks: three to a row, compact, name over laps. */
   /* The online room's track: one line, its little map, name, and laps; the host changes it on the cards. */
@@ -173,7 +175,6 @@
   }
   .track-card:hover { opacity: 0.8; }
   .track-card[aria-selected="true"] { opacity: 1; transform: none; border-color: var(--player); box-shadow: inset 0 0 0 1px var(--player); }
-  .track-card:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
   .track-card-map { width: 100%; aspect-ratio: 1; margin-bottom: 8px; }
   .track-card-map path { fill: none; stroke: var(--ink-quiet); stroke-linecap: round; stroke-linejoin: round; }
   .track-card[aria-selected="true"] .track-card-map path { stroke: var(--player); }
