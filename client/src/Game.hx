@@ -84,6 +84,7 @@ class Game {
 		panels = new Panels(page.panels, tracks, panelActions());
 		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
 		backdrops = new Backdrops(page.stage, page.panels);
+		panels.showSoundAs(show.sound.isOn);
 		previewTrack(0);
 		showTrackBehind(0);
 		showTrackCards();

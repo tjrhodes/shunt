@@ -63,6 +63,7 @@ class Panels {
 	final resultsPanel:Element;
 	final trackCards:TrackCards;
 	final tracksGo:Element;
+	final soundCorner:SoundCorner;
 	final tracks:Array<Track>;
 	final drivers:DriverParts;
 	final room:RoomParts;
@@ -72,6 +73,7 @@ class Panels {
 	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions) {
 		this.holder = holder;
 		this.tracks = tracks;
+		soundCorner = new SoundCorner(holder.parentElement, actions.toggleSound);
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
 		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards, actions.trackFacing);
 		tracksGo = Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
@@ -149,6 +151,7 @@ class Panels {
 
 	public function showSoundAs(isOn:Bool) {
 		pause.showSoundAs(isOn);
+		soundCorner.showSoundAs(isOn);
 	}
 
 	public function hideAll() {
