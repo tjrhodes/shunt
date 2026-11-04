@@ -433,7 +433,7 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   trophy and fireworks (`view/Fireworks.hx`) for winning, a smaller silver
   trophy for second, a bronze medal for third, nothing for fourth. No
   fireworks for anyone who prefers less motion.
-- `?demo` on the page's address makes every car an AI driver
+- `?demo` on the page's address makes every car an AI driver, and `?demo=close` also has the camera follow the two cars nearest each other, 2.6 times closer (`Game.followTheAction`, `IsometricCamera.closeUp`)
   (`Game.isDrivenHere`), for recording the Lab page's video and stills.
   They were recorded on a stepped clock (Playwright's `clock`), one frame
   every 1/25 s of game time, so the video is smooth even though software

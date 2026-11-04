@@ -73,6 +73,11 @@ class World {
 		shake *= shakeLeftEachFrame;
 	}
 
+	/** A closer look at a spot on the ground (zoom 2: twice as close), for the demo's recordings; showing a track again shows all of it. */
+	public function closeUpOn(spot:Vector, zoom:Float) {
+		view.closeUp(spot, zoom);
+	}
+
 	/** What the view is drawn on: a picture can be taken of it straight after drawing. */
 	public function drawing():js.html.CanvasElement {
 		return renderer.domElement;

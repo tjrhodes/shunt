@@ -11,6 +11,7 @@ import shunt.ai.DriverCharacter;
 import shunt.ai.RacingLine;
 import shunt.car.CarInput;
 import shunt.online.Pose;
+import shunt.maths.Vector;
 import shunt.race.Race;
 import shunt.track.Track;
 import hud.TournamentParts;
@@ -132,6 +133,31 @@ class Game {
 		return lineup.isHuman(seat) && Browser.location.search.indexOf("demo") < 0;
 	}
 
+	/** In a close demo (`?demo=close`), the camera this much closer, following the action; its spot eases this share of the way each frame. */
+	static inline final closeDemoZoom = 2.6;
+	static inline final followEasing = 0.06;
+	var actionSpot:Null<Vector> = null;
+
+	/**
+	 * In a close demo, while racing, the camera follows the two cars nearest
+	 * each other (where the contact is), easing from pair to pair: for the
+	 * Lab page's action shots. Everywhere else it shows the whole track.
+	 */
+	function followTheAction() {
+		if (mode != Racing || Browser.location.search.indexOf("demo=close") < 0) return;
+		var spot = nearestPairMiddle();
+		actionSpot = actionSpot == null ? spot : actionSpot + (spot - actionSpot) * followEasing;
+		show.closeUpOn(actionSpot, closeDemoZoom);
+	}
+
+	/** The point halfway between the two cars nearest each other. */
+	function nearestPairMiddle():Vector {
+		var cars = [for (racer in race.state.racers) racer.car.position];
+		var best = {a: cars[0], b: cars[1]};
+		for (i in 0...cars.length) for (j in i + 1...cars.length) if (cars[i].distanceTo(cars[j]) < best.a.distanceTo(best.b)) best = {a: cars[i], b: cars[j]};
+		return (best.a + best.b) * 0.5;
+	}
+
 	/** Whether a person here drives a seat (online: one of this browser's seats). */
 	function isOneOfOurs(seat:Int):Bool {
 		return mode == Online ? online.isOurs(seat) : lineup.isHuman(seat);
@@ -244,6 +270,7 @@ class Game {
 
 	/** Every car drawn part way between its last two ticks. */
 	function showEverything() {
+		followTheAction();
 		var share = mode == Racing ? steps.shareIntoTheNextTick() : 1;
 		var posesNow = Poses.of(race.state);
 		show.draw(race, [for (seat in 0...posesNow.length) Poses.between(posesBefore[seat], posesNow[seat], share)], mode == Racing);

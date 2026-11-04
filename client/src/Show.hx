@@ -47,6 +47,11 @@ class Show {
 		world.showTrack(track);
 	}
 
+	/** A closer look at a spot on the track (see `World.closeUpOn`). */
+	public function closeUpOn(spot:shunt.maths.Vector, zoom:Float) {
+		world.closeUpOn(spot, zoom);
+	}
+
 	/** What the 3D view is drawn on, to take pictures of. */
 	public function drawing():js.html.CanvasElement {
 		return world.drawing();

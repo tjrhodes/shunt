@@ -32,6 +32,11 @@ class IsometricCamera {
 	final trackEdge:Array<Vector>;
 	final middle:Vector;
 
+	/** The way round the camera looks from, and how much of the world it shows across and up, as last framed. */
+	var wayRound = 0.0;
+	var shownAcross = 1.0;
+	var shownUp = 1.0;
+
 	public function new(trackEdge:Array<Vector>) {
 		this.trackEdge = trackEdge;
 		middle = middleOf(trackEdge);
@@ -48,8 +53,25 @@ class IsometricCamera {
 	public function frame(width:Float, height:Float) {
 		var bestWay = waysRound[0];
 		for (way in waysRound) if (howGood(way, width, height) > howGood(bestWay, width, height)) bestWay = way;
+		wayRound = bestWay;
 		standLookingFrom(bestWay);
 		fitTheView(spanAcrossTheScreen(bestWay), width / height);
+	}
+
+	/**
+	 * A closer look, for the demo's recordings (`Game.followTheAction`): the
+	 * same camera, angle and screen shape, showing a share of what it showed
+	 * (zoom 2: half as far across), centred on a spot on the ground.
+	 * Framing again shows the whole track.
+	 */
+	public function closeUp(spot:Vector, zoom:Float) {
+		var across = metresAlong(spot, screenAcross(wayRound));
+		var up = metresAlong(spot, screenUp(wayRound));
+		camera.left = across - shownAcross / zoom / 2;
+		camera.right = across + shownAcross / zoom / 2;
+		camera.bottom = up - shownUp / zoom / 2;
+		camera.top = up + shownUp / zoom / 2;
+		camera.updateProjectionMatrix();
 	}
 
 	/** How well a way round suits the screen: how big the track looks, with a bonus for the diagonals. */
@@ -71,6 +93,8 @@ class IsometricCamera {
 		var width = (span.right - span.left) * (1 + margin);
 		var height = (span.top - span.bottom) * (1 + margin);
 		if (width / height < screenShape) width = height * screenShape; else height = width / screenShape;
+		shownAcross = width;
+		shownUp = height;
 		var middleAcross = (span.left + span.right) / 2;
 		var middleUp = (span.bottom + span.top) / 2;
 		camera.left = middleAcross - width / 2;
