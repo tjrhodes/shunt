@@ -408,3 +408,22 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   size. A track without its picture yet still dips to dark on the way past.
 - Tracks taken out of the scene are now let go on the graphics card too
   (`World.letGo`): taking the pictures builds every track, so they'd pile up.
+
+## 4 Nov 2026: sound button, four more tracks, trophies
+
+- **Sound button** (Tom: "we need some sound controls"): a speaker in the
+  top corner of the start screens, the same choice as M and the pause
+  panel's button, remembered between visits. Ready to split into music and
+  effects once there's music.
+- **Four more tracks** after the original's screenshots (16 in all):
+  Horseshoe (a C), Zed (a Z), Fork (two fingers pushed up into a loop) and
+  Switchback (an E). All circuits, from `tools/make-tracks.py`; the
+  existing twelve came out byte-identical. 100 AI races each pass first
+  time: 194 checks.
+- **Trophies** (`trophy/Trophy.hx`, `hud/TrophyParts.hx`): 3, 5 or 10
+  races, 3/2/1/0 points, ties to more wins. The tracks start as a random
+  pick, no repeats; any can be swapped on the card ring ("Use this track")
+  or the lot shuffled. Results go on to the standings; the last standings
+  name the winner. Each race's seed keeps the trophy's remainder by 3, so
+  the AI drivers stay the same kinds in the same seats all the way through.
+  On this computer only for now.

@@ -269,7 +269,7 @@ class OnlineRace {
 	public function browseTracks() {
 		if (view == null || !isHost()) return;
 		isChoosingTrack = true;
-		around.panels.showTracks(view.track, true);
+		around.panels.showTracks(view.track, Words.useThisTrack);
 	}
 
 	/** A card pressed: the first press chooses it, a second on the chosen one goes back to the room. */

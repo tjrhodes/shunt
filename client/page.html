@@ -184,7 +184,7 @@
   .track-card-name { font: 900 28px/1 var(--display); letter-spacing: 0.01em; }
   .track-card-family { font: 600 11px/1.2 var(--body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-quiet); }
   .track-card-laps { font: 500 14px/1.3 var(--body); color: var(--ink-quiet); }
-  .panel-tracks > .button-go { align-self: center; min-width: 16rem; }
+
 
   /* The second stage: the drivers. Back and Start side by side. */
   .panel-drivers .button-row { margin-top: 10px; }
@@ -204,6 +204,27 @@
   .panel-results { width: min(100%, 34rem); }
   .panel-results .panel-title { color: #e9c93a; }
   .panel-pause { width: min(100%, 22rem); }
+  /* Trophies: how many races (three buttons, one pressed), then a row per race: number, little map, name and laps, swap. */
+  .panel-trophy { width: min(100%, 36rem); }
+  .trophy-lengths { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .trophy-lengths .button { margin-top: 0; }
+  .trophy-lengths .button[aria-pressed="true"] { color: #151a2b; background: var(--ink); border-color: var(--ink); }
+  .trophy-tracks { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+  .trophy-track {
+    display: grid; grid-template-columns: 2.2ch 40px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 12px; align-items: center;
+    padding: 6px 8px; background: #293b5f; border: 1px solid #465d8c; border-radius: 3px;
+  }
+  .trophy-track-number { grid-row: 1 / 3; font: 900 22px/1 var(--display); color: var(--ink-quiet); }
+  .trophy-track .track-card-map { grid-row: 1 / 3; width: 40px; height: 40px; margin: 0; }
+  .trophy-track .track-card-map path { stroke: #e9c93a; }
+  .trophy-track-name { align-self: end; font: 800 19px/1.1 var(--display); }
+  .trophy-track-laps { align-self: start; font: 500 13px/1.3 var(--body); color: var(--ink-quiet); }
+  .trophy-swap { grid-column: 4; grid-row: 1 / 3; margin-top: 0; padding: 8px 12px; font-size: 15px; }
+  .panel-tracks .button-row { justify-content: center; }
+  .panel-tracks .button-row .button { margin-top: 6px; }
+  .panel-tracks .button-row .button-go { min-width: 16rem; }
+  .panel-trophy .button-row .button { margin-top: 6px; }
+  .panel-trophy .button-row .button-go { flex: 2 1 12rem; }
   .result-place { font: 800 20px/1 var(--display); }
   .result-swatch { width: 14px; height: 14px; border-radius: 2px; }
   .result-time { font: 800 19px/1 var(--display); }

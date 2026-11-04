@@ -266,6 +266,31 @@ def twister():
     return road("Twister", without_repeats(rounded(corners, 22, steps=5)), laps=4)
 
 
+def horseshoe():
+    """A C (the original's track 19): the road runs right round it, its mouth a long hairpin reaching deep inside."""
+    corners = [(-90, -75), (90, -75), (90, -28), (-15, -28), (-15, 28), (90, 28), (90, 75), (-90, 75)]
+    return road("Horseshoe", without_repeats(rounded(corners, 24, steps=6)), laps=4)
+
+
+def zed():
+    """A Z (the original's track 18): two long bars joined by a diagonal, run in both directions with a hairpin at each end."""
+    corners = [(-95, 80), (70, 80), (70, 30), (10, -30), (90, -30), (90, -80), (-70, -80), (-70, -30), (-10, 30), (-95, 30)]
+    return road("Zed", without_repeats(rounded(corners, 26, steps=6)), laps=4)
+
+
+def fork():
+    """A loop with two fingers pushed up into it from below (after the original's track 20): four hairpins in a row."""
+    corners = [(-95, -80), (95, -80), (95, 80), (45, 80), (45, 0), (5, 0), (5, 80), (-40, 80), (-40, 10), (-95, 10)]
+    return road("Fork", without_repeats(rounded(corners, 18, steps=6)), laps=4)
+
+
+def switchback():
+    """An E (the original's track 16): the road folds back across the middle twice, on long tight-packed straights."""
+    corners = [(-95, -85), (95, -85), (95, 85), (-95, 85), (-95, 45), (40, 45), (40, 15),
+               (-95, 15), (-95, -15), (40, -15), (40, -45), (-95, -45)]
+    return road("Switchback", without_repeats(rounded(corners, 13, steps=6)), laps=3)
+
+
 def road(name, path, laps, family="circuit"):
     return {"name": name, "family": family, "laps": laps, "centreline": as_points(evenly(shrunk_to_fit(path)), width=ROAD_WIDTH), "barriers": []}
 
@@ -313,7 +338,8 @@ def as_points(spots, **extra):
     return [{"x": round(x, 3), "y": round(y, 3), **extra} for x, y in spots]
 
 
-EVERY_NEW_TRACK = [comb, slalom, hexagon, kidney, snake, hook, twister, hourglass, pretzel, trefoil]
+EVERY_NEW_TRACK = [comb, slalom, hexagon, kidney, snake, hook, twister, hourglass, pretzel, trefoil,
+                   horseshoe, zed, fork, switchback]
 
 
 def main():

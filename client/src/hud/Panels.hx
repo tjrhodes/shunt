@@ -8,7 +8,9 @@ import shunt.race.Laps;
 import shunt.race.Race;
 import shunt.race.StartLights;
 import shunt.track.Track;
+import trophy.Trophy;
 import view.Paint;
+import hud.TrophyParts;
 
 /** What each panel's buttons do; the game decides (on this computer or online). */
 typedef PanelActions = {
@@ -63,25 +65,42 @@ class Panels {
 	final resultsPanel:Element;
 	final trackCards:TrackCards;
 	final tracksGo:Element;
+	var trophyButton:Element;
 	final soundCorner:SoundCorner;
+	final trophyPanel:Element;
+	final standingsPanel:Element;
+	final trophySetup:TrophySetup;
+	final standings:TrophyStandings;
+
+	/** The trophy the trophy panels last showed. */
+	var trophyShown:Null<Trophy> = null;
 	final tracks:Array<Track>;
 	final drivers:DriverParts;
 	final room:RoomParts;
 	final pause:PauseParts;
 	final results:ResultsParts;
 
-	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions) {
+	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions, trophyActions:TrophyActions) {
 		this.holder = holder;
 		this.tracks = tracks;
 		soundCorner = new SoundCorner(holder.parentElement, actions.toggleSound);
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
 		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards, actions.trackFacing);
-		tracksGo = Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
+		tracksGo = tracksButtons(actions, trophyActions);
+		trophySetup = new TrophySetup(trophyPanel = panel(Words.trophy, "panel-trophy"), tracks, trophyActions);
+		standings = new TrophyStandings(standingsPanel = panel(Words.standings, "panel-results panel-standings"), trophyActions, () -> trophyShown);
 		drivers = new DriverParts(driversPanel = panel(Words.drivers, "panel-drivers"), actions);
 		invitePanel = invitation(actions);
 		room = new RoomParts(roomPanel = panel(Words.online, "panel-room"), actions);
 		pause = new PauseParts(pausePanel = panel(Words.paused, "panel-pause"), actions);
 		results = new ResultsParts(resultsPanel = panel(Words.results, "panel-results"), actions);
+	}
+
+	/** Under the track cards: race on the one chosen, or start a trophy instead. Returns the go button. */
+	function tracksButtons(actions:PanelActions, trophyActions:TrophyActions):Element {
+		var row = Dom.make("div", "button-row", null, trackPanel);
+		trophyButton = Dom.button(Words.trophy, "button", row, trophyActions.start);
+		return Dom.button(Words.thisTrack, "button button-go", row, actions.raceHere);
 	}
 
 	/** The panel a friend's link opens on: just joining them, or racing alone instead. */
@@ -100,9 +119,14 @@ class Panels {
 
 	// ---- Starting a race ----
 
-	/** The first stage: the track cards, the chosen one marked and in the middle. Online the go button says the track is chosen, rather than "race here". */
-	public function showTracks(chosen:Int, isOnline = false) {
-		Dom.setText(tracksGo, isOnline ? Words.useThisTrack : Words.thisTrack);
+	/**
+	 * The first stage: the track cards, the chosen one marked and in the
+	 * middle. When choosing a track for something else (the online room's, a
+	 * trophy race's) the go button says so, and there's no trophy button.
+	 */
+	public function showTracks(chosen:Int, ?goWords:String) {
+		Dom.setText(tracksGo, goWords ?? Words.thisTrack);
+		trophyButton.hidden = goWords != null;
 		showOnly(trackPanel);
 		trackCards.mark(chosen);
 	}
@@ -122,10 +146,26 @@ class Panels {
 		trackCards.mark(chosen);
 	}
 
-	/** The second stage: the drivers, for a race on a track. */
-	public function showDrivers(chosen:Int, seats:Array<SeatLook>) {
-		drivers.show(tracks[chosen], seats);
+	/** The second stage: the drivers, for a race on a track (its line says which, and in a trophy which race). */
+	public function showDrivers(chosen:Int, seats:Array<SeatLook>, ?line:String) {
+		drivers.show(tracks[chosen], seats, line);
 		showOnly(driversPanel);
+	}
+
+	// ---- Trophies ----
+
+	/** A trophy's first stage: how many races, which tracks. */
+	public function showTrophy(trophy:Trophy) {
+		trophyShown = trophy;
+		trophySetup.show(trophy);
+		showOnly(trophyPanel);
+	}
+
+	/** The trophy's standings, after a race (and its winner after the last). */
+	public function showStandings(trophy:Trophy, drivers:Drivers) {
+		trophyShown = trophy;
+		standings.show(trophy, drivers, tracks[trophy.nextTrack()]);
+		showOnly(standingsPanel);
 	}
 
 	/** The seats changed while the drivers show. */
@@ -159,8 +199,8 @@ class Panels {
 	}
 
 	/** The results, in finishing order. Online, only the host can start the next race. */
-	public function showResults(race:Race, drivers:Drivers, ?online:{isHost:Bool}) {
-		results.show(race, drivers, online);
+	public function showResults(race:Race, drivers:Drivers, ?online:{isHost:Bool}, isInATrophy = false) {
+		results.show(race, drivers, online, isInATrophy);
 		showOnly(resultsPanel);
 	}
 
@@ -204,7 +244,7 @@ class Panels {
 	function showOnly(wanted:Null<Element>, ?focusOn:Element) {
 		for (box in everyPanel) box.hidden = box != wanted;
 		holder.classList.toggle("is-showing", wanted != null);
-		Browser.document.body.classList.toggle("is-starting", [trackPanel, driversPanel, invitePanel, roomPanel].contains(wanted));
+		Browser.document.body.classList.toggle("is-starting", [trackPanel, trophyPanel, driversPanel, invitePanel, roomPanel].contains(wanted));
 		if (wanted == null) return;
 		var main = focusOn ?? firstShowing(wanted.querySelectorAll(".button-go:not(.button-join)"));
 		if (main != null) main.focus();
@@ -273,8 +313,8 @@ class DriverParts {
 		onlineBox.hidden = false;
 	}
 
-	public function show(track:Track, looks:Array<SeatLook>) {
-		Dom.setText(trackName, Words.racingOn(track.name, track.laps));
+	public function show(track:Track, looks:Array<SeatLook>, ?line:String) {
+		Dom.setText(trackName, line ?? Words.racingOn(track.name, track.laps));
 		seats.show(looks);
 	}
 
@@ -414,28 +454,34 @@ class ResultsParts {
 		leaveButton = Dom.button(Words.leave, "button", panel, actions.leave);
 	}
 
-	/** The results, in finishing order; the buttons for on this computer, or online (the host starts the next race). */
-	public function show(race:Race, drivers:Drivers, online:Null<{isHost:Bool}>) {
+	/** The results, in finishing order; the buttons for on this computer (in a trophy: on to the standings), or online (the host starts the next race). */
+	public function show(race:Race, drivers:Drivers, online:Null<{isHost:Bool}>, isInATrophy:Bool) {
 		table.innerHTML = "";
+		Dom.setText(raceAgainButton, isInATrophy ? Words.standings : Words.raceAgain);
 		Dom.setText(headline, Words.winner(drivers.nameOf(race.state.order[0])));
 		Dom.setText(trackLine, Words.racingOn(race.track.name, race.state.laps));
 		for (place in 0...race.state.order.length) row(race, drivers, race.state.order[place], place + 1);
 		raceAgainButton.hidden = online != null && !online.isHost;
 		status.hidden = online == null || online.isHost;
-		changeTrackButton.hidden = online != null;
+		changeTrackButton.hidden = online != null || isInATrophy;
 		leaveButton.hidden = online == null;
 	}
 
 	/** A row: place, car colour, name, and race time (or how far it got). */
 	function row(race:Race, drivers:Drivers, seat:Int, place:Int) {
 		var racer = race.racer(seat);
+		var raceTime = (racer.finishTick - StartLights.greenTick) / Tick.perSecond;
+		var howFar = Words.lap + " " + Words.outOf(Laps.lapsDone(racer), race.state.laps);
+		placeRow(table, drivers, seat, place, drivers.nameOf(seat), racer.finishTick >= 0 ? Words.raceTime(raceTime) : howFar);
+	}
+
+	/** A row of a table of places (results, trophy standings): place, car colour, name, and a figure on the right. */
+	public static function placeRow(table:Element, drivers:Drivers, seat:Int, place:Int, name:String, figure:String) {
 		var row = Dom.make("li", drivers.isOurs(seat) ? "result is-player" : "result", null, table);
 		row.style.setProperty("--player", Paint.css(Paint.liveries[seat].colour));
 		Dom.make("span", "result-place", Words.place(place), row);
 		Dom.make("span", "result-swatch", null, row).style.background = Paint.css(Paint.liveries[seat].colour);
-		Dom.make("span", "result-name", drivers.nameOf(seat), row);
-		var raceTime = (racer.finishTick - StartLights.greenTick) / Tick.perSecond;
-		var howFar = Words.lap + " " + Words.outOf(Laps.lapsDone(racer), race.state.laps);
-		Dom.make("span", "result-time", racer.finishTick >= 0 ? Words.raceTime(raceTime) : howFar, row);
+		Dom.make("span", "result-name", name, row);
+		Dom.make("span", "result-time", figure, row);
 	}
 }

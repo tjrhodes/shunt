@@ -40,6 +40,46 @@ class Words {
 	public static inline final back = "Back";
 	public static inline final useThisTrack = "Use this track";
 
+	// ---- Trophies ----
+	public static inline final trophy = "Trophy";
+	public static inline final trophyRules = "A run of races, with points for each: 3 for a win, 2 for second, 1 for third. Most points takes the trophy.";
+	public static inline final shuffle = "Shuffle";
+	public static inline final swap = "Swap";
+	public static inline final chooseDrivers = "Choose drivers";
+	public static inline final standings = "Standings";
+	public static inline final newTrophy = "New trophy";
+	public static inline final leaveTheTrophy = "Leave the trophy";
+
+	public static function races(count:Int):String {
+		return '$count races';
+	}
+
+	/** Under the standings: how far through the trophy. */
+	public static function racesRun(run:Int, of:Int):String {
+		return run >= of ? 'All $of races run' : 'After $run of $of races';
+	}
+
+	/** The drivers panel's line in a trophy: which race, where. */
+	public static function trophyRace(race:Int, of:Int, name:String, laps:Int):String {
+		return 'Trophy race $race of $of: ' + racingOn(name, laps);
+	}
+
+	public static function nextRace(trackName:String):String {
+		return 'Next: $trackName';
+	}
+
+	public static function trophyWinner(name:String):String {
+		return name == you ? "You win the trophy!" : '$name wins the trophy';
+	}
+
+	public static function points(count:Int):String {
+		return count == 1 ? "1 pt" : '$count pts';
+	}
+
+	public static function wins(count:Int):String {
+		return count == 1 ? "1 win" : '$count wins';
+	}
+
 	/** The drivers panel says which track the race is on: "Serpentine, 3 laps". */
 	public static function racingOn(name:String, laps:Int):String {
 		return '$name, $laps laps';
