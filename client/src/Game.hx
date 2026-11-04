@@ -123,6 +123,15 @@ class Game {
 		};
 	}
 
+	/**
+	 * Whether a person here drives a seat in the race. Not in a demo
+	 * (`?demo` on the page's address): there every car is an AI driver, for
+	 * recording the game in action (the Lab page's screenshots and video).
+	 */
+	function isDrivenHere(seat:Int):Bool {
+		return lineup.isHuman(seat) && Browser.location.search.indexOf("demo") < 0;
+	}
+
 	/** Whether a person here drives a seat (online: one of this browser's seats). */
 	function isOneOfOurs(seat:Int):Bool {
 		return mode == Online ? online.isOurs(seat) : lineup.isHuman(seat);
@@ -245,7 +254,7 @@ class Game {
 		seed = tournament != null ? tournament.seedForARace() : Std.random(1000000000) + 1;
 		var track = tracks[shownTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
-		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[shownTrack], seat)];
+		drivers = [for (seat in 0...race.state.racers.length) isDrivenHere(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[shownTrack], seat)];
 		show.hud.seat(lineup.humanSeats());
 		posesBefore = Poses.of(race.state);
 		show.freshRace();
