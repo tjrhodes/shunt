@@ -47,6 +47,11 @@ class Show {
 		world.showTrack(track);
 	}
 
+	/** What the 3D view is drawn on, to take pictures of. */
+	public function drawing():js.html.CanvasElement {
+		return world.drawing();
+	}
+
 	/** A new race: no sparks, smoke or skid marks left over, and every dent taken out. */
 	public function freshRace() {
 		effects.clear();

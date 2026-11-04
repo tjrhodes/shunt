@@ -43,9 +43,8 @@ class TrackCards {
 		ring.animate(seconds);
 	}
 
-	/** How far the track behind should be faded out, as the ring turns between cards (see `CardRing.fadeBehind`). */
-	public function fadeBehind():Float {
-		return ring.fadeBehind();
+	public function turnNow():Float {
+		return ring.turnNow();
 	}
 
 	/** One track's card: its map, then its name, family, and laps and length. */

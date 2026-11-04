@@ -13,6 +13,7 @@ import shunt.car.CarInput;
 import shunt.online.Pose;
 import shunt.race.Race;
 import shunt.track.Track;
+import view.Backdrops;
 import view.Paint;
 
 /** What the game is doing. */
@@ -56,6 +57,10 @@ class Game {
 	final controls:Controls;
 	final lineup = new Lineup(Paint.liveries.length);
 	final steps = new FixedSteps();
+	final backdrops:Backdrops;
+
+	/** Whether the 3D view is busy showing other tracks to take their pictures (the front card's picture covers it meanwhile). */
+	var isTakingPictures = false;
 	var race:Race;
 
 	/** The AI driver in each seat, or nothing where a person drives. */
@@ -78,6 +83,7 @@ class Game {
 		show = new Show(page.stage, page.hud, isOneOfOurs);
 		panels = new Panels(page.panels, tracks, panelActions());
 		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
+		backdrops = new Backdrops(page.stage, page.panels);
 		previewTrack(0);
 		showTrackBehind(0);
 		showTrackCards();
@@ -123,7 +129,7 @@ class Game {
 
 	/**
 	 * The track behind the cards, with the cars on its grid: it changes as the
-	 * ring turns past each card (under the fade, see `CardRing.fadeBehind`).
+	 * ring turns past each card (under the crossfade, see `Backdrops`).
 	 * Online, the room's track shows the same way while the host chooses.
 	 */
 	function showTrackBehind(index:Int) {
@@ -169,6 +175,7 @@ class Game {
 		if (mode == ChoosingDrivers || (mode == Online && online.isBetweenRaces())) takeSeats();
 		if (mode == Online) online.frame(now, secondsSinceLastFrame);
 		else frameOnThisComputer(now, secondsSinceLastFrame);
+		showTheWorldBehindTheCards();
 		if (controls.pauseWasJustPressed()) pressPause();
 		if (controls.muteWasJustPressed()) toggleSound();
 		if (controls.confirmWasJustPressed()) pressYes();
@@ -220,6 +227,47 @@ class Game {
 		show.hud.seat(lineup.humanSeats());
 		posesBefore = Poses.of(race.state);
 		show.freshRace();
+	}
+
+	// ---- Behind the cards ----
+
+	/** While the cards show, the world behind follows the ring's turn (crossfading pictures, see `Backdrops`); on this computer, pictures still missing are taken. */
+	function showTheWorldBehindTheCards() {
+		var turn = panels.ringTurn();
+		if (turn == null) return backdrops.hide();
+		if (mode == ChoosingTrack) takeAPicture(turn);
+		backdrops.show(turn, tracks.length, isTakingPictures);
+	}
+
+	/**
+	 * One track's picture a frame, while the ring is at rest: first the track
+	 * showing, then (once that picture is ready to cover the view) each of
+	 * the others, shown with its cars on the grid just long enough to draw.
+	 * When the ring moves, or every picture is taken, the view goes back.
+	 */
+	function takeAPicture(turn:Float) {
+		var next = Backdrops.isAtRest(turn) ? backdrops.nextToTake(tracks.length, shownTrack) : null;
+		if (next == null) return stopTakingPictures();
+		if (next != shownTrack && !backdrops.isReady(shownTrack)) return;
+		if (next != shownTrack) drawForAPicture(next);
+		else showEverything();
+		backdrops.keep(next, show.drawing());
+	}
+
+	/** Another track in the view, its cars lined up, drawn (only the picture of it is seen). */
+	function drawForAPicture(index:Int) {
+		isTakingPictures = true;
+		show.showTrack(tracks[index]);
+		var grid = new Race(tracks[index], {cars: Paint.liveries.length, laps: tracks[index].laps, seed: 1});
+		show.draw(grid, Poses.of(grid.state), false);
+	}
+
+	/** Back to the track that should be showing, drawn now, so the view is right the moment the cover goes. */
+	function stopTakingPictures() {
+		if (!isTakingPictures) return;
+		isTakingPictures = false;
+		show.showTrack(tracks[shownTrack]);
+		showEverything();
 	}
 
 	// ---- Seats ----

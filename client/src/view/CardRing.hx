@@ -177,15 +177,9 @@ class CardRing {
 		faced(facing);
 	}
 
-	/**
-	 * How far to fade out the track behind (0: not at all, 1: right out):
-	 * nothing with a card at the front, deepening as the ring turns towards
-	 * halfway to the next, where the track changes unseen, then lifting
-	 * again. So every card the ring passes gets its own fade, in step with
-	 * the turn (a drag included).
-	 */
-	public function fadeBehind():Float {
-		return smoothly(Math.min(1, 2 * Math.abs(turn - Math.round(turn))));
+	/** How far round the ring has turned now, in cards (it keeps counting past a full turn): the world behind fades with it (`Backdrops`). */
+	public function turnNow():Float {
+		return turn;
 	}
 
 	/** An ease in and out (0 to 1, gentle at both ends). */

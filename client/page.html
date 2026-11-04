@@ -152,6 +152,8 @@
   #hud { transition: opacity 200ms ease; }
   /* The fade of the track behind the cards, as the ring turns from one to the next. */
   .track-veil { position: fixed; inset: 0; pointer-events: none; background: var(--night); opacity: 0; }
+  /* The tracks' pictures, crossfading behind the ring (view/Backdrops.hx): exactly over the 3D view. */
+  .backdrop { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   body.is-starting #hud { opacity: 0; }
 
   /* Out of sight, but there for screen readers and keyboards. */

@@ -395,3 +395,16 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   chosen track and the one behind can differ mid-turn (`Game.shownTrack`);
   going on to the drivers puts the chosen one behind straight away. Online,
   the room's track shows the same way while the host turns the ring.
+- The world behind the cards crossfades (Tom, 4 Nov): `view/Backdrops.hx`
+  keeps a picture of each track and, between two cards, lays the next
+  one's picture over the nearer one's as far as the ring has turned. At
+  rest the pictures go and the live 3D view shows. The pictures are taken in
+  the browser, not made beforehand, because the camera frames each track
+  for the screen it's on; a picture made elsewhere wouldn't line up. While
+  the cards show and the ring is at rest, the game takes one a frame
+  (`Game.takeAPicture`): first the track showing, then, with that picture
+  covering the view, each other track with its cars on the grid. They're
+  kept as JPEGs at the page's size and taken again if the screen changes
+  size. A track without its picture yet still dips to dark on the way past.
+- Tracks taken out of the scene are now let go on the graphics card too
+  (`World.letGo`): taking the pictures builds every track, so they'd pile up.

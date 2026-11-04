@@ -45,6 +45,9 @@ import js.html.CanvasElement;
 	function remove(child:Object3D):Void;
 	function updateMatrix():Void;
 	function lookAt(x:Float, y:Float, z:Float):Void;
+
+	/** Visits this and everything inside it. */
+	function traverse(visit:Object3D -> Void):Void;
 }
 
 @:native("THREE.Scene") extern class Scene extends Object3D {

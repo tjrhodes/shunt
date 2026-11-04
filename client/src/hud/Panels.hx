@@ -63,9 +63,6 @@ class Panels {
 	final resultsPanel:Element;
 	final trackCards:TrackCards;
 	final tracksGo:Element;
-
-	/** A veil in the night's colour over the track behind, for the fades between cards. */
-	final veil:Element;
 	final tracks:Array<Track>;
 	final drivers:DriverParts;
 	final room:RoomParts;
@@ -75,8 +72,6 @@ class Panels {
 	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions) {
 		this.holder = holder;
 		this.tracks = tracks;
-		veil = Dom.make("div", "track-veil", null, null);
-		holder.parentElement.insertBefore(veil, holder);
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
 		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards, actions.trackFacing);
 		tracksGo = Dom.button(Words.thisTrack, "button button-go", trackPanel, actions.raceHere);
@@ -110,10 +105,14 @@ class Panels {
 		trackCards.mark(chosen);
 	}
 
-	/** Moves anything moving in the panels on by some seconds: the ring of track cards while it shows, and the fade of the track behind it. */
+	/** Moves anything moving in the panels on by some seconds (the ring of track cards, while it shows). */
 	public function animate(seconds:Float) {
 		if (!trackPanel.hidden) trackCards.animate(seconds);
-		veil.style.opacity = trackPanel.hidden ? "0" : '${trackCards.fadeBehind()}';
+	}
+
+	/** How far the ring of track cards has turned, while it shows (the world behind follows it), or nothing. */
+	public function ringTurn():Null<Float> {
+		return trackPanel.hidden ? null : trackCards.turnNow();
 	}
 
 	/** The chosen track changed while the cards show. */
