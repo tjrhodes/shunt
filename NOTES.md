@@ -409,7 +409,7 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
 - Tracks taken out of the scene are now let go on the graphics card too
   (`World.letGo`): taking the pictures builds every track, so they'd pile up.
 
-## 4 Nov 2026: sound button, four more tracks, trophies
+## 4 Nov 2026: sound button, four more tracks, tournaments
 
 - **Sound button** (Tom: "we need some sound controls"): a speaker in the
   top corner of the start screens, the same choice as M and the pause
@@ -420,10 +420,16 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   Switchback (an E). All circuits, from `tools/make-tracks.py`; the
   existing twelve came out byte-identical. 100 AI races each pass first
   time: 194 checks.
-- **Trophies** (`trophy/Trophy.hx`, `hud/TrophyParts.hx`): 3, 5 or 10
+- **Tournaments** (`tournament/Tournament.hx`, `hud/TournamentParts.hx`; called trophies at first): 3, 5 or 10
   races, 3/2/1/0 points, ties to more wins. The tracks start as a random
   pick, no repeats; any can be swapped on the card ring ("Use this track")
   or the lot shuffled. Results go on to the standings; the last standings
   name the winner. Each race's seed keeps the trophy's remainder by 3, so
   the AI drivers stay the same kinds in the same seats all the way through.
   On this computer only for now.
+- Renamed trophies to tournaments (Tom): the mode is a tournament, the
+  trophy is what you win. On the final standings, the best of us gets an
+  award top right (`hud/Award.hx`, SVG in the palette's metals): a gold
+  trophy and fireworks (`view/Fireworks.hx`) for winning, a smaller silver
+  trophy for second, a bronze medal for third, nothing for fourth. No
+  fireworks for anyone who prefers less motion.

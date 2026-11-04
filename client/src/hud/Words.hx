@@ -40,36 +40,36 @@ class Words {
 	public static inline final back = "Back";
 	public static inline final useThisTrack = "Use this track";
 
-	// ---- Trophies ----
-	public static inline final trophy = "Trophy";
-	public static inline final trophyRules = "A run of races, with points for each: 3 for a win, 2 for second, 1 for third. Most points takes the trophy.";
+	// ---- Tournaments ----
+	public static inline final tournament = "Tournament";
+	public static inline final tournamentRules = "A run of races, with points for each: 3 for a win, 2 for second, 1 for third. Most points wins the trophy.";
 	public static inline final shuffle = "Shuffle";
 	public static inline final swap = "Swap";
 	public static inline final chooseDrivers = "Choose drivers";
 	public static inline final standings = "Standings";
-	public static inline final newTrophy = "New trophy";
-	public static inline final leaveTheTrophy = "Leave the trophy";
+	public static inline final newTournament = "New tournament";
+	public static inline final leaveTheTournament = "Leave the tournament";
 
 	public static function races(count:Int):String {
 		return '$count races';
 	}
 
-	/** Under the standings: how far through the trophy. */
+	/** Under the standings: how far through the tournament. */
 	public static function racesRun(run:Int, of:Int):String {
 		return run >= of ? 'All $of races run' : 'After $run of $of races';
 	}
 
-	/** The drivers panel's line in a trophy: which race, where. */
-	public static function trophyRace(race:Int, of:Int, name:String, laps:Int):String {
-		return 'Trophy race $race of $of: ' + racingOn(name, laps);
+	/** The drivers panel's line in a tournament: which race, where. */
+	public static function tournamentRace(race:Int, of:Int, name:String, laps:Int):String {
+		return 'Tournament race $race of $of: ' + racingOn(name, laps);
 	}
 
 	public static function nextRace(trackName:String):String {
 		return 'Next: $trackName';
 	}
 
-	public static function trophyWinner(name:String):String {
-		return name == you ? "You win the trophy!" : '$name wins the trophy';
+	public static function tournamentWinner(name:String):String {
+		return name == you ? "You win the tournament!" : '$name wins the tournament';
 	}
 
 	public static function points(count:Int):String {

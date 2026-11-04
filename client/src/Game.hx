@@ -13,8 +13,8 @@ import shunt.car.CarInput;
 import shunt.online.Pose;
 import shunt.race.Race;
 import shunt.track.Track;
-import hud.TrophyParts;
-import trophy.Trophy;
+import hud.TournamentParts;
+import tournament.Tournament;
 import view.Backdrops;
 import view.Paint;
 
@@ -33,11 +33,11 @@ enum GameMode {
 	/** In an online room: `OnlineRace` runs things until it is left. */
 	Online;
 
-	/** A trophy's first stage: how many races, which tracks. */
-	ChoosingTrophy;
+	/** A tournament's first stage: how many races, which tracks. */
+	ChoosingTournament;
 
-	/** A trophy's standings, between races and at the end. */
-	TrophyStandings;
+	/** A tournament's standings, between races and at the end. */
+	TournamentStandings;
 }
 
 /** The parts of the page the game draws into. */
@@ -85,17 +85,17 @@ class Game {
 	var lastFrameTime = -1.0;
 	var online:Null<OnlineRace> = null;
 
-	/** The trophy being raced, if one is. */
-	var trophy:Null<Trophy> = null;
+	/** The tournament being raced, if one is. */
+	var tournament:Null<Tournament> = null;
 
-	/** While a trophy race's track is being swapped on the cards: which race. */
+	/** While a tournament race's track is being swapped on the cards: which race. */
 	var swappingRace:Null<Int> = null;
 
 	public function new(tracks:Array<Track>, page:PageParts) {
 		this.tracks = tracks;
 		racingLines = tracks.map(track -> new RacingLine(track));
 		show = new Show(page.stage, page.hud, isOneOfOurs);
-		panels = new Panels(page.panels, tracks, panelActions(), trophyActions());
+		panels = new Panels(page.panels, tracks, panelActions(), tournamentActions());
 		controls = new Controls(page.stage, page.brakePad, page.pauseButton);
 		backdrops = new Backdrops(page.stage, page.panels);
 		panels.showSoundAs(show.sound.isOn);
@@ -219,12 +219,12 @@ class Game {
 		return driver != null ? driver.inputFor(race, seat) : controls.carInputFrom(lineup.controllersFor(seat, controls.every()));
 	}
 
-	/** A race over: in a trophy it scores, then the results. */
+	/** A race over: in a tournament it scores, then the results. */
 	function finished() {
 		mode = RaceOver;
 		show.sound.rest();
-		if (trophy != null) trophy.score(race.state.order);
-		panels.showResults(race, driversHere(), null, trophy != null);
+		if (tournament != null) tournament.score(race.state.order);
+		panels.showResults(race, driversHere(), null, tournament != null);
 	}
 
 	/** Who drives each car on this computer, by name: "You" alone, "Player 2", or an AI driver's kind. */
@@ -242,7 +242,7 @@ class Game {
 
 	/** A fresh race on the track shown, on a new seed, with new AI drivers, lights red. */
 	function lineUpANewRace() {
-		seed = trophy != null ? trophy.seedForARace() : Std.random(1000000000) + 1;
+		seed = tournament != null ? tournament.seedForARace() : Std.random(1000000000) + 1;
 		var track = tracks[shownTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
 		drivers = [for (seat in 0...race.state.racers.length) lineup.isHuman(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[shownTrack], seat)];
@@ -326,8 +326,8 @@ class Game {
 			case ChoosingTrack: trackChosen();
 			case ChoosingDrivers | Paused: startRacing();
 			case RaceOver: raceAgainOrStandings();
-			case ChoosingTrophy: trophyDrivers();
-			case TrophyStandings: trophy.isOver() ? startATrophy() : nextTrophyRace();
+			case ChoosingTournament: tournamentDrivers();
+			case TournamentStandings: tournament.isOver() ? startATournament() : nextTournamentRace();
 			case Online: if (panels.isShowingTheTracks()) online.doneWithTracks();
 			case Racing:
 		}
@@ -366,89 +366,89 @@ class Game {
 		panels.showSoundAs(show.sound.isOn);
 	}
 
-	/** The chosen card is the one: race on it, or (swapping a trophy race's track) that race's track. */
+	/** The chosen card is the one: race on it, or (swapping a tournament race's track) that race's track. */
 	function trackChosen() {
-		if (swappingRace != null) changeTheTrophy(() -> trophy.swap(swappingRace, chosenTrack));
+		if (swappingRace != null) changeTheTournament(() -> tournament.swap(swappingRace, chosenTrack));
 		else toDrivers();
 	}
 
-	/** Back from the drivers (or results) to choosing: the trophy's tracks if one is being set up, else the cards. */
+	/** Back from the drivers (or results) to choosing: the tournament's tracks if one is being set up, else the cards. */
 	function backToChoosing() {
-		if (trophy != null) showTheTrophy();
+		if (tournament != null) showTheTournament();
 		else showTrackCards();
 	}
 
-	/** After a race, the go button: in a trophy, on to the standings; else (and from the pause panel's restart) the same race again. */
+	/** After a race, the go button: in a tournament, on to the standings; else (and from the pause panel's restart) the same race again. */
 	function raceAgainOrStandings() {
-		if (trophy != null && mode == RaceOver) showTheStandings();
+		if (tournament != null && mode == RaceOver) showTheStandings();
 		else raceAgain();
 	}
 
-	// ---- Trophies ----
+	// ---- Tournaments ----
 
-	/** What the trophy panels' buttons do. */
-	function trophyActions():TrophyActions {
+	/** What the tournament panels' buttons do. */
+	function tournamentActions():TournamentActions {
 		return {
-			start: startATrophy,
-			makeItLong: races -> changeTheTrophy(() -> trophy.resize(races)),
-			shuffle: () -> changeTheTrophy(() -> trophy.shuffle()),
+			start: startATournament,
+			makeItLong: races -> changeTheTournament(() -> tournament.resize(races)),
+			shuffle: () -> changeTheTournament(() -> tournament.shuffle()),
 			swap: swapATrack,
-			toDrivers: trophyDrivers,
-			nextRace: nextTrophyRace,
-			leave: leaveTheTrophy
+			toDrivers: tournamentDrivers,
+			nextRace: nextTournamentRace,
+			leave: leaveTheTournament
 		};
 	}
 
-	/** A new trophy: five races on tracks picked at random, to change if wanted. */
-	function startATrophy() {
-		trophy = new Trophy(tracks.length, Trophy.lengths[1], Paint.liveries.length, Std.random);
-		showTheTrophy();
+	/** A new tournament: five races on tracks picked at random, to change if wanted. */
+	function startATournament() {
+		tournament = new Tournament(tracks.length, Tournament.lengths[1], Paint.liveries.length, Std.random);
+		showTheTournament();
 	}
 
-	function showTheTrophy() {
-		mode = ChoosingTrophy;
+	function showTheTournament() {
+		mode = ChoosingTournament;
 		swappingRace = null;
-		panels.showTrophy(trophy);
+		panels.showTournament(tournament);
 	}
 
-	/** A change to the trophy's tracks, and the panel shows it. */
-	function changeTheTrophy(change:() -> Void) {
+	/** A change to the tournament's tracks, and the panel shows it. */
+	function changeTheTournament(change:() -> Void) {
 		change();
-		showTheTrophy();
+		showTheTournament();
 	}
 
-	/** Choosing another track for one of the trophy's races: the cards, starting at the one it has now. */
+	/** Choosing another track for one of the tournament's races: the cards, starting at the one it has now. */
 	function swapATrack(race:Int) {
 		mode = ChoosingTrack;
 		swappingRace = race;
-		previewTrack(trophy.tracks[race]);
+		previewTrack(tournament.tracks[race]);
 		panels.showTracks(chosenTrack, Words.useThisTrack);
 	}
 
-	/** On to the drivers for the trophy's first race (lined up afresh, so its AI drivers are the trophy's). */
-	function trophyDrivers() {
-		previewTrack(trophy.nextTrack());
+	/** On to the drivers for the tournament's first race (lined up afresh, so its AI drivers are the tournament's). */
+	function tournamentDrivers() {
+		previewTrack(tournament.nextTrack());
 		mode = ChoosingDrivers;
 		showTrackBehind(chosenTrack);
 		lineUpANewRace();
-		panels.showDrivers(chosenTrack, seatLooks(), Words.trophyRace(trophy.racesRun + 1, trophy.tracks.length, tracks[chosenTrack].name, tracks[chosenTrack].laps));
+		panels.showDrivers(chosenTrack, seatLooks(), Words.tournamentRace(tournament.racesRun + 1, tournament.tracks.length, tracks[chosenTrack].name, tracks[chosenTrack].laps));
 	}
 
 	function showTheStandings() {
-		mode = TrophyStandings;
-		panels.showStandings(trophy, driversHere());
+		mode = TournamentStandings;
+		panels.showStandings(tournament, driversHere());
 	}
 
-	/** Straight into the trophy's next race, on its track, with the same drivers. */
-	function nextTrophyRace() {
-		previewTrack(trophy.nextTrack());
+	/** Straight into the tournament's next race, on its track, with the same drivers. */
+	function nextTournamentRace() {
+		previewTrack(tournament.nextTrack());
 		showTrackBehind(chosenTrack);
 		lineUpANewRace();
 		startRacing();
 	}
 
-	function leaveTheTrophy() {
-		trophy = null;
+	function leaveTheTournament() {
+		tournament = null;
 		showTrackCards();
 	}
 
@@ -457,7 +457,7 @@ class Game {
 	/** Into an online room; sound wakes now (this press is what browsers wait for). When the room is left, back to the start. */
 	function goOnline(how:HowToJoin) {
 		mode = Online;
-		trophy = null;
+		tournament = null;
 		show.sound.wake(Paint.liveries.length);
 		online = new OnlineRace({tracks: tracks, racingLines: racingLines, show: show, panels: panels, controls: controls, lineup: lineup, whenGone: backFromOnline});
 		online.join(how);

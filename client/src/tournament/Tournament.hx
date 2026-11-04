@@ -1,18 +1,18 @@
-package trophy;
+package tournament;
 
 /**
- * A trophy (Tom, 4 Nov): a run of 3, 5 or 10 races on different tracks,
+ * A tournament (Tom, 4 Nov): a run of 3, 5 or 10 races on different tracks,
  * with points for each finish, 3 for a win, 2 for second, 1 for third,
  * none for fourth, and a winner when they're all run.
  *
  * The tracks start as a random pick (no track twice, while there are enough
  * of them), and any can be swapped for another before the first race. The AI
  * drivers stay the same people all the way through: each race's seed comes
- * from the trophy's, keeping the same kind of driver in each seat (see
+ * from the tournament's, keeping the same kind of driver in each seat (see
  * `seedForARace`).
  */
-class Trophy {
-	/** How many races a trophy can be. */
+class Tournament {
+	/** How many races a tournament can be. */
 	public static final lengths = [3, 5, 10];
 
 	/** Points for finishing first, second, third and fourth. */
@@ -44,7 +44,7 @@ class Trophy {
 
 	// ---- Before the first race: choosing the tracks ----
 
-	/** Makes the trophy this many races long: tracks already chosen stay, new ones are picked at random. */
+	/** Makes the tournament this many races long: tracks already chosen stay, new ones are picked at random. */
 	public function resize(length:Int) {
 		tracks.resize(Std.int(Math.min(tracks.length, length)));
 		while (tracks.length < length) tracks.push(anotherTrack());
@@ -62,7 +62,7 @@ class Trophy {
 		tracks[race] = track;
 	}
 
-	/** A track at random, one not in the trophy yet if there's one left. */
+	/** A track at random, one not in the tournament yet if there's one left. */
 	function anotherTrack():Int {
 		var unused = [for (track in 0...trackCount) if (!tracks.contains(track)) track];
 		return unused.length > 0 ? unused[pick(unused.length)] : pick(trackCount);
@@ -81,8 +81,8 @@ class Trophy {
 	}
 
 	/**
-	 * A seed for one of the trophy's races: different every race, but the
-	 * same remainder by 3 as the trophy's, which is what decides the kind of
+	 * A seed for one of the tournament's races: different every race, but the
+	 * same remainder by 3 as the tournament's, which is what decides the kind of
 	 * AI driver in each seat (`DriverCharacters.kindOf`). So the Ace stays the
 	 * Ace from the first race to the last.
 	 */

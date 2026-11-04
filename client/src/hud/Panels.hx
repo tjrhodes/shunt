@@ -8,9 +8,11 @@ import shunt.race.Laps;
 import shunt.race.Race;
 import shunt.race.StartLights;
 import shunt.track.Track;
-import trophy.Trophy;
+import tournament.Tournament;
+import view.Fireworks;
 import view.Paint;
-import hud.TrophyParts;
+import hud.Award.AwardKind;
+import hud.TournamentParts;
 
 /** What each panel's buttons do; the game decides (on this computer or online). */
 typedef PanelActions = {
@@ -65,30 +67,31 @@ class Panels {
 	final resultsPanel:Element;
 	final trackCards:TrackCards;
 	final tracksGo:Element;
-	var trophyButton:Element;
+	var tournamentButton:Element;
 	final soundCorner:SoundCorner;
-	final trophyPanel:Element;
+	final fireworks = new Fireworks();
+	final tournamentPanel:Element;
 	final standingsPanel:Element;
-	final trophySetup:TrophySetup;
-	final standings:TrophyStandings;
+	final tournamentSetup:TournamentSetup;
+	final standings:TournamentStandings;
 
-	/** The trophy the trophy panels last showed. */
-	var trophyShown:Null<Trophy> = null;
+	/** The tournament the tournament panels last showed. */
+	var tournamentShown:Null<Tournament> = null;
 	final tracks:Array<Track>;
 	final drivers:DriverParts;
 	final room:RoomParts;
 	final pause:PauseParts;
 	final results:ResultsParts;
 
-	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions, trophyActions:TrophyActions) {
+	public function new(holder:Element, tracks:Array<Track>, actions:PanelActions, tournamentActions:TournamentActions) {
 		this.holder = holder;
 		this.tracks = tracks;
 		soundCorner = new SoundCorner(holder.parentElement, actions.toggleSound);
 		trackPanel = panel(Words.chooseATrack, "panel-tracks");
 		trackCards = new TrackCards(trackPanel, tracks, actions.chooseTrack, actions.moveAlongTheCards, actions.trackFacing);
-		tracksGo = tracksButtons(actions, trophyActions);
-		trophySetup = new TrophySetup(trophyPanel = panel(Words.trophy, "panel-trophy"), tracks, trophyActions);
-		standings = new TrophyStandings(standingsPanel = panel(Words.standings, "panel-results panel-standings"), trophyActions, () -> trophyShown);
+		tracksGo = tracksButtons(actions, tournamentActions);
+		tournamentSetup = new TournamentSetup(tournamentPanel = panel(Words.tournament, "panel-tournament"), tracks, tournamentActions);
+		standings = new TournamentStandings(standingsPanel = panel(Words.standings, "panel-results panel-standings"), tournamentActions, () -> tournamentShown);
 		drivers = new DriverParts(driversPanel = panel(Words.drivers, "panel-drivers"), actions);
 		invitePanel = invitation(actions);
 		room = new RoomParts(roomPanel = panel(Words.online, "panel-room"), actions);
@@ -96,10 +99,10 @@ class Panels {
 		results = new ResultsParts(resultsPanel = panel(Words.results, "panel-results"), actions);
 	}
 
-	/** Under the track cards: race on the one chosen, or start a trophy instead. Returns the go button. */
-	function tracksButtons(actions:PanelActions, trophyActions:TrophyActions):Element {
+	/** Under the track cards: race on the one chosen, or start a tournament instead. Returns the go button. */
+	function tracksButtons(actions:PanelActions, tournamentActions:TournamentActions):Element {
 		var row = Dom.make("div", "button-row", null, trackPanel);
-		trophyButton = Dom.button(Words.trophy, "button", row, trophyActions.start);
+		tournamentButton = Dom.button(Words.tournament, "button", row, tournamentActions.start);
 		return Dom.button(Words.thisTrack, "button button-go", row, actions.raceHere);
 	}
 
@@ -122,11 +125,11 @@ class Panels {
 	/**
 	 * The first stage: the track cards, the chosen one marked and in the
 	 * middle. When choosing a track for something else (the online room's, a
-	 * trophy race's) the go button says so, and there's no trophy button.
+	 * tournament race's) the go button says so, and there's no tournament button.
 	 */
 	public function showTracks(chosen:Int, ?goWords:String) {
 		Dom.setText(tracksGo, goWords ?? Words.thisTrack);
-		trophyButton.hidden = goWords != null;
+		tournamentButton.hidden = goWords != null;
 		showOnly(trackPanel);
 		trackCards.mark(chosen);
 	}
@@ -134,6 +137,7 @@ class Panels {
 	/** Moves anything moving in the panels on by some seconds (the ring of track cards, while it shows). */
 	public function animate(seconds:Float) {
 		if (!trackPanel.hidden) trackCards.animate(seconds);
+		fireworks.animate(seconds);
 	}
 
 	/** How far the ring of track cards has turned, while it shows (the world behind follows it), or nothing. */
@@ -146,26 +150,27 @@ class Panels {
 		trackCards.mark(chosen);
 	}
 
-	/** The second stage: the drivers, for a race on a track (its line says which, and in a trophy which race). */
+	/** The second stage: the drivers, for a race on a track (its line says which, and in a tournament which race). */
 	public function showDrivers(chosen:Int, seats:Array<SeatLook>, ?line:String) {
 		drivers.show(tracks[chosen], seats, line);
 		showOnly(driversPanel);
 	}
 
-	// ---- Trophies ----
+	// ---- Tournaments ----
 
-	/** A trophy's first stage: how many races, which tracks. */
-	public function showTrophy(trophy:Trophy) {
-		trophyShown = trophy;
-		trophySetup.show(trophy);
-		showOnly(trophyPanel);
+	/** A tournament's first stage: how many races, which tracks. */
+	public function showTournament(tournament:Tournament) {
+		tournamentShown = tournament;
+		tournamentSetup.show(tournament);
+		showOnly(tournamentPanel);
 	}
 
-	/** The trophy's standings, after a race (and its winner after the last). */
-	public function showStandings(trophy:Trophy, drivers:Drivers) {
-		trophyShown = trophy;
-		standings.show(trophy, drivers, tracks[trophy.nextTrack()]);
+	/** The tournament's standings, after a race (and its winner after the last). */
+	public function showStandings(tournament:Tournament, drivers:Drivers) {
+		tournamentShown = tournament;
+		var won = standings.show(tournament, drivers, tracks[tournament.nextTrack()]);
 		showOnly(standingsPanel);
+		if (won == GoldTrophy) fireworks.start();
 	}
 
 	/** The seats changed while the drivers show. */
@@ -199,8 +204,8 @@ class Panels {
 	}
 
 	/** The results, in finishing order. Online, only the host can start the next race. */
-	public function showResults(race:Race, drivers:Drivers, ?online:{isHost:Bool}, isInATrophy = false) {
-		results.show(race, drivers, online, isInATrophy);
+	public function showResults(race:Race, drivers:Drivers, ?online:{isHost:Bool}, isInATournament = false) {
+		results.show(race, drivers, online, isInATournament);
 		showOnly(resultsPanel);
 	}
 
@@ -243,8 +248,9 @@ class Panels {
 	/** Shows one panel (or none) and hides the rest; the holder dims the track only while a panel shows. Focus goes to its main button. */
 	function showOnly(wanted:Null<Element>, ?focusOn:Element) {
 		for (box in everyPanel) box.hidden = box != wanted;
+		if (wanted != standingsPanel) fireworks.stop();
 		holder.classList.toggle("is-showing", wanted != null);
-		Browser.document.body.classList.toggle("is-starting", [trackPanel, trophyPanel, driversPanel, invitePanel, roomPanel].contains(wanted));
+		Browser.document.body.classList.toggle("is-starting", [trackPanel, tournamentPanel, driversPanel, invitePanel, roomPanel].contains(wanted));
 		if (wanted == null) return;
 		var main = focusOn ?? firstShowing(wanted.querySelectorAll(".button-go:not(.button-join)"));
 		if (main != null) main.focus();
@@ -454,16 +460,16 @@ class ResultsParts {
 		leaveButton = Dom.button(Words.leave, "button", panel, actions.leave);
 	}
 
-	/** The results, in finishing order; the buttons for on this computer (in a trophy: on to the standings), or online (the host starts the next race). */
-	public function show(race:Race, drivers:Drivers, online:Null<{isHost:Bool}>, isInATrophy:Bool) {
+	/** The results, in finishing order; the buttons for on this computer (in a tournament: on to the standings), or online (the host starts the next race). */
+	public function show(race:Race, drivers:Drivers, online:Null<{isHost:Bool}>, isInATournament:Bool) {
 		table.innerHTML = "";
-		Dom.setText(raceAgainButton, isInATrophy ? Words.standings : Words.raceAgain);
+		Dom.setText(raceAgainButton, isInATournament ? Words.standings : Words.raceAgain);
 		Dom.setText(headline, Words.winner(drivers.nameOf(race.state.order[0])));
 		Dom.setText(trackLine, Words.racingOn(race.track.name, race.state.laps));
 		for (place in 0...race.state.order.length) row(race, drivers, race.state.order[place], place + 1);
 		raceAgainButton.hidden = online != null && !online.isHost;
 		status.hidden = online == null || online.isHost;
-		changeTrackButton.hidden = online != null || isInATrophy;
+		changeTrackButton.hidden = online != null || isInATournament;
 		leaveButton.hidden = online == null;
 	}
 
@@ -475,7 +481,7 @@ class ResultsParts {
 		placeRow(table, drivers, seat, place, drivers.nameOf(seat), racer.finishTick >= 0 ? Words.raceTime(raceTime) : howFar);
 	}
 
-	/** A row of a table of places (results, trophy standings): place, car colour, name, and a figure on the right. */
+	/** A row of a table of places (results, tournament standings): place, car colour, name, and a figure on the right. */
 	public static function placeRow(table:Element, drivers:Drivers, seat:Int, place:Int, name:String, figure:String) {
 		var row = Dom.make("li", drivers.isOurs(seat) ? "result is-player" : "result", null, table);
 		row.style.setProperty("--player", Paint.css(Paint.liveries[seat].colour));
