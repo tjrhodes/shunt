@@ -477,3 +477,14 @@ Written by Claude (AI), from Tom's testing.
   72 s at once before the first frame (`Game.demoSetting`,
   `skipAheadInADemo`). With every car an AI driver, a seed always plays
   out the same, so the browser shows what the search found.
+
+## 5 Nov 2026, evening: engines stop with the race
+
+- Tom: engine noise carried on after a race stopped. The engines are
+  only told how loud to be while a race runs, so when it stops they hold
+  their last note. On this computer the whole sound pauses at the finish,
+  but online it never does (it can't: the room's lights and hits still
+  sound between races), so they droned on through the results, the room
+  and back to the cards. Now every frame without a race running quietens
+  them (`Sound.quieten`, from `Show.draw`): engines and tyres die away in
+  a moment, whatever stopped the race.

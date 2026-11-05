@@ -85,11 +85,12 @@ class Show {
 		effects.animate(seconds);
 	}
 
-	/** Draws a frame: each car where it is to be shown, the oil, the HUD; engines and tyres heard while racing. */
+	/** Draws a frame: each car where it is to be shown, the oil, the HUD; engines and tyres heard while racing, and quiet otherwise. */
 	public function draw(race:Race, poses:Array<Pose>, isRacing:Bool) {
 		for (seat in 0...carViews.length) carViews[seat].show(race.racer(seat).car, poses[seat].heading, poses[seat].position);
 		oilView.show(race.state.oil);
 		if (isRacing) sound.follow(race);
+		else sound.quieten();
 		hud.update(race);
 		world.draw();
 	}
