@@ -9,7 +9,7 @@ package shunt;
  */
 class FixedSteps {
 	/** At most this many ticks in one frame: after a stall (a hidden tab), the race doesn't race to catch up. */
-	static inline final mostTicksPerFrame = 8;
+	final mostTicksPerFrame:Int;
 
 	/** Adding up times leaves tiny rounding errors: without this, a tick that is due now can wait a frame and two come together. */
 	static inline final roundingSlack = 1e-6;
@@ -17,7 +17,14 @@ class FixedSteps {
 	var lastSeconds = -1.0;
 	var timeNotYetTicked = 0.0;
 
-	public function new() {}
+	/**
+	 * On this computer 8 a frame is plenty. Online, time lost puts a browser
+	 * behind the server for the rest of the race (Tom, 5 Nov: on a slow
+	 * frame the cars jumped), so it catches up further (`OnlineTuning`).
+	 */
+	public function new(mostTicksPerFrame = 8) {
+		this.mostTicksPerFrame = mostTicksPerFrame;
+	}
 
 	/** How many ticks to run now, given the frame's time in milliseconds. */
 	public function ticksDue(nowMilliseconds:Float):Int {

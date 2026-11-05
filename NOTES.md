@@ -508,3 +508,64 @@ Written by Claude (AI), from Tom's testing.
   part way through taking pictures finishes cleanly (the right track back
   in the view). Reproduced on the old build (a track six cards round, a
   race, quit, a resize), and checked fixed.
+
+## 5 Nov 2026, night: online races that lagged and jumped
+
+Tom raced his son (two laptops, the same wifi): it lagged badly and the
+cars jumped around the track. There were no logs to say why, so first
+measurements, then fixes, each checked in "real life" (below).
+
+- **Measuring.**
+  - `?net` on the address shows a line at the bottom during online races
+    (`NetReadout`): ping, how many ticks this browser runs ahead of the
+    server, snapshots and frames a second (real frame times, not the
+    game's capped ones), and the largest correction lately for our cars,
+    other people's and the AI's.
+  - The server writes a line to its log as each race ends
+    (`RaceRoom.logTheRace`): the track, how long, how big the snapshots
+    were, and for each browser how many ticks its inputs came late for,
+    how many inputs came too late and went, and how many were usually in
+    hand. On the VPS: `journalctl -u shunt | grep "race over"`.
+  - The pretend network (`OnlineHarness`) can now be jittery, have
+    keyboard players (full lock or none), and run in "real life": browsers
+    draw frames, hear messages only at a frame, and now and then stall;
+    the server stalls too. In lockstep (as before) every correction was a
+    few centimetres, which is why the checks never saw the problem.
+- **What was wrong, and what changed.**
+  1. *A late input moved the whole race in time.* The server used each
+     browser's inputs from a queue, one a tick, and when none had come it
+     used the last again. A late input was then used anyway, a tick later:
+     so a browser stalling for a sixth of a second added 18 ticks between
+     its inputs and their use, until the queue overflowed and dropped
+     some. Every change of that gap moves the race in time on everyone's
+     screen: at 40 m/s, 18 ticks is 6 m. Now each input is for one tick
+     (`InputQueue`): its number plus a set lag. One that comes after its
+     tick has gone is thrown away (the guess stands), and the lag moves a
+     tick at most every half second: up if inputs came late lately, down
+     if more than `inputsKeptWaiting` (3) were always in hand, or at once
+     if a browser has fallen behind for good.
+  2. *Time lost for good.* A frame (or a server moment) slower than 8
+     ticks lost the rest, so that side ran behind for the rest of the race.
+     Online it now catches up to five seconds' worth
+     (`OnlineTuning.mostTicksCaughtUp`; ticks cost about 10 µs).
+  3. *A snapshot backlog.* Each snapshot meant replaying every tick the
+     browser was ahead, and every snapshot was handled, even several in a
+     frame: a page that fell behind did more work the further behind it
+     was. Now only the newest is caught up with, once a frame (each holds
+     the whole race).
+  4. *A stutter, 30 times a second.* On each snapshot, where each car was
+     a tick ago was reset to where it is now, nudging every car forward up
+     to a third of a metre. It now moves with the correction
+     (`Poses.shifted`).
+  5. Other people's cars (guessed from what they last pressed) are eased
+     over 0.3 s, and only corrections over 6 m snap (from 4).
+- **Measured** (a race on the Comb, two keyboard players, 20 ms each way
+  plus up to 20 ms of jitter, a 0.15 s stall in each browser and a 0.12 s
+  one at the server every 2.5 s): before, 99 % of corrections were under
+  1.1 m and 187 were over a metre; now 99 % are under 0.2 m and 7 are over a
+  metre. With 0.3 s stalls everywhere, both come out about even at the
+  extremes (a 0.3 s stall can't be guessed), but typical corrections drop
+  from tens of centimetres to a few.
+- Two real browsers here can't say how two laptops do: the sandbox draws
+  three frames a second. Tom's next race, with `?net` and the server's
+  log, will.

@@ -44,6 +44,12 @@
   }
   /* One plate per person, a corner each in seat order; the lap times take the top right when one races alone. */
   #hud > .plate { position: absolute; }
+  /* The ?net readout: how an online race is keeping up (NetReadout.hx). */
+  .net-readout {
+    position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 30;
+    font: 12px/1.4 ui-monospace, monospace; color: #e8ecf4; background: rgba(10, 14, 28, 0.75);
+    padding: 4px 8px; border-radius: 4px; pointer-events: none;
+  }
   .plate[data-corner="0"] { top: var(--edge-top); left: var(--gutter-left); }
   .plate[data-corner="1"], .plate-times { top: var(--edge-top); right: var(--gutter-right); }
   .plate[data-corner="2"] { bottom: var(--edge-bottom); left: var(--gutter-left); }

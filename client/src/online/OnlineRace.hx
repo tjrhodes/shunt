@@ -11,6 +11,8 @@ import shunt.ai.RacingLine;
 import shunt.car.CarInput;
 import shunt.online.InputQueue.NumberedInputs;
 import shunt.online.Messages;
+import shunt.online.OnlineTuning;
+import online.NetReadout.CarKind;
 import shunt.online.Pose;
 import shunt.online.Prediction;
 import shunt.online.Smoothing;
@@ -43,7 +45,7 @@ typedef Surroundings = {
  */
 class OnlineRace {
 	final around:Surroundings;
-	final steps = new FixedSteps();
+	final steps = new FixedSteps(OnlineTuning.mostTicksCaughtUp);
 	final waitingToSend:Array<NumberedInputs> = [];
 	var room:Null<ColyseusRoom> = null;
 	var view:Null<RoomView> = null;
@@ -64,6 +66,12 @@ class OnlineRace {
 
 	/** When the room last said how long until a quick match starts (seconds on the page's clock), to count down from. */
 	var countdownHeardAt = 0.0;
+
+	/** The newest snapshot from the server not yet caught up with (older ones are dropped: each holds the whole race). */
+	var newestSnapshot:Null<Snapshot> = null;
+
+	/** The `?net` readout, if the address asks for it. */
+	final readout:Null<NetReadout> = NetReadout.isWanted() ? new NetReadout() : null;
 
 	public function new(around:Surroundings) {
 		this.around = around;
@@ -97,6 +105,7 @@ class OnlineRace {
 		room.onMessage(Messages.room, heardAboutTheRoom);
 		room.onMessage(Messages.raceStarts, heardTheRaceStarts);
 		room.onMessage(Messages.snapshot, heardASnapshot);
+		room.onMessage(Messages.pong, (sentAt:Float) -> readout?.heardPong(sentAt));
 		room.onLeave(_ -> around.whenGone());
 		askForSeats();
 	}
@@ -136,32 +145,73 @@ class OnlineRace {
 		around.show.showTrack(track);
 		around.show.freshRace();
 		prediction = new Prediction(track, around.racingLines[start.track], start, room.sessionId);
-		isShowingStandings = false;
-		raceSeed = start.seed;
-		gatheringRace = null;
-		smoothings = [for (_ in start.seats) new Smoothing()];
+		forgetTheLastRace(start.seed);
+		smoothings = [for (seat in 0...start.seats.length) smoothingFor(seat)];
 		posesBefore = Poses.of(prediction.race.state);
-		waitingToSend.resize(0);
 		steps.startAfresh();
 		around.show.hud.seat(prediction.mySeats());
 		around.panels.hideAll();
 	}
 
-	/** The server's race, a little in the past: catch up from it, ease in any jump in our cars, and keep it for drawing the others. */
+	/** What was left from the last race (or the room before it): a snapshot still waiting isn't this race's, nor are inputs not yet sent. */
+	function forgetTheLastRace(seed:Int) {
+		newestSnapshot = null;
+		waitingToSend.resize(0);
+		isShowingStandings = false;
+		gatheringRace = null;
+		raceSeed = seed;
+	}
+
+	/** Our cars' corrections are eased quickly; other people's (guessed from what they last pressed, so corrected more) more gently. */
+	function smoothingFor(seat:Int):Smoothing {
+		var isOurs = prediction.mySeats().contains(seat);
+		return new Smoothing(isOurs ? OnlineTuning.correctionEasedOverSeconds : OnlineTuning.othersCorrectionEasedOverSeconds);
+	}
+
+	/**
+	 * A snapshot: kept, to catch up with on the next frame. Several can arrive
+	 * between frames, and catching up with each one costs a replay of every
+	 * tick we're ahead; when a page fell behind, that cost grew until it
+	 * never caught up again (Tom, 5 Nov: a race with his son lagged and the
+	 * cars jumped). Only the newest is needed: it holds the whole race.
+	 */
 	function heardASnapshot(snapshot:Snapshot) {
-		if (prediction == null) return;
+		newestSnapshot = snapshot;
+		readout?.heardASnapshot();
+	}
+
+	/**
+	 * The server's race, a little in the past: catch up from it, and ease in
+	 * any jump in the cars. Where each car was a tick ago moves with it, so
+	 * drawing carries on smoothly between ticks (Tom, 5 Nov: it was reset to
+	 * where the car is now, nudging every car forward 30 times a second).
+	 */
+	function catchUpWithTheNewest() {
+		var snapshot = newestSnapshot;
+		newestSnapshot = null;
+		if (prediction == null || snapshot == null) return;
 		var before = Poses.of(prediction.race.state);
 		prediction.catchUpWith(snapshot);
 		var after = Poses.of(prediction.race.state);
-		for (seat in 0...after.length) smoothings[seat].corrected(before[seat], after[seat]);
-		posesBefore = after;
+		for (seat in 0...after.length) {
+			smoothings[seat].corrected(before[seat], after[seat]);
+			posesBefore[seat] = Poses.shifted(posesBefore[seat], before[seat], after[seat]);
+			readout?.corrected(kindOf(seat), before[seat].position.distanceTo(after[seat].position));
+		}
 		if (snapshot.state.phase == Finished) showThePanel();
+	}
+
+	/** For the readout: whose car a seat is. */
+	function kindOf(seat:Int):CarKind {
+		if (isOurs(seat)) return Ours;
+		return view?.seats[seat]?.owner != "" ? SomeoneElses : AnAi;
 	}
 
 	// ---- Every frame ----
 
 	/** Runs the ticks due (racing) or watches for people taking seats (between races), then draws. */
 	public function frame(now:Float, secondsSinceLastFrame:Float) {
+		catchUpWithTheNewest();
 		if (isRacing()) {
 			for (_ in 0...steps.ticksDue(now)) tick();
 			sendWhatIsWaiting();
@@ -169,6 +219,14 @@ class OnlineRace {
 		} else if (view != null && view.phase != Racing && around.lineup.people() != peopleAsked() && whoIsHere()) askForSeats();
 		if (view != null && view.startsIn >= 0 && !isRacing()) around.panels.showCountdown(view.startsIn - (secondsNow() - countdownHeardAt));
 		draw(secondsSinceLastFrame);
+		measure(now);
+	}
+
+	/** With `?net`: a ping now and then, and the readout kept up to date. */
+	function measure(now:Float) {
+		if (readout == null || room == null) return;
+		if (readout.wantsAPing(now)) room.send(Messages.ping, Browser.window.performance.now());
+		readout.frame(now, prediction?.ticksAhead() ?? 0);
 	}
 
 	/** Between races (or not yet in): the people here can still take or give back seats. */

@@ -9,6 +9,8 @@ export declare const Messages: {
 	room: string;
 	raceStarts: string;
 	snapshot: string;
+	ping: string;
+	pong: string;
 };
 
 export declare const OnlineTuning: {
@@ -17,7 +19,7 @@ export declare const OnlineTuning: {
 
 export declare class RaceRoom {
 	/** Made as a browser asked: a quick match or not, the first track, a tournament's tracks by number (the room checks them all). */
-	constructor(trackTexts: string[], asked: { quick?: boolean; track?: unknown; tournament?: unknown }, outbox: { toEveryone: (type: string, message: unknown) => void });
+	constructor(trackTexts: string[], asked: { quick?: boolean; track?: unknown; tournament?: unknown }, outbox: { toEveryone: (type: string, message: unknown) => void; log?: (line: string) => void });
 	arrive(session: string): void;
 	wantSeats(session: string, wanted: unknown): void;
 	depart(session: string): void;

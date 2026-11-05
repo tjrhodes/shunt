@@ -24,6 +24,9 @@ class Messages {
 	/** A batch of the browser's inputs, numbered. */
 	public static final inputs = "inputs";
 
+	/** "How long does a message take?": the browser's clock, sent straight back as `pong` (for the `?net` readout). */
+	public static final ping = "ping";
+
 	// ---- From the server ----
 
 	/** Who is in the room and who sits where: sent whenever that changes. */
@@ -34,6 +37,9 @@ class Messages {
 
 	/** Where everything is now, many times a second. */
 	public static final snapshot = "snapshot";
+
+	/** A `ping` sent straight back to the browser that sent it. */
+	public static final pong = "pong";
 }
 
 /**

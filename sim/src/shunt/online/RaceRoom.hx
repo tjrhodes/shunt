@@ -12,6 +12,9 @@ import shunt.tournament.Tournament;
 typedef Outbox = {
 	/** Sends a message to every browser in the room. */
 	final toEveryone:(type:String, message:Dynamic) -> Void;
+
+	/** Writes a line to the server's log (if there is one): a summary of each race, for working out why one lagged. */
+	final ?log:(line:String) -> Void;
 }
 
 /**
@@ -33,7 +36,7 @@ class RaceRoom {
 	final outbox:Outbox;
 	final roomSeats = new RoomSeats();
 	final queues = new Map<String, InputQueue>();
-	final steps = new FixedSteps();
+	final steps = new FixedSteps(OnlineTuning.mostTicksCaughtUp);
 	var phase = Gathering;
 	var track = 0;
 	var race:Null<Race> = null;
@@ -130,7 +133,7 @@ class RaceRoom {
 
 	/** Each seat's input: its AI driver's, or the next from the queue of the browser that holds it. */
 	function everyonesInput():Array<CarInput> {
-		var thisTicks = [for (session => queue in queues) session => queue.next()];
+		var thisTicks = [for (session => queue in queues) session => queue.next(race.state.tick)];
 		return [for (seat in 0...roomSeats.seats.length) inputFor(seat, thisTicks)];
 	}
 
@@ -161,8 +164,32 @@ class RaceRoom {
 	/** The race is over: in a tournament it scores; its results show until the next one. */
 	function finish() {
 		phase = Results;
+		logTheRace();
 		if (tournament != null) tournament.score(race.state.order);
 		tellEveryoneAboutTheRoom();
+	}
+
+	/**
+	 * One line in the server's log as a race ends (Tom, 5 Nov: a race with his
+	 * son lagged and nothing said why): how long it took, how big the
+	 * snapshots were, and how each person's inputs came in.
+	 */
+	function logTheRace() {
+		if (outbox.log == null) return;
+		var snapshotKilobytes = Math.round(haxe.Json.stringify(race.state).length / 100) / 10;
+		var people = [for (session => queue in queues) if (hasASeat(session)) howInputsCame(session, queue)];
+		var about = '${tracks[track].name}, ${Math.round(race.state.tick / Tick.perSecond)} s, snapshots about $snapshotKilobytes KB';
+		outbox.log('race over: $about. ${people.join("; ")}');
+	}
+
+	function hasASeat(session:String):Bool {
+		return Lambda.exists(roomSeats.seats, holder -> holder.owner == session);
+	}
+
+	/** For the log: how many ticks one browser's inputs came late, how many were thrown away, and how many usually waited. */
+	static function howInputsCame(session:String, queue:InputQueue):String {
+		var waiting = queue.asked > 0 ? Math.round(queue.waitingAddedUp / queue.asked * 10) / 10 : 0;
+		return '$session: late for ${queue.late} of ${queue.asked} ticks, ${queue.dropped} dropped, $waiting waiting on average';
 	}
 
 	/** In a tournament, the next race is on its next track; once it's over, the same tracks again from no points. */

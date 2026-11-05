@@ -14,7 +14,12 @@ class Smoothing {
 	var offset = Vector.nothing();
 	var turn = 0.0;
 
-	public function new() {}
+	/** How long a correction takes to ease in (seconds). */
+	final easedOver:Float;
+
+	public function new(easedOver:Float) {
+		this.easedOver = easedOver;
+	}
 
 	/** The car was predicted at `before` and is now put at `after`: draw it from where it was. */
 	public function corrected(before:Pose, after:Pose) {
@@ -26,7 +31,7 @@ class Smoothing {
 
 	/** Where to draw a car that is really at `pose`, with the offset dying away as time passes. */
 	public function shown(pose:Pose, secondsPassed:Float):Pose {
-		var share = Math.exp(-secondsPassed * 3 / OnlineTuning.correctionEasedOverSeconds);
+		var share = Math.exp(-secondsPassed * 3 / easedOver);
 		offset = offset * share;
 		turn *= share;
 		return {position: pose.position + offset, heading: pose.heading + turn};

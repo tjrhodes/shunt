@@ -83,6 +83,11 @@ class Prediction {
 		return othersLastInputs[seat] ?? CarInputs.nothingPressed;
 	}
 
+	/** How many ticks this browser runs ahead of the server's last snapshot: its inputs the server hasn't used yet. */
+	public function ticksAhead():Int {
+		return notYetUsed.length;
+	}
+
 	/** Some numbered inputs as one batch to send. */
 	public static function batchOf(numbered:Array<NumberedInputs>):InputBatch {
 		return {firstNumber: numbered[0].number, ticks: [for (entry in numbered) entry.inputs]};

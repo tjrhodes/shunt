@@ -22,7 +22,10 @@ export class ShuntRoom extends Room {
 	/** A quick match can be joined by anyone looking for a race; any other room only by its link. The brain checks the rest of what was asked (the first track, a tournament). */
 	onCreate(options: { quick?: boolean; track?: number; tournament?: number[] }) {
 		if (options?.quick !== true) this.setPrivate(true);
-		const outbox = { toEveryone: (type: string, message: unknown) => this.broadcast(type, message) };
+		const outbox = {
+			toEveryone: (type: string, message: unknown) => this.broadcast(type, message),
+			log: (line: string) => console.log(`[room ${this.roomId}] ${line}`),
+		};
 		this.brain = new RaceRoom(trackTexts(), options ?? {}, outbox);
 		this.passMessagesToTheBrain();
 		this.setSimulationInterval(() => this.brain.advance(performance.now()), lookEvery);
@@ -34,6 +37,7 @@ export class ShuntRoom extends Room {
 		this.onMessage(Messages.chooseTrack, (client, choice) => this.brain.chooseTrack(client.sessionId, choice));
 		this.onMessage(Messages.startRace, (client) => this.brain.startRace(client.sessionId));
 		this.onMessage(Messages.inputs, (client, batch) => this.brain.takeInputs(client.sessionId, batch));
+		this.onMessage(Messages.ping, (client, sent) => client.send(Messages.pong, sent));
 	}
 
 	onJoin(client: Client) {

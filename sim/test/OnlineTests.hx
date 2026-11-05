@@ -11,6 +11,7 @@ class OnlineTests {
 		test("the browser in longest is the host, and the next takes over when it leaves", hostHandsOver),
 		test("only the host chooses the track and starts the race", onlyTheHostDecides),
 		test("inputs are used in order, one a tick, the last again when none has come", inputsInOrder),
+		test("a stall in a browser's inputs doesn't move the rest to other ticks", inputsKeepTheirTicks),
 		test("too many waiting inputs: the oldest go; repeats are ignored; numbers are tidied", inputQueueGuards),
 		test("with no delay, a browser predicts the server's race all but exactly", noDelayNoCorrection),
 		test("someone leaving mid-race: an AI driver takes their car on to the finish", aiTakesOverALeaver),
@@ -66,24 +67,43 @@ class OnlineTests {
 
 	static function inputsInOrder() {
 		var queue = new InputQueue();
+		var kept = OnlineTuning.inputsKeptWaiting;
 		queue.add({firstNumber: 0, ticks: [[pressed], [CarInputs.nothingPressed]]});
-		equal(queue.next()[0].throttle, 1.0, "first input");
-		equal(queue.next()[0].throttle, 0.0, "second input");
-		equal(queue.next()[0].throttle, 0.0, "nothing new: the last again");
-		equal(queue.usedUpTo, 1, "used up to");
+		for (tick in 0...kept) queue.next(tick);
+		equal(queue.next(kept)[0].throttle, 1.0, "the first input, once a few ticks are in hand");
+		equal(queue.next(kept + 1)[0].throttle, 0.0, "the second, on the next tick");
+		equal(queue.next(kept + 2)[0].throttle, 0.0, "none for this tick: the last again");
+		equal(queue.usedUpTo, 2, "done with up to");
+		queue.add({firstNumber: 2, ticks: [[CarInputs.nothingPressed], [pressed]]});
+		equal(queue.next(kept + 3)[0].throttle, 1.0, "number 3 on its own tick (number 2 came too late, and went)");
 	}
 
 	static function inputQueueGuards() {
 		var queue = new InputQueue();
+		var kept = OnlineTuning.inputsKeptWaiting;
 		queue.add({firstNumber: 0, ticks: [for (_ in 0...OnlineTuning.mostInputsWaiting + 5) [pressed]]});
-		queue.next();
-		equal(queue.usedUpTo, 5, "the first used, after the oldest went");
-		queue.add({firstNumber: 3, ticks: [[CarInputs.nothingPressed]]});
-		queue.add({firstNumber: 100, ticks: [[{throttle: 9, brake: -2, steer: 4, recover: false}]]});
-		for (_ in 0...OnlineTuning.mostInputsWaiting) queue.next();
-		var wild = queue.next()[0];
-		equal(queue.usedUpTo, 100, "the late repeat was ignored; the new one used");
+		queue.add(null);
+		queue.add(cast {firstNumber: "x", ticks: 3});
+		for (tick in 0...kept + 1) queue.next(tick);
+		equal(queue.usedUpTo, 5, "a huge batch: only its newest kept, so the first used is number 5");
+		queue.add({firstNumber: 17, ticks: [[{throttle: 9, brake: -2, steer: 4, recover: false}]]});
+		var wild = [for (tick in kept + 1...kept + 13) queue.next(tick)].pop()[0];
+		equal(queue.usedUpTo, 17, "used up to");
 		isTrue(wild.throttle == 1 && wild.brake == 0 && wild.steer == 1, "wild numbers tidied: " + haxe.Json.stringify(wild));
+	}
+
+	/** Inputs that stop for a sixth of a second, then all come at once (a stalled browser), don't change which tick each input is used on. */
+	static function inputsKeepTheirTicks() {
+		var queue = new InputQueue();
+		var numbered = (number:Int) -> [{throttle: number / 1000, brake: 0.0, steer: 0.0, recover: false}];
+		for (tick in 0...56) {
+			if (tick < 30) queue.add({firstNumber: tick, ticks: [numbered(tick)]});
+			if (tick == 48) queue.add({firstNumber: 30, ticks: [for (number in 30...49) numbered(number)]});
+			if (tick > 48) queue.add({firstNumber: tick, ticks: [numbered(tick)]});
+			if (tick == 55) equal(Math.round(queue.next(tick)[0].throttle * 1000), 55 - OnlineTuning.inputsKeptWaiting, "the input used on tick 55");
+			else queue.next(tick);
+		}
+		isTrue(queue.late >= 18, 'the stalled ticks used the last input again (${queue.late} late)');
 	}
 
 	static function noDelayNoCorrection() {
