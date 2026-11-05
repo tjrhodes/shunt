@@ -199,3 +199,373 @@ designed once, for several players.
   `/dev/hidraw` directly, which a Snap browser can't reach even with
   `joystick` connected. Firefox and unsandboxed browsers read it fine. The
   game now carries on with no pads if the browser refuses them.
+
+## 31 Oct 2026, evening: phase 3, online
+
+Tom chose quick match plus room links, its own subdomain
+(shunt.tomrhodes.it, nginx), and keeping seats per controller online.
+
+- **Colyseus moved on to 0.18** since the spec was written: a new client
+  package (`@colyseus/sdk`) and its own prediction helpers. Neither was
+  needed: the room is driven by our own Haxe (`RaceRoom`), and the
+  browser's prediction is our own too (`Prediction`), so the same code is
+  checked on Node with a pretend network.
+- **No schema.** The spec said to write the state schema in TypeScript and
+  generate it for Haxe. The race is already plain data that copies as
+  JSON, so snapshots send it as it is; a schema would have been every
+  field written a second time.
+- **The pretend network** (`OnlineHarness`) turns every message into JSON
+  and back, so nothing is shared between "server" and "browser" by
+  accident. The first measurements were tiny: the person in each browser
+  is an AI driver, which drives smoothly; real people will make bigger
+  corrections. Worth measuring again on the real server.
+- **Colyseus answers its own HTTP requests** (finding and joining rooms):
+  the page server first answered everything with 404, so the matchmaking
+  failed. It is now an Express middleware that passes on anything that
+  isn't one of the game's files.
+- **Checked in two browsers** against the server here: a link room, the
+  second browser joining by the link, the host starting, both driving,
+  AI in the other seats.
+- **Deploying from here wasn't possible** (no route to the VPS), so
+  `deploy/deploy.sh` does it from Tom's computer.
+- Colyseus needs Node 22 or newer; the script checks.
+- **First real test (Tom, desktop and phone):** opened from the link, the
+  phone showed the offline "Start the race" first and the join button
+  second, so it was easy to start a race alone by mistake; that is what
+  looked like both devices driving the yellow car. An invitation link now
+  leads with "Join the race" (racing alone is a quiet second choice, and
+  the offline start, track picker and seat cards are hidden). Panels were
+  also slightly wider than a phone screen (no `box-sizing`), now fixed.
+
+## 1 Nov 2026: first races with other people
+
+- **Through Player 2's car:** your car is drawn ahead (predicted), and
+  other people's were drawn 0.1 s in the past, so over a phone network
+  the two were a few metres apart on screen from where the server had
+  them, and you could drive through a car without touching it. Everyone's
+  car is now drawn where the browser predicts it, with corrections eased.
+- **Walls slow you a little more** (Tom): wall friction 0.5 (from 0.3).
+  Measured flat out at 40 m/s into the oval's wall: the slowest a graze
+  leaves you is 25 to 30 m/s, from 28 to 33.
+- **"Couldn't reach the race" on Tom's son's phone**, twice, while Tom's
+  own phone and computer joined fine. Cause not known yet: the panel now
+  shows the reason the join failed, small, under the message.
+- The no-delay online check is now "all but exactly": the other person's
+  latest input is always a tick away, so a bump can differ by millimetres.
+- Rounding in `FixedSteps` could hold a due tick for a frame and run two
+  together; it now allows a millionth of a second of slack.
+- **Cars passing through each other, offline too** (Tom): the hit test
+  looked only for a corner of one car inside the other. Two cars lying
+  across each other like a plus sign, or one nose-first into the other's
+  side, have no corner inside, so nothing happened. Now a proper box
+  overlap test (the separating-axis test): checked with a plus sign and a
+  nose into a side, and 1,000 random hits (flat out into parked cars at
+  any angle, and side by side at speed steering into each other): the
+  deepest two cars ever sink into each other is 7 cm.
+- **The flick** (Tom: "turn right slightly then hard left and it drifts,
+  as I've chucked the weight over"): the car now carries where its weight
+  leans (`sidewaysLoad`, rolling over in about 0.35 s). While the weight is
+  still over one side and the wheels ask hard for the other, once the car
+  has started turning the new way, the rear loses up to 45 % of its grip
+  and the steadying hand most of its hold. At 30 m/s: hard left off a
+  straight slides 10°; after a little right first, 27°, without spinning.
+  The first version also weakened the rear when countersteering a slide
+  (which also asks against the weight), so catching a power slide got
+  harder; the "turning the new way" condition keeps countersteering a catch.
+- **Smaller cars, and a car of our own** (Tom wanted a simplified 60s
+  small car). The models he found were ripped from games (Forza Horizon,
+  Colin McRae Rally 2005), and a copy of a real car design isn't ours to
+  use, so the car is our own little 1960s rally saloon: chunky boxes, a
+  sloping bonnet and boot, a narrowing glasshouse under a white roof,
+  round wheels out at the corners, chrome bumpers, round lamps, two
+  spotlights, and the number on the roof and both doors. The race's cars
+  shrank to match: 3.6 by 1.6 m (from 4.8 by 1.9), axles 1.05 m from the
+  middle. A short car spins up faster, so a quick correction at top speed
+  turned 44° instead of under 35°: the steadying hand went from 4 to 5,
+  and every check passes again (the gentle-bend check now uses a lighter
+  touch, 0.075 of lock, as the shorter wheelbase turns tighter).
+- **Cars looking inside each other, side by side (offline):** the race
+  kept them apart (pressed side by side at up to 40 m/s, steering into
+  each other, they never sank more than 2 cm), but the drawn car stuck out
+  of its own box: the wheels by about 15 cm each side, the bumpers and
+  spotlights at the ends. Everything drawn now sits inside the race's box.
+- **Bigger cars:** 4.2 by 1.75 m (axles 1.25 m from the middle), between
+  the stock car and a true small car, with a taller cabin, a thicker roof
+  and bigger wheels so they read on screen. Every check passes unchanged.
+- **The flick on keys:** holding a key builds steering up from a third,
+  and switching sides started that again, so the left turn came in weak
+  while the weight settled. Going straight from one side to the other
+  (even with a gap of up to 0.15 s between keys) now keeps what has built
+  up. The keyboard's build-up is now checked too (`client/test/FlickTests`,
+  driven through the very same `SteeringRamp`): at 30 m/s, left off a
+  straight slides 10°; a tap right first, 21°.
+
+## 1 Nov 2026, late: a dozen tracks
+
+Tom asked for a dozen tracks in the spirit of his screenshots, and higher
+walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
+
+- **Crossings** worked with one change to `Track`: edge walls lying on a
+  far-off part of the road are left out, so the road is open where it
+  crosses. Laps, recovery and the AI already only ever look at the part of
+  the track a car is near, so nothing else needed to know.
+- **The first Hook and Twister had walls in knots** at their corners: the
+  rounded corners were a cluster of points, and the straights between them
+  had none, and the game's smoothing (Catmull-Rom, evenly spaced along the
+  points) looped back on itself there. The generator now fills long
+  stretches with points no more than 8 m apart.
+- **All twelve pass first time**: 100 AI races on each, every car that
+  isn't wrecked finishing, none put back more than three times, no car
+  ever outside an arena. The whole set of checks now takes about 7
+  minutes, most of it those 1,200 races.
+- The camera still picks a straight-on view for some box arenas (the
+  Comb); that's for the design pass.
+
+## 2 Nov 2026: smaller tracks, sharper AI, the portfolio's look
+
+- **Tracks too big** (Tom: cars tiny on the Trefoil, Hourglass, Snake):
+  the camera fits the whole track, so size is everything. Every road
+  circuit is now shrunk to fit 185 m across (about the oval's 177 m), the
+  road staying 14 m wide: Trefoil 244 → 199 m, Snake 274 → 199, Twister
+  258 → 199, Hourglass 254 → 199. The Snake's wiggles were softened, as
+  they pinched at the smaller size.
+- **AI drivers have characters** (Tom: faster, and one aggressive): an
+  Ace (pace 1.08 of the racing line, clean), a Bruiser (1.04, bumps rather
+  than passes) and a Steady (0.97, clean); three AI cars are always one of
+  each, in seats that change from race to race. They were 0.88 to 0.98 at
+  random. Over 20 races on each track, the Ace won most, the Bruiser the
+  rest bar a few; none was put back more than twice; all checks pass.
+- **The portfolio's palette and type**: Paint.hx and the page's colours
+  are now the rock-and-lichen palette from tomrhodes.it (night-blue rock,
+  pale stone, lichen yellow, ochre, rust, ember); fonts Fira Sans and Fira
+  Sans Condensed (900 for titles and numbers), also for the car numbers and
+  billboards (`view/Lettering.hx`).
+- The online room no longer has its own track picker (2 Nov): it shows
+  its track as one line with a small map, and the host's "Change track"
+  opens the same ring of cards as on this computer ("Use this track" goes
+  back). Every card chosen there is the room's track at once.
+- Results lead with the winner ("Ace wins", "You win!") and the track;
+  the winner's row stands out. AI drivers are named by their kind (Ace,
+  Bruiser, Steady) on the results, offline and online, instead of "No. N".
+- A quick match's countdown now ticks down on the room panel each frame,
+  from the last time the room said how long was left.
+- The camera now prefers a diagonal view unless a straight one fills the
+  screen 1.45 times better (was 1.25): the Comb came out straight-on.
+- **Starting a race in stages** (Tom: "a carousel of tracks on cards, then
+  a new screen to pick the drivers... nice clutter-free layouts for each
+  stage"). First the track cards (`hud/TrackCards.hx`): a sliding row, one
+  card per track, each with a map drawn from the track's own walls, its
+  name, its family (a new `family` in each track file), and laps and
+  length; the chosen card sits in the middle and the 3D track behind
+  changes with it. Left and right on keys, stick or touch move through
+  them. Then the drivers: the four seats, the AI ones named for their kind
+  (Ace, Bruiser, Steady, from the race's seed), Back and Start, and racing
+  online. A friend's link opens on its own small panel. The HUD fades away
+  while starting.
+- **Found on the way:** on a phone the track panel came out 1,024 px wide
+  and off the side of the screen. The panels' grid sized its one column to
+  fit everything inside it, here the whole row of cards; it now has one
+  column that is never wider than the screen.
+- **The track cards as a 3D ring** (Tom: "cards in a circle, the current
+  one comes out and turns to show its content"): `view/CardRing.hx`, its
+  own small three.js view in the track panel. Cards stand in a circle with
+  their backs out; the chosen one slides towards you, rises, grows and
+  turns half round to face you; choosing another turns the ring the short
+  way round while the old card swings back. Everything eases (exponential,
+  7 per second), so running through the cards flows; with reduced motion it
+  jumps. The faces are painted on canvases (`view/CardFaces.hx`), the map
+  from the same path data as before (`view/TrackMap.hx`, used by both).
+  The plain buttons stay underneath, out of sight, for screen readers.
+- 3 Nov (Tom): the card ring follows a drag (finger or mouse, sideways
+  only; up and down still scroll the panel): one card per 90 px, the front
+  card going back as the next comes out past it, in step with the finger.
+  On letting go it settles on the nearest card; a quick short swipe (30 px
+  or more) still moves on one. Dragging left brings the next cards. The
+  click that ends a drag is ignored, so it never picks a card by accident.
+- The card backs now show the track's map in a quiet blue with its name, so
+  the cards in the ring aren't a mystery; only the chosen card's map is yellow.
+- Touch braking is a bar right across the bottom of the screen instead of a
+  round pad in the corner, so the left thumb can brake while the right one
+  steers right. The HUD's bottom plates and the start lights sit above it,
+  and the touch buttons hide while a panel shows.
+- The track behind the cards fades with the ring (Tom, 3 Nov): a veil in
+  the night's colour deepens as the ring turns towards halfway to the next
+  card, the track changes there unseen, and it lifts as the card comes out.
+  So every card passed gets its own fade, in step with a drag too. The
+  chosen track and the one behind can differ mid-turn (`Game.shownTrack`);
+  going on to the drivers puts the chosen one behind straight away. Online,
+  the room's track shows the same way while the host turns the ring.
+- The world behind the cards crossfades (Tom, 4 Nov): `view/Backdrops.hx`
+  keeps a picture of each track and, between two cards, lays the next
+  one's picture over the nearer one's as far as the ring has turned. At
+  rest the pictures go and the live 3D view shows. The pictures are taken in
+  the browser, not made beforehand, because the camera frames each track
+  for the screen it's on; a picture made elsewhere wouldn't line up. While
+  the cards show and the ring is at rest, the game takes one a frame
+  (`Game.takeAPicture`): first the track showing, then, with that picture
+  covering the view, each other track with its cars on the grid. They're
+  kept as JPEGs at the page's size and taken again if the screen changes
+  size. A track without its picture yet still dips to dark on the way past.
+- Tracks taken out of the scene are now let go on the graphics card too
+  (`World.letGo`): taking the pictures builds every track, so they'd pile up.
+
+## 4 Nov 2026: sound button, four more tracks, tournaments
+
+- **Sound button** (Tom: "we need some sound controls"): a speaker in the
+  top corner of the start screens, the same choice as M and the pause
+  panel's button, remembered between visits. Ready to split into music and
+  effects once there's music.
+- **Four more tracks** after the original's screenshots (16 in all):
+  Horseshoe (a C), Zed (a Z), Fork (two fingers pushed up into a loop) and
+  Switchback (an E). All circuits, from `tools/make-tracks.py`; the
+  existing twelve came out byte-identical. 100 AI races each pass first
+  time: 194 checks.
+- **Tournaments** (`shunt/tournament/Tournament.hx`, moved into the simulation on 5 Nov, `hud/TournamentParts.hx`; called trophies at first): 3, 5 or 10
+  races, 3/2/1/0 points, ties to more wins. The tracks start as a random
+  pick, no repeats; any can be swapped on the card ring ("Use this track")
+  or the lot shuffled. Results go on to the standings; the last standings
+  name the winner. Each race's seed keeps the trophy's remainder by 3, so
+  the AI drivers stay the same kinds in the same seats all the way through.
+  On this computer only for now.
+- Renamed trophies to tournaments (Tom): the mode is a tournament, the
+  trophy is what you win. On the final standings, the best of us gets an
+  award top right (`hud/Award.hx`, SVG in the palette's metals): a gold
+  trophy and fireworks (`view/Fireworks.hx`) for winning, a smaller silver
+  trophy for second, a bronze medal for third, nothing for fourth. No
+  fireworks for anyone who prefers less motion.
+- `?demo` on the page's address makes every car an AI driver, and `?demo=close` also has the camera follow the two cars nearest each other, 2.6 times closer (`Game.followTheAction`, `IsometricCamera.closeUp`)
+  (`Game.isDrivenHere`), for recording the Lab page's video and stills.
+  They were recorded on a stepped clock (Playwright's `clock`), one frame
+  every 1/25 s of game time, so the video is smooth even though software
+  rendering takes seconds a frame.
+
+## 5 Nov 2026: a way out of a race, Leave fixed, tournaments online
+
+Written by Claude (AI), from Tom's testing.
+
+- **A way out of a race** (Tom: "need a quit race button or back
+  button"): the pause button showed only after the screen was touched, so
+  on a computer the only way out was Esc, which nothing said. It now shows
+  during every race, just under the start lights, and a mouse can press it
+  (a quick click is kept until the next frame looks, in `TouchPads`). The
+  pause panel has Quit race on this computer (Leave the tournament in a
+  tournament's race; Leave online), back to the track cards.
+- **Leave did nothing online** (Tom found it in a quick match; it was
+  every room): leaving cleared the room before the game stopped being
+  online, so the next thing it did asked the cleared room to show a track
+  and crashed. It is off line first now (`Game.backFromOnline`). Checked
+  against the old build, which fails with that very error.
+- **Tournaments online** (Tom: a tournament's link to a friend opened a
+  single race on the oval): Race friends from a tournament's drivers makes
+  a room for that tournament (`HowToJoin.NewTournament`, its tracks sent
+  when the room is made). `Tournament` moved into the simulation so the
+  room runs it: its races go in order on its tracks, the host can't change
+  them, every finish is scored, and the standings go out with the room
+  (`RoomView.tournament`). The room panel says which race is next. After
+  each race everyone can see the standings; only the host goes on to the
+  next race (or, once it's won, the same tracks again from no points). A
+  new check races a tournament room's first race: 240 checks.
+- Checked in browsers against the server here: a tournament room and a
+  friend joining it by its link (both see "Tournament race 1 of 3"), leaving
+  it mid-race, leaving a quick match, and quitting a race on this computer.
+- **More action in the Lab video** (Tom: "some bumping about maybe and
+  some sliding round corners"): the first clips were race starts. This
+  time a scratch search ran 30 all-AI races on every track and scored each
+  4 s stretch for cars hitting each other and sliding near the camera. The
+  five best, on different tracks, were recorded with two new demo
+  settings: `?demo=close&seed=4&from=72` races that seed and runs it to
+  72 s at once before the first frame (`Game.demoSetting`,
+  `skipAheadInADemo`). With every car an AI driver, a seed always plays
+  out the same, so the browser shows what the search found.
+
+## 5 Nov 2026, evening: engines stop with the race
+
+- Tom: engine noise carried on after a race stopped. The engines are
+  only told how loud to be while a race runs, so when it stops they hold
+  their last note. On this computer the whole sound pauses at the finish,
+  but online it never does (it can't: the room's lights and hits still
+  sound between races), so they droned on through the results, the room
+  and back to the cards. Now every frame without a race running quietens
+  them (`Sound.quieten`, from `Show.draw`): engines and tyres die away in
+  a moment, whatever stopped the race.
+- Tom: Race friends always opened on the Oval. A new room started on
+  track 0 whatever the cards showed; now the browser asks for the chosen
+  track when it makes a room (`RoomAsked`, which also carries quick and a
+  tournament's tracks; the room checks it all), quick matches included. A
+  tournament's room starts on its own first track.
+- npm's "uuid@8.3.2 deprecated" warning: it came from Colyseus's login
+  add-on (@colyseus/auth → grant → request-oauth → uuid@8), which shunt
+  doesn't use. `overrides` in server/package.json pins uuid to 11, which
+  still has the `require('uuid').v4` that request-oauth calls.
+- Tom: back on the track cards, the ring wouldn't click, drag or swipe
+  ("Cannot read properties of undefined (reading 'src')" in
+  `Backdrops.showPicture`). While pictures were being retaken (the screen
+  had changed size), the ring at rest asked for the next card's picture
+  to show it at no opacity, and that one wasn't taken yet. The error came
+  every frame, and the frame loop asked for its next frame last, so the
+  game stopped. Now: at rest that layer is just hidden; the next frame is
+  asked for first, so one error can't stop the game; and leaving the cards
+  part way through taking pictures finishes cleanly (the right track back
+  in the view). Reproduced on the old build (a track six cards round, a
+  race, quit, a resize), and checked fixed.
+
+## 5 Nov 2026, night: online races that lagged and jumped
+
+Tom raced his son (two laptops, the same wifi): it lagged badly and the
+cars jumped around the track. There were no logs to say why, so first
+measurements, then fixes, each checked in "real life" (below).
+
+- **Measuring.**
+  - `?net` on the address shows a line at the bottom during online races
+    (`NetReadout`): ping, how many ticks this browser runs ahead of the
+    server, snapshots and frames a second (real frame times, not the
+    game's capped ones), and the largest correction lately for our cars,
+    other people's and the AI's.
+  - The server writes a line to its log as each race ends
+    (`RaceRoom.logTheRace`): the track, how long, how big the snapshots
+    were, and for each browser how many ticks its inputs came late for,
+    how many inputs came too late and went, and how many were usually in
+    hand. On the VPS: `journalctl -u shunt | grep "race over"`.
+  - The pretend network (`OnlineHarness`) can now be jittery, have
+    keyboard players (full lock or none), and run in "real life": browsers
+    draw frames, hear messages only at a frame, and now and then stall;
+    the server stalls too. In lockstep (as before) every correction was a
+    few centimetres, which is why the checks never saw the problem.
+- **What was wrong, and what changed.**
+  1. *A late input moved the whole race in time.* The server used each
+     browser's inputs from a queue, one a tick, and when none had come it
+     used the last again. A late input was then used anyway, a tick later:
+     so a browser stalling for a sixth of a second added 18 ticks between
+     its inputs and their use, until the queue overflowed and dropped
+     some. Every change of that gap moves the race in time on everyone's
+     screen: at 40 m/s, 18 ticks is 6 m. Now each input is for one tick
+     (`InputQueue`): its number plus a set lag. One that comes after its
+     tick has gone is thrown away (the guess stands), and the lag moves a
+     tick at most every half second: up if inputs came late lately, down
+     if more than `inputsKeptWaiting` (3) were always in hand, or at once
+     if a browser has fallen behind for good.
+  2. *Time lost for good.* A frame (or a server moment) slower than 8
+     ticks lost the rest, so that side ran behind for the rest of the race.
+     Online it now catches up to five seconds' worth
+     (`OnlineTuning.mostTicksCaughtUp`; ticks cost about 10 µs).
+  3. *A snapshot backlog.* Each snapshot meant replaying every tick the
+     browser was ahead, and every snapshot was handled, even several in a
+     frame: a page that fell behind did more work the further behind it
+     was. Now only the newest is caught up with, once a frame (each holds
+     the whole race).
+  4. *A stutter, 30 times a second.* On each snapshot, where each car was
+     a tick ago was reset to where it is now, nudging every car forward up
+     to a third of a metre. It now moves with the correction
+     (`Poses.shifted`).
+  5. Other people's cars (guessed from what they last pressed) are eased
+     over 0.3 s, and only corrections over 6 m snap (from 4).
+- **Measured** (a race on the Comb, two keyboard players, 20 ms each way
+  plus up to 20 ms of jitter, a 0.15 s stall in each browser and a 0.12 s
+  one at the server every 2.5 s): before, 99 % of corrections were under
+  1.1 m and 187 were over a metre; now 99 % are under 0.2 m and 7 are over a
+  metre. With 0.3 s stalls everywhere, both come out about even at the
+  extremes (a 0.3 s stall can't be guessed), but typical corrections drop
+  from tens of centimetres to a few.
+- Two real browsers here can't say how two laptops do: the sandbox draws
+  three frames a second. Tom's next race, with `?net` and the server's
+  log, will.

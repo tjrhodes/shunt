@@ -11,7 +11,7 @@ class ContactTuning {
 
 	/** How much rubbing slows a scrape along the other car or wall (0 is ice, 1 is very grippy). */
 	public static inline final carScrape = 0.4;
-	public static inline final wallScrape = 0.3;
+	public static inline final wallScrape = 0.5;
 
 	/**
 	 * Walls are this many metres from their middle line to their face (half

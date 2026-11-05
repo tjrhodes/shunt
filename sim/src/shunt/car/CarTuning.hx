@@ -13,15 +13,20 @@ import shunt.maths.Numbers.degrees;
 class CarTuning {
 	// ---- The body ----
 
-	/** Bumper to bumper, and side to side. */
-	public static inline final length = 4.8;
-	public static inline final width = 1.9;
+	/**
+	 * Bumper to bumper, and side to side: a small 1960s rally saloon, drawn
+	 * a little larger than life so it reads on screen (Tom, 1 Nov: 4.8 by
+	 * 1.9, stock-car size, until then; briefly 3.6 by 1.6, too small to see).
+	 */
+	public static inline final length = 4.2;
+	public static inline final width = 1.75;
 
+	/** Kept from the stock car, so it pulls away, brakes and grips just as before. */
 	public static inline final mass = 1400.0;
 
-	/** Where the axles sit, measured from the car's centre of mass. */
-	public static inline final frontAxleAhead = 1.4;
-	public static inline final rearAxleBehind = 1.4;
+	/** Where the axles sit, measured from the car's centre of mass: right out at the corners. */
+	public static inline final frontAxleAhead = 1.25;
+	public static inline final rearAxleBehind = 1.25;
 	public static inline final wheelbase = frontAxleAhead + rearAxleBehind;
 
 	/** How hard it is to start (or stop) the car spinning: that of a solid box this size. */
@@ -114,7 +119,7 @@ class CarTuning {
 	 * small correction growing into a spin, and makes countersteering catch a
 	 * slide; drift is still there, but it goes where the wheels point.
 	 */
-	public static inline final steadying = 4.0;
+	public static inline final steadying = 6.0;
 
 	/**
 	 * Steering held at full lock lets the car turn this much more than its
@@ -123,6 +128,25 @@ class CarTuning {
 	 */
 	public static inline final extraTurnAtFullLock = 0.25;
 	public static inline final extraTurnFromLock = 0.75;
+
+	// ---- Weight shift (the flick) ----
+
+	/** How long the body takes to roll its weight over to a new side, in seconds. */
+	public static inline final weightRollsOverIn = 0.35;
+
+	/**
+	 * A full flick: the weight still leaning this hard one way (in g) times
+	 * the wheels asking this hard the other (in g). A little right then hard
+	 * left is about half of one; a hard right then hard left, all of one.
+	 */
+	public static inline final fullFlick = 1.2;
+
+	/** The flick only counts once the car is turning the new way at least this fast (radians per second). */
+	public static inline final flickOnceTurningAt = 0.3;
+
+	/** At a full flick the rear tyres lose this share of their grip, and the steadying hand this share of its hold. */
+	public static inline final rearGripLostInAFlick = 0.45;
+	public static inline final steadyingLostInAFlick = 0.75;
 
 	/**
 	 * Below this speed (m/s) the tyre sums get jumpy, so the car rolls where

@@ -1,0 +1,11 @@
+# The room's brain for the server: the shared Haxe simulation and
+# shunt.online.RaceRoom, as one CommonJS file the TypeScript requires.
+# Build: haxe build.hxml   (from this folder; npm run build does it too)
+
+-cp ../sim/src
+-D js-es=6
+-dce full
+-js lib/race-room.cjs
+shunt.online.RaceRoom
+shunt.online.Messages
+shunt.online.OnlineTuning

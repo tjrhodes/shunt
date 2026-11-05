@@ -1,0 +1,28 @@
+# The shunt server as a system service on the VPS: started at boot, and
+# again if it ever stops. Installed by deploy/on-the-server.sh.
+
+[Unit]
+Description=shunt: the game page and its online rooms
+After=network.target
+
+[Service]
+Type=simple
+User=shunt
+WorkingDirectory=/opt/shunt/server
+Environment=NODE_ENV=production
+Environment=SHUNT_PORT=2567
+Environment=SHUNT_HOST=127.0.0.1
+Environment=SHUNT_PAGE=/opt/shunt/www
+Environment=SHUNT_TRACKS=/opt/shunt/tracks
+ExecStart=/usr/bin/env node dist/src/main.js
+Restart=always
+RestartSec=2
+
+# It only needs to read its own files and listen on one local port.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
