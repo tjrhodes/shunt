@@ -1,7 +1,7 @@
 {
   "name": "shunt-server",
   "version": "1.0.0",
-  "description": "The shunt server: the game page and the online rooms (SPEC.md §9)",
+  "description": "The shunt server: the game page and the online rooms (SPEC.md \u00a79)",
   "scripts": {
     "build": "haxe build.hxml && tsc && mkdir -p dist/lib && cp lib/race-room.cjs dist/lib/",
     "start": "node dist/src/main.js",
@@ -18,5 +18,8 @@
     "typescript": "^5.9.3"
   },
   "private": true,
-  "type": "module"
+  "type": "module",
+  "overrides": {
+    "uuid": "^11.1.1"
+  }
 }

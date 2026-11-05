@@ -493,3 +493,7 @@ Written by Claude (AI), from Tom's testing.
   track when it makes a room (`RoomAsked`, which also carries quick and a
   tournament's tracks; the room checks it all), quick matches included. A
   tournament's room starts on its own first track.
+- npm's "uuid@8.3.2 deprecated" warning: it came from Colyseus's login
+  add-on (@colyseus/auth → grant → request-oauth → uuid@8), which shunt
+  doesn't use. `overrides` in server/package.json pins uuid to 11, which
+  still has the `require('uuid').v4` that request-oauth calls.
