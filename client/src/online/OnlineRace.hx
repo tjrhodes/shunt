@@ -16,6 +16,7 @@ import shunt.online.Prediction;
 import shunt.online.Smoothing;
 import shunt.race.Race;
 import shunt.track.Track;
+import shunt.tournament.Tournament;
 import view.Paint;
 
 /** What an online race needs from the game around it. */
@@ -52,6 +53,9 @@ class OnlineRace {
 	var posesBefore:Array<Pose> = [];
 	var isMenuShowing = false;
 
+	/** In a tournament room, after a race: whether the standings show (rather than the race's results). */
+	var isShowingStandings = false;
+
 	/** Whether the host is choosing the room's track on the cards (a stage of its own, off the room panel). */
 	var isChoosingTrack = false;
 
@@ -74,6 +78,7 @@ class OnlineRace {
 		var joining = switch how {
 			case QuickMatch: client.joinOrCreate("race", {quick: true});
 			case NewRoom: client.create("race", {quick: false});
+			case NewTournament(tracks): client.create("race", {quick: false, tournament: tracks});
 			case RoomById(id): client.joinById(id);
 		}
 		joining.then(entered, problem -> around.panels.showCantConnect(whatWentWrong(problem)));
@@ -131,6 +136,7 @@ class OnlineRace {
 		around.show.showTrack(track);
 		around.show.freshRace();
 		prediction = new Prediction(track, around.racingLines[start.track], start, room.sessionId);
+		isShowingStandings = false;
 		raceSeed = start.seed;
 		gatheringRace = null;
 		smoothings = [for (_ in start.seats) new Smoothing()];
@@ -216,8 +222,14 @@ class OnlineRace {
 		if (isChoosingTrack && view.phase == Gathering && isHost()) return around.panels.markTrack(view.track);
 		isChoosingTrack = false;
 		if (view.phase == Gathering || (view.phase == Racing && prediction == null)) showTheRoom();
-		else if (view.phase == Results && prediction != null) around.panels.showResults(prediction.race, drivers(), {isHost: isHost()});
+		else if (view.phase == Results && prediction != null) showResultsOrStandings();
 		else if (view.phase == Results) showTheRoom();
+	}
+
+	/** After a race: its results, or in a tournament (once asked for) the standings. */
+	function showResultsOrStandings() {
+		if (isShowingStandings) around.panels.showStandings(Tournament.fromView(view.tournament), drivers(), {isHost: isHost()});
+		else around.panels.showResults(prediction.race, drivers(), {isHost: isHost()}, view.tournament != null);
 	}
 
 	function showTheRoom() {
@@ -250,7 +262,7 @@ class OnlineRace {
 	/** The pause key online: the race can't stop, but a menu opens (sound, leave) and closes again. */
 	public function pressPause(soundIsOn:Bool) {
 		isMenuShowing = !isMenuShowing;
-		if (isMenuShowing) around.panels.showPause(true, soundIsOn);
+		if (isMenuShowing) around.panels.showPause(soundIsOn, Words.leave, false);
 		else if (isRacing()) around.panels.hideAll();
 		else showThePanel();
 	}
@@ -294,6 +306,13 @@ class OnlineRace {
 	/** While the host turns the ring of cards, the track behind follows it (the room's own track may already be further on). */
 	public function showTrackBehind(track:Int) {
 		if (isChoosingTrack) gatherOn(track);
+	}
+
+	/** The results' go button: in a tournament, on to the standings (for everyone); else the host starts the next race. */
+	public function raceAgain() {
+		if (view?.tournament == null || prediction == null) return startRace();
+		isShowingStandings = true;
+		showThePanel();
 	}
 
 	public function startRace() {

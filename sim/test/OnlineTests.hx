@@ -15,6 +15,7 @@ class OnlineTests {
 		test("with no delay, a browser predicts the server's race all but exactly", noDelayNoCorrection),
 		test("someone leaving mid-race: an AI driver takes their car on to the finish", aiTakesOverALeaver),
 		test("a quick match starts by itself once two people are in", quickMatchStartsItself),
+		test("a room made for a tournament races its tracks in order, scores each race and tells everyone", aTournamentRoom),
 		test("with 50, 100 and 200 ms each way, browsers finish with the server's results, and corrections are small", racesOverDelay)
 	];
 
@@ -106,6 +107,21 @@ class OnlineTests {
 		harness.arrive("b", 1);
 		harness.runUntil(() -> harness.room.view().phase == Racing, OnlineTuning.quickMatchStartsAfterSeconds + 1);
 		equal(harness.room.view().phase, Racing, "with two");
+	}
+
+	static function aTournamentRoom() {
+		var harness = new OnlineHarness(0.05, false, [2, 5, 1]);
+		var a = harness.arrive("a", 1);
+		harness.arrive("b", 1);
+		equal(harness.room.view().track, 2, "the first race's track");
+		harness.room.chooseTrack("a", {track: 7});
+		equal(harness.room.view().track, 2, "the host can't change a tournament's track");
+		harness.room.startRace("a");
+		harness.runUntil(() -> a.room?.phase == Results, 600);
+		equal(a.room.tournament.racesRun, 1, "races run, as the browser heard");
+		equal(Lambda.fold(a.room.tournament.points, (points, sum) -> points + sum, 0), 6, "points shared out (3, 2, 1, 0)");
+		harness.room.startRace("a");
+		equal(harness.room.view().track, 5, "the second race's track");
 	}
 
 	static function racesOverDelay() {

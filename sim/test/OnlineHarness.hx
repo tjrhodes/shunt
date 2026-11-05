@@ -52,11 +52,12 @@ class OnlineHarness {
 	public var now(default, null) = 0.0;
 	var ticksSoFar = 0;
 
-	public function new(oneWaySeconds:Float, quick:Bool) {
+	/** A room (a quick match, or one joined by its link, perhaps for a tournament on the tracks given). */
+	public function new(oneWaySeconds:Float, quick:Bool, ?tournamentTracks:Array<Int>) {
 		this.oneWaySeconds = oneWaySeconds;
 		tracks = TestRaces.everyTrackText.map(Track.fromJson);
 		lines = tracks.map(track -> new RacingLine(track));
-		room = new RaceRoom(TestRaces.everyTrackText, quick, {toEveryone: toEveryone});
+		room = new RaceRoom(TestRaces.everyTrackText, quick, {toEveryone: toEveryone}, tournamentTracks);
 	}
 
 	/** A browser comes in and asks for seats for its people. */

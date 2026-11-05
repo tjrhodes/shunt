@@ -15,7 +15,7 @@ import shunt.maths.Vector;
 import shunt.race.Race;
 import shunt.track.Track;
 import hud.TournamentParts;
-import tournament.Tournament;
+import shunt.tournament.Tournament;
 import view.Backdrops;
 import view.Paint;
 
@@ -115,12 +115,12 @@ class Game {
 			start: () -> mode == Online ? online.startRace() : startRacing(),
 			resume: () -> mode == Online ? online.closeMenu() : startRacing(),
 			toggleSound: toggleSound,
-			raceAgain: () -> mode == Online ? online.startRace() : raceAgainOrStandings(),
+			raceAgain: () -> mode == Online ? online.raceAgain() : raceAgainOrStandings(),
 			changeTrack: () -> mode == Online ? online.browseTracks() : backToChoosing(),
 			goOnline: goOnline,
 			joinFriends: () -> goOnline(RoomById(OnlineServer.invitation())),
 			raceAlone: forgetTheInvitation,
-			leave: () -> if (online != null) online.leave()
+			leave: () -> mode == Online ? online.leave() : quitTheRace()
 		};
 	}
 
@@ -389,7 +389,7 @@ class Game {
 			case Racing:
 				mode = Paused;
 				show.sound.rest();
-				panels.showPause(false, show.sound.isOn);
+				panels.showPause(show.sound.isOn, tournament != null ? Words.leaveTheTournament : Words.quitRace, true);
 			case Paused: startRacing();
 			case Online: online.pressPause(show.sound.isOn);
 			case _:
@@ -414,6 +414,14 @@ class Game {
 		else showTrackCards();
 	}
 
+	/** Out of a race part way (from the pause panel), back to the track cards; quitting a tournament's race leaves the tournament. */
+	function quitTheRace() {
+		show.sound.rest();
+		tournament = null;
+		lineUpANewRace();
+		showTrackCards();
+	}
+
 	/** After a race, the go button: in a tournament, on to the standings; else (and from the pause panel's restart) the same race again. */
 	function raceAgainOrStandings() {
 		if (tournament != null && mode == RaceOver) showTheStandings();
@@ -422,16 +430,16 @@ class Game {
 
 	// ---- Tournaments ----
 
-	/** What the tournament panels' buttons do. */
+	/** What the tournament panels' buttons do; online (a tournament room's standings), going on means asking the room for the next race. */
 	function tournamentActions():TournamentActions {
 		return {
-			start: startATournament,
+			start: () -> mode == Online ? online.startRace() : startATournament(),
 			makeItLong: races -> changeTheTournament(() -> tournament.resize(races)),
 			shuffle: () -> changeTheTournament(() -> tournament.shuffle()),
 			swap: swapATrack,
 			toDrivers: tournamentDrivers,
-			nextRace: nextTournamentRace,
-			leave: leaveTheTournament
+			nextRace: () -> mode == Online ? online.startRace() : nextTournamentRace(),
+			leave: () -> mode == Online ? online.leave() : leaveTheTournament()
 		};
 	}
 
@@ -490,8 +498,14 @@ class Game {
 
 	// ---- Online ----
 
-	/** Into an online room; sound wakes now (this press is what browsers wait for). When the room is left, back to the start. */
+	/**
+	 * Into an online room; sound wakes now (this press is what browsers wait
+	 * for). Racing friends from a tournament's drivers makes a room for that
+	 * tournament, so the link sent runs it for everyone. When the room is
+	 * left, back to the start.
+	 */
 	function goOnline(how:HowToJoin) {
+		if (how == NewRoom && tournament != null) how = NewTournament(tournament.tracks.copy());
 		mode = Online;
 		tournament = null;
 		show.sound.wake(Paint.liveries.length);
@@ -511,7 +525,9 @@ class Game {
 		showTrackCards();
 	}
 
+	/** The room is left: off line first (so nothing asks the room any more), then the track cards. */
 	function backFromOnline() {
+		mode = ChoosingTrack;
 		online = null;
 		shownTrack = -1;
 		showTrackBehind(chosenTrack);

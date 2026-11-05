@@ -278,7 +278,7 @@
   .sound-corner:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
   #pause-button {
     position: fixed; left: 50%; transform: translateX(-50%);
-    top: calc(12px + env(safe-area-inset-top, 0px)); padding: 9px 14px;
+    top: calc(76px + env(safe-area-inset-top, 0px)); padding: 9px 14px; /* under the start lights */
     font: 800 15px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase;
     color: var(--ink); background: var(--plate); border: 1px solid var(--plate-edge); border-radius: 3px;
   }
@@ -291,7 +291,6 @@
     .figure-value { font-size: 22px; }
     .plate-times .figure-value { font-size: 17px; }
     .lights { top: auto; bottom: calc(var(--edge-bottom) + 6px); }
-    #pause-button { top: calc(76px + env(safe-area-inset-top, 0px)); }
     .lamp { width: 20px; height: 20px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -305,7 +304,7 @@
 <div id="hud" aria-live="off"></div>
 <div id="panels"></div>
 <button id="brake-pad" type="button" hidden></button>
-<button id="pause-button" type="button" hidden></button>
+<button id="pause-button" type="button"></button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="shunt.js" charset="utf-8"></script>

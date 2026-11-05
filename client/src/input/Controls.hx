@@ -52,9 +52,10 @@ class Controls {
 		};
 	}
 
-	/** True once each time anyone's pause button goes down. */
+	/** True once each time anyone's pause button goes down (a key, a pad's Start, or the one on the screen). */
 	public function pauseWasJustPressed():Bool {
-		return pausePresses.justNow(everyonesHands().pause);
+		var onAController = pausePresses.justNow(everyonesHands().pause);
+		return touch.pauseWasPressed() || onAController;
 	}
 
 	/** True once each time anyone's sound button goes down. */

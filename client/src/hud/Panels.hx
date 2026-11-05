@@ -8,7 +8,8 @@ import shunt.race.Laps;
 import shunt.race.Race;
 import shunt.race.StartLights;
 import shunt.track.Track;
-import tournament.Tournament;
+import shunt.tournament.Tournament;
+import shunt.tournament.Tournament.TournamentView;
 import view.Fireworks;
 import view.Paint;
 import hud.Award.AwardKind;
@@ -165,12 +166,13 @@ class Panels {
 		showOnly(tournamentPanel);
 	}
 
-	/** The tournament's standings, after a race (and its winner after the last). */
-	public function showStandings(tournament:Tournament, drivers:Drivers) {
+	/** The tournament's standings, after a race (and its winner after the last). Online, only the host goes on. */
+	public function showStandings(tournament:Tournament, drivers:Drivers, ?online:{isHost:Bool}) {
 		tournamentShown = tournament;
-		var won = standings.show(tournament, drivers, tracks[tournament.nextTrack()]);
+		var won = standings.show(tournament, drivers, tracks[tournament.nextTrack()], online);
+		var wasShowing = !standingsPanel.hidden;
 		showOnly(standingsPanel);
-		if (won == GoldTrophy) fireworks.start();
+		if (won == GoldTrophy && !wasShowing) fireworks.start();
 	}
 
 	/** The seats changed while the drivers show. */
@@ -188,9 +190,9 @@ class Panels {
 		return !trackPanel.hidden;
 	}
 
-	/** The pause panel: on this computer it can restart; online the race carries on, and you can leave. */
-	public function showPause(isOnline:Bool, soundIsOn:Bool) {
-		pause.show(isOnline, soundIsOn);
+	/** The pause panel, and what its way out says (quit the race, leave the tournament or the room); on this computer it can restart, online the race carries on. */
+	public function showPause(soundIsOn:Bool, leaveWords:String, canRestart:Bool) {
+		pause.show(soundIsOn, leaveWords, canRestart);
 		showOnly(pausePanel);
 	}
 
@@ -220,6 +222,7 @@ class Panels {
 	/** The online room before a race: its link, who sits where, the track, and starting. */
 	public function showRoom(view:RoomView, seats:Array<SeatLook>, isHost:Bool, link:Null<String>) {
 		room.show(view, tracks[view.track], seats, isHost, link);
+		room.showTournament(view.tournament, tracks);
 		if (holder.querySelector(".panel:not([hidden])") != roomPanel) showOnly(roomPanel);
 	}
 
@@ -342,13 +345,14 @@ class RoomParts {
 	final seats:SeatCards;
 	final startButton:Element;
 	final leaveButton:Element;
+	final tournamentLine:Element;
 
 	public function new(panel:Element, actions:PanelActions) {
 		this.panel = panel;
 		status = Dom.make("p", "panel-tagline", null, panel);
+		tournamentLine = Dom.make("p", "panel-help room-tournament", null, panel);
 		reason = Dom.make("p", "panel-help room-reason", null, panel);
-		linkRow = Dom.make("div", "room-link", null, panel);
-		Dom.make("p", "panel-help", Words.roomLink, linkRow);
+		linkRow = linkRowIn(panel);
 		link = Dom.make("code", "room-link-text", null, linkRow);
 		copyButton = Dom.button(Words.copy, "button", linkRow, copyTheLink);
 		var trackBox = Dom.make("div", "room-track", null, panel);
@@ -359,8 +363,25 @@ class RoomParts {
 		leaveButton = Dom.button(Words.leave, "button", panel, actions.leave);
 	}
 
+	/** The room's link, for friends: what it's for, then (filled in later) the link and a copy button. */
+	static function linkRowIn(panel:Element):Element {
+		var row = Dom.make("div", "room-link", null, panel);
+		Dom.make("p", "panel-help", Words.roomLink, row);
+		return row;
+	}
+
 	public function showConnecting() {
 		showProblem(Words.connecting);
+	}
+
+	/** In a tournament room: which race is next, and where (its tracks are set, so the host can't change them). */
+	public function showTournament(tournament:Null<TournamentView>, tracks:Array<Track>) {
+		tournamentLine.hidden = tournament == null;
+		if (tournament == null) return;
+		changeTrackButton.hidden = true;
+		var race = tournament.racesRun % tournament.tracks.length;
+		var track = tracks[tournament.tracks[race]];
+		Dom.setText(tournamentLine, Words.tournamentRace(race + 1, tournament.tracks.length, track.name, track.laps));
 	}
 
 	public function showCountdown(seconds:Float) {
@@ -372,6 +393,7 @@ class RoomParts {
 		Dom.setText(status, words);
 		Dom.setText(reason, why ?? "");
 		reason.hidden = why == null;
+		tournamentLine.hidden = true;
 		panel.classList.add("is-just-words");
 	}
 
@@ -427,9 +449,9 @@ class PauseParts {
 		leaveButton = Dom.button(Words.leave, "button", panel, actions.leave);
 	}
 
-	public function show(isOnline:Bool, soundIsOn:Bool) {
-		restartButton.hidden = isOnline;
-		leaveButton.hidden = !isOnline;
+	public function show(soundIsOn:Bool, leaveWords:String, canRestart:Bool) {
+		restartButton.hidden = !canRestart;
+		Dom.setText(leaveButton, leaveWords);
 		showSoundAs(soundIsOn);
 	}
 
@@ -467,8 +489,8 @@ class ResultsParts {
 		Dom.setText(headline, Words.winner(drivers.nameOf(race.state.order[0])));
 		Dom.setText(trackLine, Words.racingOn(race.track.name, race.state.laps));
 		for (place in 0...race.state.order.length) row(race, drivers, race.state.order[place], place + 1);
-		raceAgainButton.hidden = online != null && !online.isHost;
-		status.hidden = online == null || online.isHost;
+		raceAgainButton.hidden = online != null && !online.isHost && !isInATournament;
+		status.hidden = online == null || online.isHost || isInATournament;
 		changeTrackButton.hidden = online != null || isInATournament;
 		leaveButton.hidden = online == null;
 	}

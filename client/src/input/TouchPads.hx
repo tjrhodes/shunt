@@ -20,11 +20,13 @@ class TouchPads {
 	final steeringRamp = new SteeringRamp();
 	var isInUse = false;
 	var isBraking = false;
-	var isPausing = false;
+
+	/** Whether the pause button has been pressed since the game last asked (a quick click is over before the next frame, so it is kept until then). */
+	var pauseWaiting = false;
 
 	public function new(stage:Element, brakePad:Element, pauseButton:Element) {
 		this.stage = stage;
-		buttons = [brakePad, pauseButton];
+		buttons = [brakePad];
 		brakePad.textContent = Words.brake;
 		pauseButton.textContent = Words.pause;
 		Browser.window.addEventListener("pointerdown", (event:PointerEvent) -> if (event.pointerType == "touch") startUsingTouch());
@@ -32,7 +34,17 @@ class TouchPads {
 		stage.addEventListener("pointermove", (event:PointerEvent) -> if (fingersOnTheScreen.exists(event.pointerId)) fingerDown(event));
 		for (ending in ["pointerup", "pointercancel"]) stage.addEventListener(ending, (event:PointerEvent) -> fingersOnTheScreen.remove(event.pointerId));
 		whileHeld(brakePad, isHeld -> isBraking = isHeld);
-		whileHeld(pauseButton, isHeld -> isPausing = isHeld);
+		pauseButton.addEventListener("pointerdown", () -> pauseWaiting = true);
+	}
+
+	/**
+	 * True once for each press of the pause button. It shows during every
+	 * race (Tom, 5 Nov: a way out of one), so a finger or a mouse can press it.
+	 */
+	public function pauseWasPressed():Bool {
+		var wasPressed = pauseWaiting;
+		pauseWaiting = false;
+		return wasPressed;
 	}
 
 	public function hands():Hands {
@@ -42,13 +54,13 @@ class TouchPads {
 			brake: isBraking ? 1 : 0,
 			steer: steeringRamp.steering(Lambda.fold([for (side in fingersOnTheScreen) side], (side, total) -> total + side, 0.0), Browser.window.performance.now() / 1000),
 			recover: false,
-			pause: isPausing,
+			pause: false,
 			mute: false,
 			confirm: false
 		};
 	}
 
-	/** From the first touch anywhere (even on the start button), the car goes by itself and the touch buttons show. */
+	/** From the first touch anywhere (even on the start button), the car goes by itself and the brake bar shows. */
 	function startUsingTouch() {
 		if (isInUse) return;
 		isInUse = true;

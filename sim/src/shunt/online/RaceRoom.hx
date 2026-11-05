@@ -6,6 +6,7 @@ import shunt.car.CarInput;
 import shunt.online.Messages;
 import shunt.race.Race;
 import shunt.track.Track;
+import shunt.tournament.Tournament;
 
 /** How the room speaks to the browsers in it: the server gives it this. */
 typedef Outbox = {
@@ -19,6 +20,10 @@ typedef Outbox = {
  * browser, with people's inputs from the network and AI drivers in the
  * empty seats. The server's own code only passes messages in and out; every
  * decision is made here, in the same Haxe as the rest of the game.
+ *
+ * A room made for friends can run a tournament (Tom, 5 Nov): its races go
+ * in order on the tournament's tracks, each finish is scored, and the
+ * standings go to everyone with the rest of the room.
  */
 @:expose("RaceRoom")
 class RaceRoom {
@@ -39,12 +44,22 @@ class RaceRoom {
 	var seed = 0;
 	var startsIn = -1.0;
 
-	/** A room for tracks given as the text of their JSON files; a quick match or a room joined by its link. */
-	public function new(trackTexts:Array<String>, quick:Bool, outbox:Outbox) {
+	/** The tournament this room races, if it was made for one. */
+	final tournament:Null<Tournament>;
+
+	/**
+	 * A room for tracks given as the text of their JSON files; a quick match or
+	 * a room joined by its link. A room joined by its link may be for a
+	 * tournament on the tracks given (by number, in order).
+	 */
+	public function new(trackTexts:Array<String>, quick:Bool, outbox:Outbox, ?tournamentTracks:Dynamic) {
 		tracks = trackTexts.map(Track.fromJson);
 		racingLines = tracks.map(track -> new RacingLine(track));
 		this.quick = quick;
 		this.outbox = outbox;
+		var isATournament = !quick && Tournament.isATournament(tournamentTracks, tracks.length);
+		tournament = isATournament ? Tournament.on(tournamentTracks, tracks.length, OnlineTuning.seats, Std.random) : null;
+		if (tournament != null) track = tournament.nextTrack();
 	}
 
 	// ---- Messages from browsers ----
@@ -75,7 +90,7 @@ class RaceRoom {
 	/** The host picks a track, between races. */
 	public function chooseTrack(session:String, choice:TrackChoice) {
 		var isAKnownTrack = Std.isOfType(choice?.track, Int) && choice.track >= 0 && choice.track < tracks.length;
-		if (session != roomSeats.host() || phase == Racing || !isAKnownTrack) return;
+		if (session != roomSeats.host() || phase == Racing || !isAKnownTrack || tournament != null) return;
 		track = choice.track;
 		tellEveryoneAboutTheRoom();
 	}
@@ -126,7 +141,8 @@ class RaceRoom {
 	/** A new race: everyone seated, a fresh seed, AI drivers in the empty seats; every browser is told how to set up the same race. */
 	function begin() {
 		roomSeats.seatEveryone();
-		seed = Std.random(1000000000) + 1;
+		nextInTheTournament();
+		seed = tournament != null ? tournament.seedForARace() : Std.random(1000000000) + 1;
 		race = new Race(tracks[track], {cars: OnlineTuning.seats, laps: tracks[track].laps, seed: seed});
 		drivers = SeatDrivers.forSeats(roomSeats.seats, seed, racingLines[track]);
 		for (session in queues.keys()) queues.set(session, new InputQueue());
@@ -137,10 +153,18 @@ class RaceRoom {
 		tellEveryoneAboutTheRoom();
 	}
 
-	/** The race is over: its results show until the next one. */
+	/** The race is over: in a tournament it scores; its results show until the next one. */
 	function finish() {
 		phase = Results;
+		if (tournament != null) tournament.score(race.state.order);
 		tellEveryoneAboutTheRoom();
+	}
+
+	/** In a tournament, the next race is on its next track; once it's over, the same tracks again from no points. */
+	function nextInTheTournament() {
+		if (tournament == null) return;
+		if (tournament.isOver()) tournament.again();
+		track = tournament.nextTrack();
 	}
 
 	/** Seats whose people have gone get AI drivers, carrying on from where the car is. */
@@ -179,7 +203,8 @@ class RaceRoom {
 			seats: roomSeats.seats.copy(),
 			browsers: [for (browser in roomSeats.browsers) {session: browser.session, people: browser.people}],
 			quick: quick,
-			startsIn: startsIn
+			startsIn: startsIn,
+			tournament: tournament?.view()
 		};
 	}
 }

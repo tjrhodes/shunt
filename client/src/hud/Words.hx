@@ -14,6 +14,7 @@ class Words {
 	public static inline final track = "Track";
 	public static inline final resume = "Resume";
 	public static inline final restart = "Restart";
+	public static inline final quitRace = "Quit race";
 	public static inline final paused = "Paused";
 	public static inline final pause = "Pause";
 	public static inline final brake = "Brake";

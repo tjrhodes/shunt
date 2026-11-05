@@ -1,5 +1,5 @@
 import Check.*;
-import tournament.Tournament;
+import shunt.tournament.Tournament;
 
 /** Tournaments (Tom, 4 Nov): the tracks picked, swapped and resized, points scored, and the standings. */
 class TournamentTests {
@@ -51,6 +51,30 @@ class TournamentTests {
 			var tournament = new Tournament(16, 5, 4, counting());
 			var first = tournament.seedForARace();
 			for (_ in 0...10) equal(tournament.seedForARace() % 3, first % 3, "the seed's remainder by 3");
+		}),
+		test("a tournament sent as plain data comes back the same", () -> {
+			var tournament = Tournament.on([4, 9, 2], 16, 4, counting());
+			tournament.score([3, 1, 0, 2]);
+			var back = Tournament.fromView(haxe.Json.parse(haxe.Json.stringify(tournament.view())));
+			equal(back.tracks.join(","), "4,9,2", "tracks, in order");
+			equal(back.points.join(","), tournament.points.join(","), "points");
+			equal(back.wins.join(","), tournament.wins.join(","), "wins");
+			equal(back.racesRun, 1, "races run");
+		}),
+		test("only a usual length of real tracks makes a tournament", () -> {
+			isTrue(Tournament.isATournament([0, 5, 15], 16), "three real tracks");
+			isTrue(!Tournament.isATournament([0, 5], 16), "two races");
+			isTrue(!Tournament.isATournament([0, 5, 16], 16), "a track that isn't there");
+			isTrue(!Tournament.isATournament("0,5,15", 16), "not a list");
+			isTrue(!Tournament.isATournament(null, 16), "nothing");
+		}),
+		test("the same tournament again starts from no points", () -> {
+			var tournament = Tournament.on([4, 9, 2], 16, 4, counting());
+			for (_ in 0...3) tournament.score([0, 1, 2, 3]);
+			tournament.again();
+			equal(tournament.points.join(","), "0,0,0,0", "points");
+			equal(tournament.racesRun, 0, "races run");
+			equal(tournament.tracks.join(","), "4,9,2", "the same tracks");
 		}),
 	];
 }

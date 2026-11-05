@@ -4,7 +4,7 @@ import js.html.Element;
 import shunt.track.Track;
 import hud.Award.AwardKind;
 import hud.Panels;
-import tournament.Tournament;
+import shunt.tournament.Tournament;
 
 /** What the tournament's panels do; the game decides. */
 typedef TournamentActions = {
@@ -79,6 +79,7 @@ class TournamentStandings {
 	final runSoFar:Element;
 	final table:Element;
 	final goButton:Element;
+	final waiting:Element;
 	final award:Award;
 
 	public function new(panel:Element, actions:TournamentActions, tournament:() -> Tournament) {
@@ -86,12 +87,19 @@ class TournamentStandings {
 		award = new Award(panel);
 		runSoFar = Dom.make("p", "panel-tagline", null, panel);
 		table = Dom.make("ol", "results standings", null, panel);
+		waiting = Dom.make("p", "panel-help", Words.waitingForTheHost, panel);
 		goButton = Dom.button("", "button button-go", panel, () -> tournament().isOver() ? actions.start() : actions.nextRace());
 		Dom.button(Words.leaveTheTournament, "button", panel, actions.leave);
 	}
 
-	/** The standings now, and what the go button does next: the next race, or a new tournament. Once it's over, the award for the best of us; returned, for the fireworks. */
-	public function show(tournament:Tournament, drivers:Drivers, nextTrack:Track):AwardKind {
+	/**
+	 * The standings now, and what the go button does next: the next race, or a
+	 * new tournament (online, only the host has it; the others wait). Once
+	 * it's over, the award for the best of us; returned, for the fireworks.
+	 */
+	public function show(tournament:Tournament, drivers:Drivers, nextTrack:Track, ?online:{isHost:Bool}):AwardKind {
+		goButton.hidden = online != null && !online.isHost;
+		waiting.hidden = !goButton.hidden;
 		var standings = tournament.standings();
 		var ourBest = Lambda.findIndex(standings, drivers.isOurs) + 1;
 		var won = tournament.isOver() ? Award.forPlace(ourBest) : Nothing;

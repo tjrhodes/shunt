@@ -420,7 +420,7 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   Switchback (an E). All circuits, from `tools/make-tracks.py`; the
   existing twelve came out byte-identical. 100 AI races each pass first
   time: 194 checks.
-- **Tournaments** (`tournament/Tournament.hx`, `hud/TournamentParts.hx`; called trophies at first): 3, 5 or 10
+- **Tournaments** (`shunt/tournament/Tournament.hx`, moved into the simulation on 5 Nov, `hud/TournamentParts.hx`; called trophies at first): 3, 5 or 10
   races, 3/2/1/0 points, ties to more wins. The tracks start as a random
   pick, no repeats; any can be swapped on the card ring ("Use this track")
   or the lot shuffled. Results go on to the standings; the last standings
@@ -438,3 +438,33 @@ walls. Ten new ones, all from `tools/make-tracks.py` (see SPEC.md §5).
   They were recorded on a stepped clock (Playwright's `clock`), one frame
   every 1/25 s of game time, so the video is smooth even though software
   rendering takes seconds a frame.
+
+## 5 Nov 2026: a way out of a race, Leave fixed, tournaments online
+
+Written by Claude (AI), from Tom's testing.
+
+- **A way out of a race** (Tom: "need a quit race button or back
+  button"): the pause button showed only after the screen was touched, so
+  on a computer the only way out was Esc, which nothing said. It now shows
+  during every race, just under the start lights, and a mouse can press it
+  (a quick click is kept until the next frame looks, in `TouchPads`). The
+  pause panel has Quit race on this computer (Leave the tournament in a
+  tournament's race; Leave online), back to the track cards.
+- **Leave did nothing online** (Tom found it in a quick match; it was
+  every room): leaving cleared the room before the game stopped being
+  online, so the next thing it did asked the cleared room to show a track
+  and crashed. It is off line first now (`Game.backFromOnline`). Checked
+  against the old build, which fails with that very error.
+- **Tournaments online** (Tom: a tournament's link to a friend opened a
+  single race on the oval): Race friends from a tournament's drivers makes
+  a room for that tournament (`HowToJoin.NewTournament`, its tracks sent
+  when the room is made). `Tournament` moved into the simulation so the
+  room runs it: its races go in order on its tracks, the host can't change
+  them, every finish is scored, and the standings go out with the room
+  (`RoomView.tournament`). The room panel says which race is next. After
+  each race everyone can see the standings; only the host goes on to the
+  next race (or, once it's won, the same tracks again from no points). A
+  new check races a tournament room's first race: 240 checks.
+- Checked in browsers against the server here: a tournament room and a
+  friend joining it by its link (both see "Tournament race 1 of 3"), leaving
+  it mid-race, leaving a quick match, and quitting a race on this computer.

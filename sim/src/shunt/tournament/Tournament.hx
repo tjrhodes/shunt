@@ -1,4 +1,12 @@
-package tournament;
+package shunt.tournament;
+
+/** A tournament as the online room tells the browsers about it: plain data, to send. */
+typedef TournamentView = {
+	final tracks:Array<Int>;
+	final racesRun:Int;
+	final points:Array<Int>;
+	final wins:Array<Int>;
+}
 
 /**
  * A tournament (Tom, 4 Nov): a run of 3, 5 or 10 races on different tracks,
@@ -10,6 +18,9 @@ package tournament;
  * drivers stay the same people all the way through: each race's seed comes
  * from the tournament's, keeping the same kind of driver in each seat (see
  * `seedForARace`).
+ *
+ * Online (Tom, 5 Nov), a room can run one: the server keeps it, and tells
+ * the browsers how it stands with `view` (they rebuild it with `fromView`).
  */
 class Tournament {
 	/** How many races a tournament can be. */
@@ -40,6 +51,41 @@ class Tournament {
 		points = [for (_ in 0...seats) 0];
 		wins = [for (_ in 0...seats) 0];
 		resize(length);
+	}
+
+	/** The tracks a room was asked to race, if they make a tournament: a usual length, every one a real track. */
+	public static function isATournament(tracks:Dynamic, trackCount:Int):Bool {
+		if (!Std.isOfType(tracks, Array) || !lengths.contains(tracks.length)) return false;
+		return Lambda.foreach((tracks : Array<Dynamic>), track -> Std.isOfType(track, Int) && track >= 0 && track < trackCount);
+	}
+
+	/** A tournament on these tracks, in this order. */
+	public static function on(tracks:Array<Int>, trackCount:Int, seats:Int, pick:Int -> Int):Tournament {
+		var tournament = new Tournament(trackCount, tracks.length, seats, pick);
+		for (race in 0...tracks.length) tournament.swap(race, tracks[race]);
+		return tournament;
+	}
+
+	/** A tournament as a room told it (for showing its standings: it can't pick seeds). */
+	public static function fromView(view:TournamentView):Tournament {
+		var tournament = on(view.tracks, view.tracks.length, view.points.length, _ -> 0);
+		for (seat in 0...view.points.length) {
+			tournament.points[seat] = view.points[seat];
+			tournament.wins[seat] = view.wins[seat];
+		}
+		tournament.racesRun = view.racesRun;
+		return tournament;
+	}
+
+	/** How it stands, as plain data to send. */
+	public function view():TournamentView {
+		return {tracks: tracks.copy(), racesRun: racesRun, points: points.copy(), wins: wins.copy()};
+	}
+
+	/** The same tracks again, from no points (a room's next tournament). */
+	public function again() {
+		for (seat in 0...points.length) points[seat] = wins[seat] = 0;
+		racesRun = 0;
 	}
 
 	// ---- Before the first race: choosing the tracks ----

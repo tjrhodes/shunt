@@ -90,6 +90,9 @@ typedef RoomView = {
 
 	/** Seconds until a quick match starts by itself, or -1. */
 	final startsIn:Float;
+
+	/** The tournament the room is racing, if it was made for one (Tom, 5 Nov). */
+	final tournament:Null<shunt.tournament.Tournament.TournamentView>;
 }
 
 /** A race begins: the track, the seed, and who sits where (so every browser sets up the very same race and AI drivers). */
