@@ -158,6 +158,29 @@ class Game {
 		return (best.a + best.b) * 0.5;
 	}
 
+	/**
+	 * A number from a demo's address, for recording a chosen moment (Tom,
+	 * 5 Nov: more action in the video): `seed` picks the race (and so its AI
+	 * drivers and everything they do), `from` starts it that many seconds in.
+	 * Only in a demo, where every car is an AI driver, so the race always
+	 * plays out the same.
+	 */
+	static function demoSetting(name:String):Null<Int> {
+		var address = new js.html.URLSearchParams(Browser.location.search);
+		var value = address.has("demo") ? Std.parseInt(address.get(name) ?? "") : null;
+		return value;
+	}
+
+	/** In a demo started part way (`from`), the race so far is run at once, as it would have gone, before the first frame. */
+	function skipAheadInADemo() {
+		var seconds = demoSetting("from");
+		if (seconds == null || race.state.tick > 0) return;
+		for (_ in 0...Std.int(seconds * Tick.perSecond)) {
+			oneTick();
+			show.animate(Tick.seconds);
+		}
+	}
+
 	/** Whether a person here drives a seat (online: one of this browser's seats). */
 	function isOneOfOurs(seat:Int):Bool {
 		return mode == Online ? online.isOurs(seat) : lineup.isHuman(seat);
@@ -278,7 +301,7 @@ class Game {
 
 	/** A fresh race on the track shown, on a new seed, with new AI drivers, lights red. */
 	function lineUpANewRace() {
-		seed = tournament != null ? tournament.seedForARace() : Std.random(1000000000) + 1;
+		seed = tournament != null ? tournament.seedForARace() : demoSetting("seed") ?? Std.random(1000000000) + 1;
 		var track = tracks[shownTrack];
 		race = new Race(track, {cars: Paint.liveries.length, laps: track.laps, seed: seed});
 		drivers = [for (seat in 0...race.state.racers.length) isDrivenHere(seat) ? null : new AiDriver(DriverCharacters.forSeat(seed, seat), racingLines[shownTrack], seat)];
@@ -374,6 +397,7 @@ class Game {
 		mode = Racing;
 		show.sound.wake(Paint.liveries.length);
 		steps.startAfresh();
+		skipAheadInADemo();
 		panels.hideAll();
 		Browser.document.body.focus();
 	}

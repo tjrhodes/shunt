@@ -468,3 +468,12 @@ Written by Claude (AI), from Tom's testing.
 - Checked in browsers against the server here: a tournament room and a
   friend joining it by its link (both see "Tournament race 1 of 3"), leaving
   it mid-race, leaving a quick match, and quitting a race on this computer.
+- **More action in the Lab video** (Tom: "some bumping about maybe and
+  some sliding round corners"): the first clips were race starts. This
+  time a scratch search ran 30 all-AI races on every track and scored each
+  4 s stretch for cars hitting each other and sliding near the camera. The
+  five best, on different tracks, were recorded with two new demo
+  settings: `?demo=close&seed=4&from=72` races that seed and runs it to
+  72 s at once before the first frame (`Game.demoSetting`,
+  `skipAheadInADemo`). With every car an AI driver, a seed always plays
+  out the same, so the browser shows what the search found.
