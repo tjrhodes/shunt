@@ -534,7 +534,7 @@ class Game {
 		tournament = null;
 		show.sound.wake(Paint.liveries.length);
 		online = new OnlineRace({tracks: tracks, racingLines: racingLines, show: show, panels: panels, controls: controls, lineup: lineup, whenGone: backFromOnline});
-		online.join(how);
+		online.join(how, chosenTrack);
 	}
 
 	/** There is a server here: the drivers panel offers racing online, and a friend's link opens on its own panel. */

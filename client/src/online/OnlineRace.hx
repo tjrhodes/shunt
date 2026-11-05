@@ -71,13 +71,13 @@ class OnlineRace {
 
 	// ---- Getting in and out ----
 
-	/** Finds or makes the room, then asks for seats. */
-	public function join(how:HowToJoin) {
+	/** Finds or makes the room (a new one starting on the track chosen on the cards), then asks for seats. */
+	public function join(how:HowToJoin, chosenTrack:Int) {
 		around.panels.showConnecting();
 		var client = new ColyseusClient(OnlineServer.address());
 		var joining = switch how {
-			case QuickMatch: client.joinOrCreate("race", {quick: true});
-			case NewRoom: client.create("race", {quick: false});
+			case QuickMatch: client.joinOrCreate("race", {quick: true, track: chosenTrack});
+			case NewRoom: client.create("race", {quick: false, track: chosenTrack});
 			case NewTournament(tracks): client.create("race", {quick: false, tournament: tracks});
 			case RoomById(id): client.joinById(id);
 		}

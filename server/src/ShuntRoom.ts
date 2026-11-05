@@ -19,12 +19,11 @@ export class ShuntRoom extends Room {
 	maxClients = OnlineTuning.mostBrowsers;
 	brain!: RaceRoomType;
 
-	/** A quick match can be joined by anyone looking for a race; any other room only by its link, and it may be for a tournament (its tracks, by number). */
-	onCreate(options: { quick?: boolean; tournament?: number[] }) {
-		const quick = options?.quick === true;
-		if (!quick) this.setPrivate(true);
+	/** A quick match can be joined by anyone looking for a race; any other room only by its link. The brain checks the rest of what was asked (the first track, a tournament). */
+	onCreate(options: { quick?: boolean; track?: number; tournament?: number[] }) {
+		if (options?.quick !== true) this.setPrivate(true);
 		const outbox = { toEveryone: (type: string, message: unknown) => this.broadcast(type, message) };
-		this.brain = new RaceRoom(trackTexts(), quick, outbox, options?.tournament);
+		this.brain = new RaceRoom(trackTexts(), options ?? {}, outbox);
 		this.passMessagesToTheBrain();
 		this.setSimulationInterval(() => this.brain.advance(performance.now()), lookEvery);
 	}

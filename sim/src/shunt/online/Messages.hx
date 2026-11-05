@@ -36,6 +36,18 @@ class Messages {
 	public static final snapshot = "snapshot";
 }
 
+/**
+ * What a browser asks for when it makes a room: a quick match or not, the
+ * track to start on (Tom, 5 Nov: the one chosen on the cards, not always
+ * the first), or a tournament's tracks. From a browser, so the room checks
+ * it all.
+ */
+typedef RoomAsked = {
+	final ?quick:Bool;
+	final ?track:Dynamic;
+	final ?tournament:Dynamic;
+}
+
 /** "We are this many people." */
 typedef SeatsWanted = {
 	final people:Int;

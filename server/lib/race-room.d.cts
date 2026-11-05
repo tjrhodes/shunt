@@ -16,8 +16,8 @@ export declare const OnlineTuning: {
 };
 
 export declare class RaceRoom {
-	/** The last, if given, is a tournament's tracks by number (the room checks them). */
-	constructor(trackTexts: string[], quick: boolean, outbox: { toEveryone: (type: string, message: unknown) => void }, tournamentTracks?: unknown);
+	/** Made as a browser asked: a quick match or not, the first track, a tournament's tracks by number (the room checks them all). */
+	constructor(trackTexts: string[], asked: { quick?: boolean; track?: unknown; tournament?: unknown }, outbox: { toEveryone: (type: string, message: unknown) => void });
 	arrive(session: string): void;
 	wantSeats(session: string, wanted: unknown): void;
 	depart(session: string): void;

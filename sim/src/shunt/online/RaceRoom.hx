@@ -48,18 +48,24 @@ class RaceRoom {
 	final tournament:Null<Tournament>;
 
 	/**
-	 * A room for tracks given as the text of their JSON files; a quick match or
-	 * a room joined by its link. A room joined by its link may be for a
-	 * tournament on the tracks given (by number, in order).
+	 * A room for tracks given as the text of their JSON files, made as asked: a
+	 * quick match or a room joined by its link, starting on the track asked
+	 * for. A room joined by its link may be for a tournament on the tracks
+	 * given (by number, in order), and starts on its first.
 	 */
-	public function new(trackTexts:Array<String>, quick:Bool, outbox:Outbox, ?tournamentTracks:Dynamic) {
+	public function new(trackTexts:Array<String>, asked:Null<RoomAsked>, outbox:Outbox) {
 		tracks = trackTexts.map(Track.fromJson);
 		racingLines = tracks.map(track -> new RacingLine(track));
-		this.quick = quick;
+		quick = asked?.quick == true;
 		this.outbox = outbox;
-		var isATournament = !quick && Tournament.isATournament(tournamentTracks, tracks.length);
-		tournament = isATournament ? Tournament.on(tournamentTracks, tracks.length, OnlineTuning.seats, Std.random) : null;
-		if (tournament != null) track = tournament.nextTrack();
+		var isATournament = !quick && Tournament.isATournament(asked?.tournament, tracks.length);
+		tournament = isATournament ? Tournament.on(asked.tournament, tracks.length, OnlineTuning.seats, Std.random) : null;
+		track = tournament != null ? tournament.nextTrack() : isAKnownTrack(asked?.track) ? asked.track : 0;
+	}
+
+	/** Whether a browser named one of the room's tracks. */
+	function isAKnownTrack(track:Dynamic):Bool {
+		return Std.isOfType(track, Int) && track >= 0 && track < tracks.length;
 	}
 
 	// ---- Messages from browsers ----
@@ -89,8 +95,7 @@ class RaceRoom {
 
 	/** The host picks a track, between races. */
 	public function chooseTrack(session:String, choice:TrackChoice) {
-		var isAKnownTrack = Std.isOfType(choice?.track, Int) && choice.track >= 0 && choice.track < tracks.length;
-		if (session != roomSeats.host() || phase == Racing || !isAKnownTrack || tournament != null) return;
+		if (session != roomSeats.host() || phase == Racing || !isAKnownTrack(choice?.track) || tournament != null) return;
 		track = choice.track;
 		tellEveryoneAboutTheRoom();
 	}

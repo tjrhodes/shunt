@@ -488,3 +488,8 @@ Written by Claude (AI), from Tom's testing.
   and back to the cards. Now every frame without a race running quietens
   them (`Sound.quieten`, from `Show.draw`): engines and tyres die away in
   a moment, whatever stopped the race.
+- Tom: Race friends always opened on the Oval. A new room started on
+  track 0 whatever the cards showed; now the browser asks for the chosen
+  track when it makes a room (`RoomAsked`, which also carries quick and a
+  tournament's tracks; the room checks it all), quick matches included. A
+  tournament's room starts on its own first track.

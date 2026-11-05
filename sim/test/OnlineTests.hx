@@ -16,6 +16,12 @@ class OnlineTests {
 		test("someone leaving mid-race: an AI driver takes their car on to the finish", aiTakesOverALeaver),
 		test("a quick match starts by itself once two people are in", quickMatchStartsItself),
 		test("a room made for a tournament races its tracks in order, scores each race and tells everyone", aTournamentRoom),
+		test("a room starts on the track asked for, if there is one", () -> {
+			equal(new OnlineHarness(0.05, false, null, 7).room.view().track, 7, "the track chosen on the cards");
+			equal(new OnlineHarness(0.05, true, null, 4).room.view().track, 4, "a quick match too");
+			equal(new OnlineHarness(0.05, false, null, 99).room.view().track, 0, "no such track: the first");
+			equal(new OnlineHarness(0.05, false, [3, 1, 2], 7).room.view().track, 3, "a tournament: its first track");
+		}),
 		test("with 50, 100 and 200 ms each way, browsers finish with the server's results, and corrections are small", racesOverDelay)
 	];
 
