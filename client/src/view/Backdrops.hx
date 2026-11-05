@@ -118,7 +118,8 @@ class Backdrops {
 		if (resting && !isCovering) return hide();
 		if (!isReady(wrapped(nearer, count)) || (!resting && !isReady(wrapped(other, count)))) return dipInstead(amount);
 		showPicture(behind, wrapped(nearer, count), 1);
-		showPicture(inFront, wrapped(other, count), resting ? 0 : amount);
+		inFront.hidden = resting;
+		if (!resting) showPicture(inFront, wrapped(other, count), amount);
 		veil.hidden = true;
 	}
 
@@ -135,6 +136,7 @@ class Backdrops {
 		veil.style.opacity = '${share * share * (3 - 2 * share)}';
 	}
 
+	/** A layer showing a track's picture, which must be ready (at rest, the next card's may not be taken yet, so it is never asked for: Tom, 5 Nov). */
 	function showPicture(layer:ImageElement, track:Int, opacity:Float) {
 		var source = pictures.get(track).src;
 		if (layer.src != source) layer.src = source;

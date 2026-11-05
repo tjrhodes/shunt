@@ -497,3 +497,14 @@ Written by Claude (AI), from Tom's testing.
   add-on (@colyseus/auth → grant → request-oauth → uuid@8), which shunt
   doesn't use. `overrides` in server/package.json pins uuid to 11, which
   still has the `require('uuid').v4` that request-oauth calls.
+- Tom: back on the track cards, the ring wouldn't click, drag or swipe
+  ("Cannot read properties of undefined (reading 'src')" in
+  `Backdrops.showPicture`). While pictures were being retaken (the screen
+  had changed size), the ring at rest asked for the next card's picture
+  to show it at no opacity, and that one wasn't taken yet. The error came
+  every frame, and the frame loop asked for its next frame last, so the
+  game stopped. Now: at rest that layer is just hidden; the next frame is
+  asked for first, so one error can't stop the game; and leaving the cards
+  part way through taking pictures finishes cleanly (the right track back
+  in the view). Reproduced on the old build (a track six cards round, a
+  race, quit, a resize), and checked fixed.

@@ -241,6 +241,7 @@ class Game {
 
 	/** One frame: the ticks due and the sparks and smoke moved on (while racing), the presses that happen once, and drawing. */
 	function frame(now:Float) {
+		Browser.window.requestAnimationFrame(frame); // first: if anything below goes wrong, the next frame still comes
 		var secondsSinceLastFrame = lastFrameTime < 0 ? 0 : Math.min(0.1, (now - lastFrameTime) / 1000);
 		lastFrameTime = now;
 		if (panels.isShowingTheTracks()) browseTheCards();
@@ -252,7 +253,6 @@ class Game {
 		if (controls.pauseWasJustPressed()) pressPause();
 		if (controls.muteWasJustPressed()) toggleSound();
 		if (controls.confirmWasJustPressed()) pressYes();
-		Browser.window.requestAnimationFrame(frame);
 	}
 
 	function frameOnThisComputer(now:Float, secondsSinceLastFrame:Float) {
@@ -315,6 +315,7 @@ class Game {
 	/** While the cards show, the world behind follows the ring's turn (crossfading pictures, see `Backdrops`); on this computer, pictures still missing are taken. */
 	function showTheWorldBehindTheCards() {
 		var turn = panels.ringTurn();
+		if (turn == null || mode != ChoosingTrack) stopTakingPictures();
 		if (turn == null) return backdrops.hide();
 		if (mode == ChoosingTrack) takeAPicture(turn);
 		backdrops.show(turn, tracks.length, isTakingPictures);
@@ -343,7 +344,12 @@ class Game {
 		show.draw(grid, Poses.of(grid.state), false);
 	}
 
-	/** Back to the track that should be showing, drawn now, so the view is right the moment the cover goes. */
+	/**
+	 * Back to the track that should be showing, drawn now, so the view is right
+	 * the moment the cover goes. Also when the cards are left part way through
+	 * (Tom, 5 Nov: Race here pressed before every picture was taken left the
+	 * game half way, and back on the cards it broke the ring).
+	 */
 	function stopTakingPictures() {
 		if (!isTakingPictures) return;
 		isTakingPictures = false;
