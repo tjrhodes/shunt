@@ -17,7 +17,8 @@ class Steadying {
 	/** A twist that draws the car's spin towards the spin its wheels ask for, at the steadying rate. */
 	public static function steadyingHand(car:Car):Push {
 		var spinToLoseOrGain = car.spin - spinTheWheelsAskFor(car);
-		var twist = -Tuning.steadying * Tuning.turningInertia * spinToLoseOrGain;
+		var hold = Tuning.steadying * (1 - Tuning.steadyingLostInAFlick * WeightShift.swing(car));
+		var twist = -hold * Tuning.turningInertia * spinToLoseOrGain;
 		return new Push(Vector.nothing(), twist * Tyres.tyreModelShare(car));
 	}
 

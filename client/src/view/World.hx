@@ -41,12 +41,27 @@ class World {
 
 	/** Puts a track in the scene (in place of any other), aims the floodlight at it, and frames it. */
 	public function showTrack(track:Track) {
-		if (trackShown != null) scene.remove(trackShown);
+		if (trackShown != null) letGo(trackShown);
 		trackShown = TrackView.build(track);
 		scene.add(trackShown);
 		view = new IsometricCamera(track.wallCorners());
 		shadowsOver(track);
 		fitTheScreen();
+	}
+
+	/**
+	 * A track taken out of the scene, and let go on the graphics card too:
+	 * its shapes, paints and painted pictures (each track is built afresh, and
+	 * taking the tracks' pictures builds every one, so they would pile up).
+	 */
+	function letGo(track:Group) {
+		scene.remove(track);
+		track.traverse(part -> {
+			var piece:Dynamic = part;
+			if (piece.geometry != null) piece.geometry.dispose();
+			if (piece.material != null && piece.material.map != null) piece.material.map.dispose();
+			if (piece.material != null) piece.material.dispose();
+		});
 	}
 
 	/** Draws a frame, with any shake from a hit nudging the camera. */
@@ -56,6 +71,16 @@ class World {
 		renderer.render(scene, view.camera);
 		view.camera.position.x -= nudge;
 		shake *= shakeLeftEachFrame;
+	}
+
+	/** A closer look at a spot on the ground (zoom 2: twice as close), for the demo's recordings; showing a track again shows all of it. */
+	public function closeUpOn(spot:Vector, zoom:Float) {
+		view.closeUp(spot, zoom);
+	}
+
+	/** What the view is drawn on: a picture can be taken of it straight after drawing. */
+	public function drawing():js.html.CanvasElement {
+		return renderer.domElement;
 	}
 
 	/** Shakes the view by a share of the most, unless the viewer prefers less motion. */

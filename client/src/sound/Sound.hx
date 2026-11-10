@@ -63,6 +63,16 @@ class Sound {
 		}
 	}
 
+	/**
+	 * Every engine and tyre falls quiet: whenever no race is running (results,
+	 * standings, the cards, an online room), however the race stopped (Tom,
+	 * 5 Nov: engines carried on after a race online, where sound never pauses).
+	 */
+	public function quieten() {
+		for (engine in engines) engine.stop();
+		for (squeal in squeals) squeal.follow(0, 0);
+	}
+
 	/** Something that happened in the race, if it makes a sound. */
 	public function hear(event:RaceEvent) {
 		if (context == null) return;

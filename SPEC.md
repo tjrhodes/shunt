@@ -20,7 +20,7 @@ both sides.
 |---|---|---|
 | **1. Alone** (this spec) | Car physics, two tracks (an oval and a whacky one), three AI cars, keyboard and gamepad, HUD, sound | A 5-lap race against three AI cars is fun, on a phone and a desktop |
 | **2. Same screen** (done) | 2–4 human players on one screen (keyboard halves and gamepads); AI fills the empty seats | Four people on one sofa can race |
-| 3. Online | Colyseus rooms on the VPS; bots fill empty seats; netcode (section 9) | Two browsers on different networks race and bump with no snapping |
+| **3. Online** (built) | Colyseus rooms on the VPS; bots fill empty seats; netcode (section 9) | Two browsers on different networks race and bump with no snapping |
 
 Phase 1 is built so that phases 2 and 3 are additions, not rewrites: the
 simulation only knows about **inputs**, never about keys, gamepads or sockets.
@@ -34,7 +34,7 @@ One small, finished, fun race beats a big unfinished season.
 | Feature | Detail |
 |---|---|
 | Race | Four cars on the chosen track: the player and three AI drivers. Grid start, 3-2-1 lights, 5 laps. Finishing order by laps done, then distance round the lap. |
-| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD; holding a steering key turns harder, up to full after 0.6 s. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake pad bottom right. |
+| Drive | Throttle, brake (becomes reverse when nearly stopped), steer. Keyboard: arrows or WASD; holding a steering key turns harder, up to full after 0.6 s. Gamepad (standard mapping): right trigger throttle, left trigger brake, left stick steer. Touch: left and right thumbs steer, throttle on by default, a brake bar right across the bottom (either thumb reaches it). |
 | Contact | Cars bump, push and spin each other. A tap on a rear quarter turns the car hit; a hit square from behind shoves it. Walls take speed off and send sparks. |
 | Damage | Hard hits dent the car and cost it speed; heavy damage pulls the steering to one side; a badly damaged car now and then drops oil, which takes away the grip of whoever drives over it. Walls are kinder than cars. Damage lasts the whole race (section 4b). |
 | Recover | A car stuck or facing the wrong way for 3 s is put back on the centreline at the nearest point, facing the right way, at walking pace. Also on a key (R / gamepad Y). |
@@ -160,9 +160,10 @@ ends.
   of a barrier is caught too. Joints where a wall carries on smoothly are
   not ends: treating them as ends pushed a car straight back along its
   length and stopped it dead, which made it spear into the oval's wall
-  (found on Tom's third drive). Restitution 0.2, sliding friction 0.3 (a
-  top-speed graze keeps about three quarters of the speed), the same
-  push-out.
+  (found on Tom's third drive). Restitution 0.2, sliding friction 0.5
+  (0.3 until 1 Nov, when Tom asked for walls to slow you a little more:
+  a top-speed graze now drops you to about two thirds of the speed at
+  worst, rather than three quarters), the same push-out.
 - Each contact adds a `RaceEvent` with its point and strength, for sparks,
   sound and screen shake.
 
@@ -257,8 +258,21 @@ centreline only guiding laps, recovery and the AI. A file can also give its
 own `laps`. `tracks/index.json` lists the tracks, for the game and the
 checks alike. The second track is **Serpentine** (`tools/make-serpentine.py`):
 a 170 × 100 m arena, four rows zigzagging up round fence tips in hairpins,
-a return lane down the east side; about 650 m a lap, 3 laps. Gaps for a
-crossing are still to come, with the figure-of-eight.
+a return lane down the east side; about 650 m a lap, 3 laps.
+
+**Twelve tracks (1 Nov).** `tools/make-tracks.py` writes ten more, each an
+original layout made of simple shapes, in the three families:
+*arena mazes* Comb (fingers from both sides), Slalom (a split box with
+fences to weave round), Hexagon (a ring round an island, fences from both
+walls); *flowing circuits* Kidney, Snake, Hook (a hairpin folded inside),
+Twister (corners of every kind); *crossings* Hourglass (a figure of eight),
+Pretzel (a loop inside a loop) and Trefoil (three crossings). A road that
+crosses itself needs nothing in its file: where an edge wall would lie on
+another part of the road (one more than 40 m away along the track), the
+track leaves it open, and the walls either side end in free tips. Points
+on a centreline must be spaced fairly evenly: bunched corner points next
+to long empty straights made the smoothing loop back on itself, so the
+generator fills long stretches in. Walls are drawn 1.3 m high (from 0.9).
 
 Each track is one JSON file (`tracks/oval.json`, …). It holds only a name,
 a few points round the centreline (each with the track's width there) and
@@ -363,24 +377,57 @@ hits shake the view. Who sits where is `client/src/seats/Lineup.hx`, with
 its own checks (`client/test`, run in CI). The whole-track camera means no
 split screen, and the simulation didn't change at all.
 
-**Phase 3: online.**
-- **Server**: a thin TypeScript Colyseus room on Tom's OVH VPS that runs the
-  shared Haxe simulation at 120 Hz and sends state at 30 Hz. The state schema
-  is written in TypeScript and generated for Haxe (colyseus-haxe).
-- **Seats**: up to four; bots (the same `AiDriver`) fill empty ones and hand
-  over when a player joins between races.
-- **Your car**: predicted. Your inputs are applied at once locally and sent
-  numbered; when the server's state arrives, restore it and replay your
-  unconfirmed inputs (`copyState` / `restoreState` exist for this).
-- **Other cars**: drawn about 100 ms in the past, interpolated between
-  server states.
-- **Contact under latency** (the hard part): when the server's answer
-  disagrees with the prediction, the difference is eased in over about
-  150 ms rather than snapped. Measured: how far corrections move a car, how
-  often, at 50, 100 and 200 ms of added latency.
-- **Floats**: the server corrects any drift, so exact determinism between
-  Node and browsers isn't required, only that the drift is small. Measured,
-  not assumed.
+**Phase 3: online (built 31 Oct).**
+- **Getting in:** the start panel offers *Quick match* (any open quick
+  room, or a new one, which starts by itself 15 s after a second person
+  arrives) and *Race friends* (a room of your own, reached only by its
+  link, `?room=…`; the host picks the track and starts). Everyone at this
+  computer comes too: each browser asks for a seat per person (phase 2's
+  seat picker), seats go in the order browsers arrived, AI drivers fill the
+  rest, and anyone left over watches until the next race. If someone
+  leaves mid-race, an AI driver takes their car to the finish. The host is
+  whichever browser has been in longest.
+- **The server**: one Node process on the VPS (`server/`) serves the game's
+  page and runs the rooms (Colyseus 0.18). The TypeScript is only glue:
+  every decision is made by `shunt.online.RaceRoom`, Haxe built from the
+  same source as the game (`server/build.hxml`), which runs the race at
+  120 ticks a second and sends a snapshot 30 times a second. Colyseus's
+  schema state is deliberately not used: the race is already plain data
+  (`RaceState`), and describing it again as a schema would write every
+  field twice. Message names and shapes are in `shunt.online.Messages`,
+  read by both sides.
+- **Inputs**: each browser numbers its inputs (one per tick, one per
+  person) and sends them every frame. The server queues them per browser
+  and uses one a tick (the last again if none has come; the oldest dropped
+  if more than 12 wait), tidying every number first.
+- **Your cars** (`Prediction`): run ahead of the server. On each snapshot,
+  the browser goes back to it, drops the inputs the server has used, and
+  runs the rest again. AI cars are predicted exactly (same seed, and AI
+  drivers remember nothing); other people's cars carry on with their last
+  input.
+- **Corrections** (`Smoothing`): eased in over 0.15 s, or snapped if over
+  4 m (a crash seen differently).
+- **Other people's cars** are drawn where this browser predicts them,
+  carrying on with their last input, and eased like your own when a
+  snapshot says otherwise. (They were first drawn 0.1 s in the past, as
+  smooth as could be, but then your car, drawn ahead, met them where they
+  weren't shown: Tom drove straight through Player 2's car. A bump has to
+  happen where it is seen.)
+- **Measured** (`OnlineTests`, a pretend network in the checks, one person
+  per browser driven by an AI as a person would): at 50, 100 and 200 ms
+  each way the browser finishes with the server's results; its own car is
+  moved by under 0.2 m by any correction, and almost always not at all.
+  With no delay, the prediction is exact.
+- **Floats**: the server corrects any drift, so Node and browsers needn't
+  agree to the last bit; with no delay they did agree exactly.
+- **Deploying**: `deploy/deploy.sh you@vps [port]` builds here, copies up,
+  and runs `deploy/on-the-server.sh` with sudo: a `shunt` user, the files
+  in `/opt/shunt`, a systemd service, an nginx site for
+  shunt.tomrhodes.it passing the page and WebSocket to the local port, and
+  a certificate from certbot. Needs Node 22 on the VPS.
+- The copy on claude.ai stays offline (its pages may not connect to other
+  servers): online racing appears only when the page comes from the shunt
+  server, which it knows by finding `online.json`.
 
 ## 10. Rendering and game feel
 
@@ -398,8 +445,11 @@ split screen, and the simulation didn't change at all.
 - **Dents**: the car body is a low-poly mesh; a contact pushes in the
   vertices near its point, scaled by the damage it did. Drawn only, never fed
   back into the physics (the simulation's damage zones are the truth).
-- **Low-poly** flat-shaded cars, walls, infield, stands and lights; cars built
-  in Blender and loaded as glTF, simple boxes until then. Big readable
+- **Low-poly** flat-shaded cars, walls, infield, stands and lights. The car
+  is our own small 1960s rally saloon, built from simple shapes in code
+  (`view/CarView.hx`, 1 Nov): 3.6 by 1.6 m, white roof, round lamps, two
+  spotlights, its number on the roof and both doors. Models found online
+  were ripped from games, so none is used. Big readable
   numbers on the car roofs (the player's car marked clearly).
 - **Feel** (done 31 Oct): skid marks and tyre smoke from sideways slide;
   sparks, dents and a short screen shake from hits (no shake if the viewer
@@ -463,7 +513,8 @@ shunt/
   tools/           make-oval.py (writes tracks/oval.json), check-lengths.py
   client/          Haxe browser client: render, input, HUD (src/), the page (www/)
   assets/          glTF models (later)
-  server/          phase 3: the TypeScript Colyseus room
+  server/          the Node server: Colyseus glue in TypeScript, the room's brain built from sim/
+  deploy/          deploy.sh and what it installs on the VPS (service, nginx site)
   tests/           Playwright browser checks
 ```
 

@@ -37,10 +37,22 @@ class Track {
 	/** How many centreline samples apart the edge walls' corners are (fewer walls, same shape). */
 	static inline final samplesPerEdgeWall = 2;
 
+	/**
+	 * Two parts of the track this far apart along it (metres) are different
+	 * parts, even if they come close: where an edge lies on the other's road,
+	 * the road crosses itself. Within a part's own road, an edge goes this far
+	 * in before it counts as on it (so a wall just touching isn't opened).
+	 */
+	static inline final crossingsAtLeastApart = 40.0;
+	static inline final edgeOverlap = 0.5;
+
 	public final name:String;
 	public final samples:Array<TrackSample>;
 	public final length:Float;
 	public final laps:Int;
+
+	/** Which family of track it is (see `TrackFile`), or "" if its file doesn't say. */
+	public final family:String;
 	public final walls:Array<Wall>;
 
 	/** A road has walls down its edges; an arena is an open floor inside its outline (see `TrackFile`). */
@@ -57,6 +69,7 @@ class Track {
 		length = loopLength(places);
 		samples = [for (index in 0...places.length) sampleAt(places, index, length)];
 		laps = file.laps ?? RaceTuning.defaultLaps;
+		family = file.family ?? "";
 		isARoad = file.edgeWalls ?? true;
 		var loops = [for (loop in file.loops ?? []) spotsOf(loop)];
 		arenaOutline = isARoad || loops.length == 0 ? [] : loops[0];
@@ -161,9 +174,43 @@ class Track {
 	/** The walls down both edges of the track, made from the same centreline samples. */
 	function edgeWalls():Array<Wall> {
 		var corners = [for (index in 0...samples.length) if (index % samplesPerEdgeWall == 0) index];
-		var leftEdge = Walls.joining([for (index in corners) edgeAt(index, 1)], true);
-		var rightEdge = Walls.joining([for (index in corners) edgeAt(index, -1)], true);
-		return leftEdge.concat(rightEdge);
+		return edgeAlong(corners, 1).concat(edgeAlong(corners, -1));
+	}
+
+	/**
+	 * One edge's walls. Where the road crosses itself (a figure of eight),
+	 * this edge runs right across the other part of the road: it is left
+	 * open there, so cars can cross, and each run of wall either side ends
+	 * in a free tip.
+	 */
+	function edgeAlong(corners:Array<Int>, side:Float):Array<Wall> {
+		var spots = [for (index in corners) edgeAt(index, side)];
+		var isOpen = [for (index in corners) isOnAnotherPartOfTheRoad(edgeAt(index, side), index)];
+		if (!isOpen.contains(true)) return Walls.joining(spots, true);
+		var walls:Array<Wall> = [];
+		for (run in runsBetweenGaps(spots, isOpen)) if (run.length > 1) walls = walls.concat(Walls.joining(run, false));
+		return walls;
+	}
+
+	/** Whether a spot by sample `index` lies on the road of some far-off part of the track: where the road crosses itself. */
+	function isOnAnotherPartOfTheRoad(spot:Vector, index:Int):Bool {
+		for (other in 0...samples.length) {
+			var apart = Math.min(Math.abs(other - index), samples.length - Math.abs(other - index)) * sampleSpacing;
+			if (apart > crossingsAtLeastApart && spot.distanceTo(samples[other].position) < samples[other].width / 2 - edgeOverlap) return true;
+		}
+		return false;
+	}
+
+	/** A closed list of spots cut into the runs between the open ones, each run in order. */
+	static function runsBetweenGaps(spots:Array<Vector>, isOpen:Array<Bool>):Array<Array<Vector>> {
+		var start = isOpen.indexOf(true);
+		var runs:Array<Array<Vector>> = [[]];
+		for (step in 1...spots.length + 1) {
+			var index = (start + step) % spots.length;
+			if (isOpen[index]) runs.push([]);
+			else runs[runs.length - 1].push(spots[index]);
+		}
+		return runs;
 	}
 
 	/** The free-standing walls, each a line from corner to corner. */

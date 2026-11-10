@@ -39,10 +39,15 @@ class CarInputs {
 	 */
 	public static function tidied(input:CarInput):CarInput {
 		return {
-			throttle: keepBetween(input.throttle, 0, 1),
-			brake: keepBetween(input.brake, 0, 1),
-			steer: keepBetween(input.steer, -1, 1),
-			recover: input.recover
+			throttle: keepBetween(aNumber(input?.throttle), 0, 1),
+			brake: keepBetween(aNumber(input?.brake), 0, 1),
+			steer: keepBetween(aNumber(input?.steer), -1, 1),
+			recover: input?.recover == true
 		};
+	}
+
+	/** Something that should be a number: itself if it is a real one, otherwise 0 (so nothing strange gets into the physics). */
+	static function aNumber(thing:Dynamic):Float {
+		return Std.isOfType(thing, Float) && Math.isFinite(thing) ? thing : 0;
 	}
 }

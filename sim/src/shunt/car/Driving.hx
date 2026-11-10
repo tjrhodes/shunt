@@ -7,6 +7,7 @@ using shunt.car.Tyres;
 using shunt.car.Steadying;
 using shunt.car.Engine;
 using shunt.car.CarMotion;
+using shunt.car.WeightShift;
 
 /**
  * One tick of one car on open ground: the whole story of how a car drives,
@@ -18,5 +19,6 @@ class Driving {
 		car.followTheDriver(tidyInput);
 		var allThePushes = car.grip(ground).plus(car.steadyingHand()).plus(car.engineBrakesAndAir(tidyInput));
 		car.moveOneTick(allThePushes);
+		car.rollWithThe(allThePushes);
 	}
 }

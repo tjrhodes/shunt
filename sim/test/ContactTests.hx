@@ -22,6 +22,8 @@ class ContactTests {
 		test("a side hit keeps all the momentum", sideHitKeepsMomentum),
 		test("cars pushing into each other don't stay overlapped", noOverlapRemains),
 		test("a tap on a back corner turns the car", tapTurnsTheCar),
+		test("cars lying across each other, or nose into side, touch (no corner of either is inside the other)", crossingCarsTouch),
+		test("1,000 random hits, fast into parked and side by side: cars never pass through each other", carsNeverPassThrough),
 		test('$wallRuns random runs at the walls: no car gets out', wallsHold),
 		test("a car flat out into a wall at 5° to 20° slides along it, never spearing in", wallsAreGlancedOff)
 	];
@@ -69,6 +71,64 @@ class ContactTests {
 		isTrue(contact != null, "the cars touch");
 		Impacts.shoveApart(hitter, still, contact, ContactTuning.carBounce, ContactTuning.carScrape);
 		isTrue(Math.abs(still.spin) > 0.3, 'the car hit spins (${still.spin} rad/s)');
+	}
+
+	static function crossingCarsTouch() {
+		var lying = carAt(0, 0, 0, Vector.nothing());
+		isTrue(CarContacts.deepestBetween(lying, carAt(0, 0, Math.PI / 2, Vector.nothing())) != null, "a plus sign");
+		isTrue(CarContacts.deepestBetween(lying, carAt(1, 0, Math.PI / 2, Vector.nothing())) != null, "nose into the side");
+		isTrue(CarContacts.deepestBetween(lying, carAt(0, 3.5, Math.PI / 2, Vector.nothing())) == null, "nose just short of the side");
+	}
+
+	/** How many random hits to try, and the deepest two cars may ever sink into each other (metres) before that counts as passing through. */
+	static inline final passThroughRuns = 1000;
+	static inline final deepestAllowed = 0.5;
+
+	/**
+	 * Tom's report (1 Nov): two cars side by side at speed sank into each
+	 * other, and a fast car drove straight through parked ones. Half the
+	 * runs are a car flat out at a parked one at any angle; half are two
+	 * cars side by side at speed, steering into each other.
+	 */
+	static function carsNeverPassThrough() {
+		var random = SeededRandom.startingFrom(7);
+		var deepest = 0.0;
+		for (run in 0...passThroughRuns) {
+			var numbers = [for (_ in 0...5) SeededRandom.asFraction(random = SeededRandom.next(random))];
+			var race = run % 2 == 0 ? fastIntoParked(numbers) : sideBySide(numbers);
+			for (_ in 0...Tick.ticksIn(1.5)) {
+				race.step([TestDrive.pedals(1, 0, numbers[3] * 2 - 1), TestDrive.pedals(numbers[4], 0, 0)]);
+				var contact = CarContacts.deepestBetween(race.racer(0).car, race.racer(1).car);
+				if (contact != null) deepest = Math.max(deepest, contact.overlap);
+			}
+		}
+		between(deepest, 0, deepestAllowed, "the deepest two cars ever sank into each other (m)");
+		say('    deepest two cars sank into each other: ${Math.round(deepest * 100) / 100} m');
+	}
+
+	/** On the oval's back straight: a parked car at any angle, and another 8 m behind it coming at 10 to 46 m/s, aimed anywhere across it. */
+	static function fastIntoParked(numbers:Array<Float>):Race {
+		var race = racingOnTheOval(2);
+		var spot = race.track.sample(60).position;
+		race.racer(1).car = carAt(spot.x, spot.y, numbers[0] * Math.PI, Vector.nothing());
+		var aimedAt = spot + race.track.leftAt(60) * ((numbers[1] - 0.5) * 3);
+		var from = aimedAt - race.track.sample(60).direction * 8;
+		var heading = (aimedAt - from).angle();
+		race.racer(0).car = carAt(from.x, from.y, heading, Vector.pointingAt(heading) * (10 + numbers[2] * 36));
+		return race;
+	}
+
+	/** Two cars side by side on the back straight, a little apart, both at 30 to 46 m/s. */
+	static function sideBySide(numbers:Array<Float>):Race {
+		var race = racingOnTheOval(2);
+		var here = race.track.sample(40);
+		var heading = here.direction.angle();
+		var speed = Vector.pointingAt(heading) * (30 + numbers[2] * 16);
+		for (seat in 0...2) {
+			var spot = here.position + race.track.leftAt(40) * ((seat - 0.5) * (CarTuning.width + 0.3)) + here.direction * (numbers[0] - 0.5);
+			race.racer(seat).car = carAt(spot.x, spot.y, heading, speed);
+		}
+		return race;
 	}
 
 	/**
@@ -133,7 +193,7 @@ class ContactTests {
 		return race;
 	}
 
-	static function carAt(x:Float, y:Float, heading:Float, velocity:Vector):Car {
+	public static function carAt(x:Float, y:Float, heading:Float, velocity:Vector):Car {
 		var car = Cars.parkedAt(new Vector(x, y), heading);
 		car.velocity = velocity;
 		return car;

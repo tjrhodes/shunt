@@ -1,5 +1,6 @@
 {
  "name": "Serpentine",
+ "family": "arena",
  "laps": 3,
  "edgeWalls": false,
  "centreline": [

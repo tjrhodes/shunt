@@ -40,7 +40,7 @@ class Keyboard {
 		return {
 			throttle: anyDown(half.throttle) ? 1 : 0,
 			brake: anyDown(half.brake) ? 1 : 0,
-			steer: half.steeringRamp.steering((anyDown(half.right) ? 1 : 0) - (anyDown(half.left) ? 1 : 0)),
+			steer: half.steeringRamp.steering((anyDown(half.right) ? 1 : 0) - (anyDown(half.left) ? 1 : 0), secondsNow()),
 			recover: anyDown(half.recover),
 			pause: anyDown(pauseKeys),
 			mute: anyDown(muteKeys),
@@ -56,6 +56,10 @@ class Keyboard {
 
 	static function isADrivingKey(code:String):Bool {
 		return Lambda.exists([leftHalf, rightHalf], half -> half.throttle.concat(half.brake).concat(half.left).concat(half.right).concat(half.recover).contains(code));
+	}
+
+	static function secondsNow():Float {
+		return Browser.window.performance.now() / 1000;
 	}
 
 	function anyDown(keys:Array<String>):Bool {

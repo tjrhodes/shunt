@@ -1,3 +1,5 @@
+package shunt;
+
 /**
  * Keeps the race in step with real time (SPEC.md §3). The screen draws
  * whenever it can (60, 90, 144 times a second...), but the race only ever
@@ -7,19 +9,29 @@
  */
 class FixedSteps {
 	/** At most this many ticks in one frame: after a stall (a hidden tab), the race doesn't race to catch up. */
-	static inline final mostTicksPerFrame = 8;
+	final mostTicksPerFrame:Int;
+
+	/** Adding up times leaves tiny rounding errors: without this, a tick that is due now can wait a frame and two come together. */
+	static inline final roundingSlack = 1e-6;
 
 	var lastSeconds = -1.0;
 	var timeNotYetTicked = 0.0;
 
-	public function new() {}
+	/**
+	 * On this computer 8 a frame is plenty. Online, time lost puts a browser
+	 * behind the server for the rest of the race (Tom, 5 Nov: on a slow
+	 * frame the cars jumped), so it catches up further (`OnlineTuning`).
+	 */
+	public function new(mostTicksPerFrame = 8) {
+		this.mostTicksPerFrame = mostTicksPerFrame;
+	}
 
 	/** How many ticks to run now, given the frame's time in milliseconds. */
 	public function ticksDue(nowMilliseconds:Float):Int {
 		var now = nowMilliseconds / 1000;
 		if (lastSeconds >= 0) timeNotYetTicked += now - lastSeconds;
 		lastSeconds = now;
-		var due = Math.floor(timeNotYetTicked / Tick.seconds);
+		var due = Math.floor(timeNotYetTicked / Tick.seconds + roundingSlack);
 		timeNotYetTicked -= due * Tick.seconds;
 		if (due <= mostTicksPerFrame) return due;
 		timeNotYetTicked = 0;

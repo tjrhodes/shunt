@@ -133,7 +133,7 @@ class Scenery {
 		paint.fillStyle = Paint.css(Paint.billboards[index % Paint.billboards.length]);
 		paint.fillRect(0, 0, 512, 128);
 		paint.fillStyle = Paint.css(Paint.billboardWords);
-		paint.font = "800 84px 'Saira Condensed', sans-serif";
+		paint.font = Lettering.heavy(84);
 		paint.textAlign = "center";
 		paint.textBaseline = "middle";
 		paint.fillText(Words.billboards[index], 256, 68, 472);

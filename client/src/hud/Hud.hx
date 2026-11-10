@@ -1,7 +1,6 @@
 package hud;
 
 import js.html.Element;
-import seats.Lineup;
 import shunt.race.Race;
 import shunt.race.RaceState.Racer;
 import shunt.race.StartLights;
@@ -32,9 +31,8 @@ class Hud {
 		lamps = [for (_ in 0...RaceTuning.redLights) Dom.make("span", "lamp", null, lights)];
 	}
 
-	/** Shows a plate for each person, corner by corner in seat order; the lap times only for someone racing alone. */
-	public function seat(lineup:Lineup) {
-		var people = [for (seat in 0...lineup.seats) if (lineup.isHuman(seat)) seat];
+	/** Shows a plate for each of the seats our people drive, corner by corner in seat order; the lap times only for someone racing alone. */
+	public function seat(people:Array<Int>) {
 		for (seat in 0...plates.length) plates[seat].place(people.contains(seat), people.indexOf(seat), people.length > 1);
 		timesFor = people.length == 1 ? people[0] : -1;
 		times.hidden = timesFor < 0;

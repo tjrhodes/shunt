@@ -46,6 +46,11 @@ class EngineVoice {
 		volume.gain.setTargetAtTime(loudness * (0.5 + 0.5 * car.throttle), now, Tuning.followTime);
 	}
 
+	/** The engine dies away (the race has stopped). */
+	public function stop() {
+		volume.gain.setTargetAtTime(0, context.currentTime, Tuning.followTime);
+	}
+
 	/** The engine's note at a speed: which gear it would be in, and how far through that gear. */
 	static function noteAt(speed:Float):Float {
 		var speedPerGear = CarTuning.topSpeed / Tuning.gears;

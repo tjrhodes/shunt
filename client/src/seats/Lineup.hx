@@ -56,9 +56,14 @@ class Lineup {
 		return anyoneJoined() ? claimed[seat] != null : seat == 0;
 	}
 
+	/** The seats people drive, in order. */
+	public function humanSeats():Array<Int> {
+		return [for (seat in 0...seats) if (isHuman(seat)) seat];
+	}
+
 	/** How many people are racing. */
 	public function people():Int {
-		return [for (seat in 0...seats) if (isHuman(seat)) seat].length;
+		return humanSeats().length;
 	}
 
 	/** What drives a seat, out of every controller there is: one claimed controller, or (before anyone joins) all of them for the first seat; none for an AI seat. */

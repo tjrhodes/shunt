@@ -40,4 +40,7 @@ typedef TrackFile = {
 
 	/** How many laps a race here is, if not the usual (`RaceTuning.defaultLaps`). */
 	final ?laps:Int;
+
+	/** Which family of track it is ("oval", "arena", "circuit", "crossing"), for the track cards. */
+	final ?family:String;
 }

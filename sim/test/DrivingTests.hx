@@ -1,3 +1,4 @@
+import shunt.maths.Numbers.wrapAngle;
 import Check.*;
 import TestDrive.pedals;
 import haxe.Json;
@@ -33,6 +34,7 @@ class DrivingTests {
 		test("a quick correction at top speed stays a correction, not a spin", correctionsDoNotSpin),
 		test("lifting off at top speed slows it to 70 km/h within 8 s", liftingOffSlows),
 		test("on the power in a bend the tail drifts out, and countersteering catches it", powerSlidesCanBeHeld),
+		test("a flick (a little right, then hard left) throws the tail out twice as far as turning from straight, without spinning", flicksDrift),
 		test("the same inputs always give the same drive", isRepeatable),
 		test("a copied car carries on exactly as the original", copiesCarryOn),
 		test("inputs out of range count as the most allowed", tidiesInputs)
@@ -87,7 +89,8 @@ class DrivingTests {
 	 */
 	static function holdsAGentleBend() {
 		var drive = new TestDrive().holdUntil(floored, car -> car.speed() >= 25, 10);
-		var car = drive.follow(_ -> pedals(holdSpeed(drive.car, 25), 0, 0.1), 5).car;
+		// A light touch on the wheel: 0.075 of full lock (it was 0.1 before the cars shrank; the shorter wheelbase turns tighter for the same touch).
+		var car = drive.follow(_ -> pedals(holdSpeed(drive.car, 25), 0, 0.075), 5).car;
 		between(Math.abs(car.sidewaysSpeed()), 0, 1.5, "sideways slide on a gentle bend");
 		between(Math.abs(car.spin), 0.1, 1.0, "steady turning rate");
 	}
@@ -182,5 +185,31 @@ class DrivingTests {
 	static function isFinite(car:Car):Bool {
 		var numbers = [car.position.x, car.position.y, car.velocity.x, car.velocity.y, car.heading, car.spin];
 		return Lambda.foreach(numbers, Math.isFinite);
+	}
+
+	/**
+	 * Tom, 1 Nov: turn right slightly, then hard left, and the weight thrown
+	 * over should make it drift. At 30 m/s, the biggest slide after a flick
+	 * must be at least twice the slide from turning left off a straight,
+	 * and still well short of a spin.
+	 */
+	static function flicksDrift() {
+		var fromStraight = biggestSlideTurningLeftAfter(0);
+		var afterAFlick = biggestSlideTurningLeftAfter(0.3);
+		isTrue(afterAFlick >= 2 * fromStraight, 'slide after a flick ${Math.round(afterAFlick)}°, from straight ${Math.round(fromStraight)}°');
+		isTrue(afterAFlick < 45, 'not a spin: ${Math.round(afterAFlick)}°');
+	}
+
+	/** At 30 m/s: steer right this much for 0.6 s, then hard left for 1.5 s; the biggest angle between where the car points and where it goes, in degrees. */
+	static function biggestSlideTurningLeftAfter(rightFirst:Float):Float {
+		var drive = new TestDrive();
+		drive.car.velocity = new shunt.maths.Vector(30, 0);
+		drive.hold(TestDrive.pedals(0.6, 0, rightFirst), 0.6);
+		var biggest = 0.0;
+		for (_ in 0...Tick.ticksIn(1.5)) {
+			drive.hold(TestDrive.pedals(0.6, 0, -1), Tick.seconds);
+			biggest = Math.max(biggest, Math.abs(wrapAngle(drive.car.velocity.angle() - drive.car.heading)) * 180 / Math.PI);
+		}
+		return biggest;
 	}
 }

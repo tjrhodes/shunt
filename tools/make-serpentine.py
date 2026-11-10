@@ -104,6 +104,7 @@ def as_points(spots, **extra):
 def main():
     track = {
         "name": "Serpentine",
+        "family": "arena",
         "laps": LAPS,
         "edgeWalls": False,
         "centreline": as_points(without_repeats(centreline()), width=WIDTH),

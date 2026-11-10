@@ -1,6 +1,5 @@
 package input;
 
-import js.Browser;
 import shunt.maths.Numbers.partWay;
 
 /**
@@ -8,6 +7,11 @@ import shunt.maths.Numbers.partWay;
  * It starts gentle and builds the longer it is held, up to full: a tap is a
  * small correction, holding turns the car in properly. (A gamepad stick
  * doesn't need this: it is already as gradual as the thumb on it.)
+ *
+ * Going straight from one side to the other keeps what has built up, even
+ * with a moment's gap between the keys: that is a flick (Tom, 1 Nov), and
+ * starting the new side gentle again would let the car's weight settle
+ * before the steering got there. Letting go for longer starts afresh.
  */
 class SteeringRamp {
 	/** The share of full steering the moment a key goes down... */
@@ -16,26 +20,40 @@ class SteeringRamp {
 	/** ...building to full after it has been held this many seconds. */
 	static inline final secondsToFull = 0.6;
 
+	/** Let go for less than this and pressed again, it carries on from where it was. */
+	static inline final switchingGap = 0.15;
+
 	var heldSince = -1.0;
 	var heldWay = 0.0;
+	var letGoAt = -1.0;
+	var builtBeforeLettingGo = 0.0;
 
 	public function new() {}
 
 	/**
-	 * The steering for the way held now (-1 left, 1 right, 0 nothing). It
-	 * goes by the clock, so asking more than once in a moment changes nothing;
-	 * letting go, or switching sides, starts the build again.
+	 * The steering at a moment (seconds, on any clock that keeps going) for
+	 * the way held then (-1 left, 1 right, 0 nothing). Asking more than once
+	 * in a moment changes nothing.
 	 */
-	public function steering(wayHeld:Float):Float {
+	public function steering(wayHeld:Float, now:Float):Float {
 		if (wayHeld == 0) {
-			heldSince = -1;
+			letGo(now);
 			return 0;
 		}
-		var now = Browser.window.performance.now() / 1000;
-		if (heldSince < 0 || wayHeld != heldWay) {
-			heldSince = now;
-			heldWay = wayHeld;
-		}
+		if (heldSince < 0) heldSince = isASwitch(now) ? now - builtBeforeLettingGo : now;
+		heldWay = wayHeld;
 		return wayHeld * partWay(shareAtFirst, 1, Math.min(1, (now - heldSince) / secondsToFull));
+	}
+
+	/** Remembers how far it had built, the moment it is let go. */
+	function letGo(now:Float) {
+		if (heldSince < 0) return;
+		builtBeforeLettingGo = now - heldSince;
+		letGoAt = now;
+		heldSince = -1;
+	}
+
+	function isASwitch(now:Float):Bool {
+		return letGoAt >= 0 && now - letGoAt < switchingGap;
 	}
 }

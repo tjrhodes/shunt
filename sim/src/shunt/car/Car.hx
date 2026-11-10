@@ -31,6 +31,9 @@ typedef Car = {
 	/** How far down the accelerator is, 0 to 1 (it follows the driver's foot smoothly). */
 	var throttle:Float;
 
+	/** How far the car's weight leans to the right-hand tyres, in g (it rolls over a moment after a turn: `WeightShift`). */
+	var sidewaysLoad:Float;
+
 	/** How battered each side is (SPEC.md §4b). */
 	var damage:DamageZones;
 }
@@ -46,6 +49,7 @@ class Cars {
 			spin: 0,
 			wheelAngle: 0,
 			throttle: 0,
+			sidewaysLoad: 0,
 			damage: Damage.none
 		};
 	}

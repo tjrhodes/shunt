@@ -49,7 +49,7 @@ class Check {
 	}
 
 	/** Prints a line on Node's console. */
-	static function say(line:String) {
+	public static function say(line:String) {
 		js.Syntax.code("console.log({0})", line);
 	}
 
