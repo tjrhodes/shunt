@@ -70,6 +70,12 @@ class OnlineRace {
 	/** The newest snapshot from the server not yet caught up with (older ones are dropped: each holds the whole race). */
 	var newestSnapshot:Null<Snapshot> = null;
 
+	/** Over the race while the connection has dropped and the browser is getting back in. */
+	final dropNotice = hiddenNotice(Words.reconnecting);
+
+	/** The close code for leaving the room on purpose (Colyseus's CONSENTED). */
+	static inline final consented = 4000;
+
 	/** The `?net` readout, if the address asks for it. */
 	final readout:Null<NetReadout> = NetReadout.isWanted() ? new NetReadout() : null;
 
@@ -106,8 +112,31 @@ class OnlineRace {
 		room.onMessage(Messages.raceStarts, heardTheRaceStarts);
 		room.onMessage(Messages.snapshot, heardASnapshot);
 		room.onMessage(Messages.pong, (sentAt:Float) -> readout?.heardPong(sentAt));
-		room.onLeave(_ -> around.whenGone());
+		room.onLeave(leftTheRoom);
+		room.onDrop((_, _) -> dropNotice.hidden = false);
+		room.onReconnect(() -> dropNotice.hidden = true);
 		askForSeats();
+	}
+
+	static function hiddenNotice(words:String):js.html.Element {
+		var notice = hud.Dom.make("p", "reconnecting", words, Browser.document.body);
+		notice.hidden = true;
+		return notice;
+	}
+
+	/**
+	 * Out of the room. Meaning to (Leave), back to the cards. Otherwise the
+	 * connection dropped and the browser couldn't get back in (Tom, 10 Nov):
+	 * the race stops here, and the room panel says so (with its Leave).
+	 */
+	function leftTheRoom(code:Int) {
+		dropNotice.hidden = true;
+		room = null;
+		if (code == consented) return around.whenGone();
+		prediction = null;
+		gatheringRace = null;
+		around.show.sound.quieten();
+		around.panels.showLostTheRace(code);
 	}
 
 	function askForSeats() {

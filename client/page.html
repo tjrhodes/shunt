@@ -44,6 +44,12 @@
   }
   /* One plate per person, a corner each in seat order; the lap times take the top right when one races alone. */
   #hud > .plate { position: absolute; }
+  /* Over an online race while its connection has dropped (OnlineRace.dropNotice). */
+  .reconnecting {
+    position: fixed; top: calc(130px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); z-index: 30;
+    margin: 0; padding: 8px 14px; border-radius: 6px; font-weight: 600;
+    color: #fff; background: rgba(180, 40, 40, 0.9);
+  }
   /* The ?net readout: how an online race is keeping up (NetReadout.hx). */
   .net-readout {
     position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 30;

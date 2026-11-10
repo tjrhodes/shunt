@@ -25,6 +25,10 @@ extern class ColyseusRoom {
 	function onMessage(type:String, heard:Dynamic -> Void):() -> Void;
 	function leave(?consented:Bool):Promise<Int>;
 
-	/** Called with what to do once the room is left, however that happens. */
+	/** Called with what to do once the room is left, however that happens, with the close code (4000: meant to). */
 	function onLeave(then:Int -> Void):Void;
+
+	/** Called when the connection drops (the browser then tries to reconnect by itself), and when it is back. */
+	function onDrop(then:(code:Int, reason:String) -> Void):Void;
+	function onReconnect(then:() -> Void):Void;
 }

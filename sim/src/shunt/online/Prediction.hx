@@ -88,8 +88,15 @@ class Prediction {
 		return notYetUsed.length;
 	}
 
-	/** Some numbered inputs as one batch to send. */
+	/**
+	 * Some numbered inputs as one batch to send: only the newest few, which
+	 * is all the server keeps of a batch (the rest would be too late). After
+	 * a slow moment a browser can have seconds' worth, and there's no point
+	 * sending them (the server's limit for a message is 4 KB, about a second
+	 * of inputs).
+	 */
 	public static function batchOf(numbered:Array<NumberedInputs>):InputBatch {
-		return {firstNumber: numbered[0].number, ticks: [for (entry in numbered) entry.inputs]};
+		var newest = numbered.slice(-OnlineTuning.mostInputsWaiting);
+		return {firstNumber: newest[0].number, ticks: [for (entry in newest) entry.inputs]};
 	}
 }

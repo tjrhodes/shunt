@@ -107,6 +107,12 @@ class Words {
 	public static inline final onlineHelp = "Quick match puts you in with anyone looking for a race. Race friends gives you a link to send them. Everyone on this computer comes too.";
 	public static inline final connecting = "Getting you a seat…";
 	public static inline final cantConnect = "Couldn't reach the race. It may have finished, or the server is down. Try again in a moment.";
+	public static inline final reconnecting = "Connection lost: getting back in…";
+	public static inline final lostTheRace = "Lost the connection to the race, and couldn't get back in. Try joining again.";
+
+	public static function closeCode(code:Int):String {
+		return 'Close code $code';
+	}
 	public static inline final roomLink = "Send this link to the people you want to race:";
 	public static inline final copy = "Copy";
 	public static inline final copied = "Copied";

@@ -569,3 +569,26 @@ measurements, then fixes, each checked in "real life" (below).
 - Two real browsers here can't say how two laptops do: the sandbox draws
   three frames a second. Tom's next race, with `?net` and the server's
   log, will.
+
+## 10 Nov 2026: a friend dropped from a race, twice
+
+Tom raced James (from the north of Italy, over the internet). Near the end
+of lap 1, and again of lap 2, James landed back on the track cards: his
+connection to the room had closed (the only way there mid-race), and Tom's
+hadn't. The server's log said nothing about people leaving, so why it
+closed is unknown.
+
+- **Back in after a drop.** The Colyseus browser library reconnects by
+  itself when a connection drops, but only if the server allows it, and
+  ours didn't: any blip ended the race. Now a dropped player has 20 s to
+  come back (`ShuntRoom.onLeave`, `allowReconnection`); their car carries
+  on meanwhile, and the browser shows "Connection lost: getting back in…".
+  If it can't get back in, the room panel says so (with the close code),
+  instead of dropping them silently on the cards. Checked in two browsers:
+  the guest's network off for 3 s mid-race, and the race carried on.
+- **The server's log says who left and why** (the close code), and
+  whether they came back.
+- **Smaller input messages.** Inputs are sent as only the newest 12 of
+  each batch (all the server keeps). The suspect first was the server's
+  4 KB limit on a message (a second of inputs, sent after a slow moment),
+  but a probe sending 180 ticks at once stayed connected: not the cause.

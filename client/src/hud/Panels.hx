@@ -237,6 +237,12 @@ class Panels {
 		showOnly(roomPanel);
 	}
 
+	/** The connection to the room dropped and didn't come back (`code`: how it closed, small, for working out why). */
+	public function showLostTheRace(code:Int) {
+		room.showProblem(Words.lostTheRace, Words.closeCode(code));
+		showOnly(roomPanel);
+	}
+
 	// ---- Every panel ----
 
 	/** A titled panel, hidden until wanted. */
